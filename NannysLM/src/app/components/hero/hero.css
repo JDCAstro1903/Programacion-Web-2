@@ -1,0 +1,64 @@
+.hero {
+  display: flex;
+  padding: 4rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 2rem;
+}
+
+.hero-content {
+  flex: 1;
+}
+
+h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.highlight {
+  color: #6C63FF;
+}
+
+.cta-buttons {
+  margin-top: 2rem;
+}
+
+.btn-search {
+  background: #6C63FF;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 5px;
+  margin-right: 1rem;
+  cursor: pointer;
+}
+
+.btn-learn {
+  background: #FF69B4;
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.hero-image {
+  flex: 1;
+  position: relative;
+}
+
+.profile-placeholder {
+  background: #f5f5f5;
+  border-radius: 10px;
+  padding: 2rem;
+}
+
+.verification-badge {
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
