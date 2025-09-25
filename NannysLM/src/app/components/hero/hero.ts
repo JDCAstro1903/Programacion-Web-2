@@ -6,4 +6,11 @@ import { Component } from '@angular/core';
   templateUrl: './hero.html',
   styleUrls: ['./hero.css']
 })
-export class HeroComponent {}
+export class HeroComponent {
+  scrollToCta() {
+    const element = document.getElementById('cta');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+}

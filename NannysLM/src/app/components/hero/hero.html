@@ -14,32 +14,34 @@
         </svg>
         Buscar niñera →
       </button>
-      <button class="btn-learn">Conocenos</button>
+      <button class="btn-learn" (click)="scrollToCta()">Conocenos</button>
     </div>
   </div>
   
   <div class="hero-image">
     <div class="profile-card">
+      <!-- Profile placeholder with gray background -->
       <div class="profile-placeholder">
-        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="60" cy="60" r="60" fill="#E5E5E5"/>
-          <circle cx="60" cy="45" r="20" fill="#9CA3AF"/>
-          <path d="M20 100c0-22.091 17.909-40 40-40s40 17.909 40 40" fill="#9CA3AF"/>
+        <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" rx="10" fill="#E5E7EB"/>
+          <path d="M100 90C111.046 90 120 81.0457 120 70C120 58.9543 111.046 50 100 50C88.9543 50 80 58.9543 80 70C80 81.0457 88.9543 90 100 90Z" fill="#9CA3AF"/>
+          <path d="M140 140C140 117.909 122.091 100 100 100C77.9086 100 60 117.909 60 140" fill="#9CA3AF"/>
         </svg>
       </div>
       <p class="profile-text">Imagen preliminar</p>
-    </div>
-    
-    <div class="verification-badge">
-      <div class="verification-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" fill="#F59E0B"/>
-          <path d="m9 12 2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="verification-text">
-        <p><strong>Verificación completa</strong></p>
-        <p class="verification-subtext">Antecedentes y referencias</p>
+      
+      <!-- Verification badge -->
+      <div class="verification-badge">
+        <div class="verification-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="12" fill="#F59E0B"/>
+            <path d="M8 12L11 15L16 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="verification-text">
+          <p>Verificación completa</p>
+          <p class="verification-subtext">Antecedentes y referencias</p>
+        </div>
       </div>
     </div>
   </div>
@@ -83,20 +85,20 @@
         </svg>
       </div>
       <h3>Comunidad Confiable</h3>
-      <p>Únete a miles de familias que ya confían en Nannys LM para el cuidado de sus hijos.</p>
+      <p>Únete a cientos de familias que ya confían en NannysLM para el cuidado de sus hijos.</p>
     </div>
   </div>
 </section>
 
 <!-- CTA Section -->
-<section class="cta-section">
+<section class="cta-section" id="cta">
   <div class="cta-content">
     <h2>¿Lista para encontrar tu niñera ideal?</h2>
     <p>Únete a nuestra comunidad confiable hoy mismo y descubre por qué somos la opción #1 para el cuidado infantil</p>
     
     <div class="cta-buttons">
-      <button class="btn-conocenos">Conocenos</button>
-      <a href="https://instagram.com" class="instagram-link" target="_blank">
+      <span class="text-conocenos">Conocenos</span>
+      <a href="https://www.instagram.com/nannyslm/" class="instagram-link" target="_blank">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="currentColor" stroke-width="2"/>
           <path d="m16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" stroke="currentColor" stroke-width="2"/>

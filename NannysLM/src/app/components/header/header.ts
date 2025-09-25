@@ -1,11 +1,13 @@
 import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-header',
   standalone: true,
+  imports: [RouterModule],
   templateUrl: './header.html',
   styleUrls: ['./header.css']
 })
 export class HeaderComponent {
-  logoPath = '/assets/logo.png';  // Add this line
+  logoPath = '/assets/logo.png';  
 }

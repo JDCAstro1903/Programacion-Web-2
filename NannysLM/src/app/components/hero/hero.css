@@ -3,9 +3,9 @@
   display: flex;
   padding: 4rem 2rem;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 70px auto 0; /* Add top margin to prevent content hiding under header */
   gap: 4rem;
-  min-height: 80vh;
+  min-height: calc(80vh - 92px); /* Adjust height to account for header */
   align-items: center;
 }
 
@@ -14,7 +14,8 @@
 }
 
 .hero-content h1 {
-  font-size: 3.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 3rem;
   font-weight: 700;
   line-height: 1.1;
   margin: 0;
@@ -23,7 +24,6 @@
 
 .highlight {
   color: #6c63ff;
-  text-decoration: underline;
   text-decoration-color: #6c63ff;
   text-decoration-thickness: 3px;
   text-underline-offset: 8px;
@@ -91,20 +91,26 @@
 }
 
 .profile-card {
-  background: #f5f5f5;
-  border-radius: 15px;
+  background: white;
+  border-radius: 12px;
   padding: 2rem;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  width: 280px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .profile-placeholder {
+  background: #E5E7EB;
+  border-radius: 10px;
+  padding: 2rem;
   margin-bottom: 1rem;
 }
 
 .profile-text {
-  color: #666;
+  color: #6B7280;
   font-size: 0.9rem;
   margin: 0;
 }
@@ -114,30 +120,44 @@
   bottom: -20px;
   right: -20px;
   background: white;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
-  gap: 1rem;
-  max-width: 200px;
+  gap: 0.75rem;
+  max-width: 250px;
+}
+
+.verification-icon {
+  flex-shrink: 0;
+}
+
+.verification-text {
+  text-align: left;
 }
 
 .verification-text p {
   margin: 0;
   font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .verification-subtext {
-  color: #666;
+  color: #6B7280;
+  font-size: 0.75rem !important;
 }
 
 /* CTA Section */
 .cta-section {
   background: linear-gradient(135deg, #00b4db 0%, #ff69b4 100%);
-  padding: 4rem 2rem;
+  padding: 3rem 2rem;  /* Reduced padding from 4rem to 3rem */
   text-align: center;
   color: white;
+  border-radius: 20px;  /* Added rounded corners */
+  max-width: 1200px;   /* Added max-width to make it more compact */
+  margin: 2rem auto;   /* Center the section and add vertical spacing */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);  /* Optional: adds depth */
 }
 
 .cta-content {
@@ -161,38 +181,31 @@
 
 .cta-section .cta-buttons {
   display: flex;
-  justify-content: center;
+  flex-direction: column;  /* Change to column to stack vertically */
   align-items: center;
-  gap: 2rem;
-  flex-direction: row;
-  max-width: none;
-}
-
-.btn-conocenos {
-  background: white;
-  color: #6c63ff;
-  padding: 1rem 2rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-conocenos:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  gap: 1.5rem;
+  max-width: 300px;  /* Add max-width to contain buttons */
+  margin: 0 auto;    /* Center the container */
 }
 
 .instagram-link {
-  display: inline-block;
+  display: block;    /* Change to block for full width */
+  text-align: center;
   color: white;
   transition: transform 0.3s ease;
 }
 
 .instagram-link:hover {
   transform: scale(1.1);
+}
+
+.text-conocenos {
+  color: white;
+  font-size: 1.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* Features Section */
@@ -203,6 +216,7 @@
 }
 
 .features h2 {
+  font-family: 'Poppins', sans-serif;
   font-size: 2.5rem;
   font-weight: 700;
   color: #1a1a1a;
@@ -249,6 +263,7 @@
 }
 
 .feature-card h3 {
+  font-family: 'Poppins', sans-serif;
   color: #1a1a1a;
   font-size: 1.25rem;
   font-weight: 600;
@@ -263,16 +278,33 @@
   margin: 0;
 }
 
-/* Responsive Design */
+/* Media Queries */
 @media (max-width: 768px) {
   .hero {
     flex-direction: column;
-    gap: 2rem;
     padding: 2rem 1rem;
+    gap: 2rem;
+    margin-top: 80px;
   }
 
   .hero-content h1 {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
+    text-align: center;
+  }
+
+  .hero-description {
+    text-align: center;
+    margin: 1.5rem auto;
+    max-width: 90%;
+  }
+
+  .cta-buttons {
+    align-items: center;
+    margin: 0 auto;
+  }
+
+  .features {
+    padding: 2rem 1rem;
   }
 
   .features-grid {
@@ -281,21 +313,68 @@
     padding: 0 1rem;
   }
 
+  .feature-card {
+    padding: 1.5rem;
+  }
+
+  .cta-section {
+    margin: 1rem;
+    padding: 2rem 1rem;
+  }
+
   .cta-content h2 {
-    font-size: 2rem;
+    font-size: 1.6rem;
   }
 
   .cta-content p {
     font-size: 1rem;
+    margin: 1rem auto;
   }
 
-  .cta-section .cta-buttons {
-    flex-direction: column;
-    gap: 1rem;
+  .profile-card {
+    max-width: 300px;
+    margin: 0 auto;
   }
 
   .verification-badge {
-    position: static;
-    margin-top: 1rem;
+    position: relative;
+    bottom: -10px;
+    right: 0;
+    margin: 0 auto;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hero {
+    padding: 3rem 2rem;
+    gap: 3rem;
+  }
+
+  .hero-content h1 {
+    font-size: 2.5rem;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 375px) {
+  .hero-content h1 {
+    font-size: 1.8rem;
+  }
+
+  .btn-search, .btn-learn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .verification-badge {
+    padding: 0.75rem;
+    font-size: 0.8rem;
   }
 }
