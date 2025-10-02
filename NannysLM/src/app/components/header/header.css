@@ -15,7 +15,7 @@
 
 .logo {
   height: 60px; /* Reducido para coincidir con la imagen */
-  margin-right: 8rem; /* Añadir margen para empujar el logo a la derecha */
+  margin-right: 12rem; /* Aumentado para mover el logo más a la derecha */
 }
 
 .logo img {
@@ -38,12 +38,21 @@
   cursor: pointer;
   font-weight: 500;
   font-size: 0.875rem;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
   font-family: 'Poppins', sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-login:hover {
   background-color: #d1d5db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
 }
 
 .btn-register {
@@ -55,12 +64,21 @@
   cursor: pointer;
   font-weight: 500;
   font-size: 0.875rem;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
   font-family: 'Poppins', sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-register:hover {
   background-color: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-register:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
 }
 
 :host {
@@ -71,7 +89,7 @@
 /* Tablet styles */
 @media (max-width: 1024px) {
   .logo {
-    margin-right: 4rem; /* Reduce right margin on tablet */
+    margin-right: 6rem; /* Reduce right margin on tablet but keep it more to the right */
   }
 }
 
@@ -83,7 +101,7 @@
 
   .logo {
     height: 45px;
-    margin-right: 2rem;
+    margin-right: 3rem; /* Slightly more margin on mobile */
   }
 
   .nav {
