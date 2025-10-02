@@ -1,0 +1,81 @@
+<div class="login-container">
+  <!-- Sección izquierda con el mensaje promocional -->
+  <div class="promo-section">
+    <div class="promo-content">
+      <h1>Contactamos familias con cuidadores de confianza</h1>
+      <p>La plataforma mas segura y confiable para encontrar la niñera perfecta para tu familia</p>
+    </div>
+    <button class="back-button" routerLink="/">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Sección derecha con el formulario de login -->
+  <div class="form-section">
+    <div class="form-container">
+      <div class="logo-container">
+        <img src="/assets/logo.png" alt="NannysLM" class="logo">
+      </div>
+      
+      <h2>Bienvenido de vuelta</h2>
+      <p class="subtitle">Inicia sesión para encontrar la niñera perfecta</p>
+
+      <form (ngSubmit)="onSubmit()" class="login-form">
+        <div class="input-group">
+          <label for="email">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Correo electrónico
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            [(ngModel)]="email" 
+            name="email" 
+            required
+            placeholder="tu@email.com">
+        </div>
+
+        <div class="input-group">
+          <label for="password">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Contraseña
+          </label>
+          <input 
+            type="password" 
+            id="password" 
+            [(ngModel)]="password" 
+            name="password" 
+            required
+            placeholder="••••••••">
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-container">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="rememberMe" 
+              name="rememberMe">
+            <span class="checkmark"></span>
+            recordarme
+          </label>
+          <a href="#" class="forgot-link" (click)="onForgotPassword()">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="login-button">Iniciar sesión</button>
+      </form>
+
+      <div class="register-section">
+        <p>¿No tienes cuenta?</p>
+        <a routerLink="/register" class="register-link">Regístrate aquí</a>
+      </div>
+    </div>
+  </div>
+</div>
