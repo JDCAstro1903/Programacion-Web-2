@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -15,13 +15,18 @@ export class LoginComponent {
   password: string = '';
   rememberMe: boolean = false;
 
+  constructor(private router: Router) {}
+
   onSubmit() {
     console.log('Login attempt:', {
       email: this.email,
       password: this.password,
       rememberMe: this.rememberMe
     });
-    // Aquí implementarás la lógica de autenticación
+    
+    // Por ahora, simplemente redirigir a la selección de usuario
+    // Más adelante aquí validarás las credenciales
+    this.router.navigate(['/user-selection']);
   }
 
   onForgotPassword() {
