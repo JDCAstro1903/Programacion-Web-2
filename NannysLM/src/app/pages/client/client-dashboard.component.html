@@ -1,115 +1,601 @@
-<div class="development-container">
-  <div class="development-content">
-    <div class="back-button" routerLink="/user-selection">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-
-    <div class="logo-container">
-      <img src="/assets/logo.png" alt="NannysLM" class="logo">
+<div class="client-layout">
+  <!-- Header -->
+  <header class="client-header">
+    <div class="header-left">
+      <div class="logo-section">
+        <img src="/assets/logo.png" alt="NannysLM" class="logo">
+        <div class="brand-info">
+          <h1>NannysLM</h1>
+          <p>Panel de cliente</p>
+        </div>
+      </div>
     </div>
     
-    <div class="development-info">
-      <h1>👨‍👩‍👧‍👦 Dashboard Cliente/Familia</h1>
-      <h2>🚧 En Proceso de Desarrollo</h2>
-      
-      <div class="progress-section">
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: 15%"></div>
-        </div>
-        <span class="progress-text">15% Completado</span>
-      </div>
-      
-      <div class="features-preview">
-        <h3>Funcionalidades Planificadas:</h3>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">🔍</div>
-            <div class="feature-info">
-              <h4>Buscar Cuidadoras</h4>
-              <p>Encuentra la cuidadora perfecta con filtros avanzados</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📅</div>
-            <div class="feature-info">
-              <h4>Gestión de Reservas</h4>
-              <p>Programa y administra las citas con cuidadoras</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">⭐</div>
-            <div class="feature-info">
-              <h4>Favoritas y Calificaciones</h4>
-              <p>Guarda tus cuidadoras preferidas y califica servicios</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">💬</div>
-            <div class="feature-info">
-              <h4>Chat y Comunicación</h4>
-              <p>Comunicación directa con las cuidadoras</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">💳</div>
-            <div class="feature-info">
-              <h4>Pagos Seguros</h4>
-              <p>Sistema de pagos integrado y seguro</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <div class="feature-info">
-              <h4>Historial y Reportes</h4>
-              <p>Seguimiento completo de servicios utilizados</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="timeline-section">
-        <h3>📅 Cronograma de Desarrollo:</h3>
-        <div class="timeline">
-          <div class="timeline-item completed">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 1: Diseño UI/UX</h4>
-              <p>Completado ✅</p>
-            </div>
-          </div>
-          
-          <div class="timeline-item in-progress">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 2: Funcionalidades Core</h4>
-              <p>En desarrollo 🔄</p>
-            </div>
-          </div>
-          
-          <div class="timeline-item">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 3: Integración Backend</h4>
-              <p>Próximamente ⏳</p>
-            </div>
-          </div>
-          
-          <div class="timeline-item">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 4: Testing y Pulimiento</h4>
-              <p>Próximamente ⏳</p>
-            </div>
-          </div>
+    <div class="header-right">
+      <div class="user-info">
+        <span class="user-name">{{ currentUser.name }}</span>
+        <span class="user-role">{{ currentUser.role }}</span>
+        <div class="user-avatar">
+          <img [src]="currentUser.avatar" alt="Avatar">
         </div>
       </div>
     </div>
+  </header>
+
+  <!-- Layout principal -->
+  <div class="main-layout">
+    <!-- Sidebar Reutilizable -->
+    <app-sidebar 
+      [config]="sidebarConfig" 
+      [currentView]="currentView"
+      (onViewChange)="onViewChange($event)"
+      (onLogoutClick)="onSidebarLogout()">
+    </app-sidebar>
+
+    <!-- Contenido principal -->
+    <main class="main-content">
+      <!-- Vista Inicio -->
+      <div *ngIf="currentView === 'dashboard'">
+        <div class="content-header">
+          <h2>Inicio</h2>
+          <p>Resumen general de la plataforma</p>
+        </div>
+        
+        <!-- Mensaje principal cuando no hay servicios -->
+        <div class="welcome-card" *ngIf="hasNoServices()">
+          <div class="welcome-content">
+            <h3>Parece que aun no has necesitado un servicio, cuando lo solicites aqui aparecera la informacion :)</h3>
+          </div>
+        </div>
+
+        <!-- Estado de la cuenta -->
+        <div class="account-status-card">
+          <div class="status-header">
+            <h3>Estado de la cuenta:</h3>
+          </div>
+          <div class="status-content">
+            <div class="verification-badge" *ngIf="accountStatus.isVerified">
+              <span class="verification-text">Verificada</span>
+              <div class="verification-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista de servicios contratados -->
+      <div *ngIf="currentView === 'contracted-services'" class="contracted-services-view">
+        <div class="content-header">
+          <h2>Servicios</h2>
+          <p>Detalles sobre el servicio</p>
+        </div>
+
+        <!-- Lista de servicios contratados -->
+        <div class="contracted-services-container" *ngIf="!hasNoContractedServices()">
+          <div *ngFor="let service of contractedServices" class="service-card contracted">
+            <h3 class="service-title">{{ service.title }}</h3>
+            
+            <div class="service-content">
+              <!-- Información del servicio -->
+              <div class="service-info">
+                <div class="status-badge">
+                  <span class="status-label">Estado:</span>
+                  <span class="status-value finished">{{ service.status }}</span>
+                </div>
+                
+                <div class="service-details">
+                  <p><strong>Hora y fecha:</strong> {{ formatContractedServiceDate(service) }}</p>
+                  <p><strong>Indicaciones:</strong></p>
+                  <p class="service-instructions">{{ service.instructions }}</p>
+                </div>
+              </div>
+
+              <!-- Información de la nanny -->
+              <div class="nanny-info">
+                <div class="nanny-card">
+                  <div class="nanny-avatar">
+                    <img [src]="service.nanny.photo" [alt]="service.nanny.name">
+                  </div>
+                  <div class="nanny-details">
+                    <p class="nanny-assigned">Nanny asignada: {{ service.nanny.name }}</p>
+                    <button class="view-profile-btn" (click)="viewNannyProfile()">
+                      Ver perfil
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones del servicio contratado -->
+            <div class="service-actions">
+              <!-- Botón para calificar -->
+              <button 
+                class="action-btn rate-btn" 
+                *ngIf="!service.isRated && !service.showRating"
+                (click)="rateService(service.id)">
+                Calificar
+              </button>
+
+              <!-- Sistema de calificación con estrellas -->
+              <div class="rating-system" *ngIf="service.showRating">
+                <h4>Califica el servicio:</h4>
+                <div class="stars-container">
+                  <span 
+                    *ngFor="let star of getStarsArray()" 
+                    class="star"
+                    (click)="setRating(service.id, star)"
+                    [class.filled]="star <= service.tempRating"
+                    (mouseenter)="onStarHover(service.id, star)"
+                    (mouseleave)="onStarLeave(service.id)">
+                    ⭐
+                  </span>
+                </div>
+                <div class="rating-actions">
+                  <button class="cancel-rating-btn" (click)="cancelRating(service.id)">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+
+              <!-- Servicio ya calificado -->
+              <div class="rated-badge" *ngIf="service.isRated">
+                <div class="rating-display">
+                  <span class="rating-text">Calificado:</span>
+                  <div class="rating-stars">
+                    <span 
+                      *ngFor="let star of getStarsArray()" 
+                      class="star"
+                      [class.filled]="star <= service.rating">
+                      ⭐
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensaje cuando no hay servicios contratados -->
+        <div class="no-services-message" *ngIf="hasNoContractedServices()">
+          <div class="no-services-content">
+            <h3>No tienes servicios contratados aún</h3>
+            <p>Cuando contrates servicios, aparecerán aquí después de completarse.</p>
+            <button class="book-service-btn" (click)="currentView = 'services'">
+              Contratar Servicio
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista de detalles del servicio creado -->
+      <div *ngIf="currentView === 'service-details' && showServiceDetails && createdService" class="service-details-view">
+        <div class="content-header">
+          <h2>Servicios</h2>
+          <p>Detalles sobre el servicio</p>
+        </div>
+
+        <div class="service-card">
+          <h3 class="service-title">{{ createdService.title }}</h3>
+          
+          <div class="service-content">
+            <!-- Información del servicio -->
+            <div class="service-info">
+              <div class="status-badge">
+                <span class="status-label">Estado:</span>
+                <span class="status-value active">{{ createdService.status }}</span>
+              </div>
+              
+              <div class="service-details">
+                <p><strong>Hora:</strong> {{ createdService.startTime }} - {{ createdService.endTime }}</p>
+                <p><strong>Fecha:</strong> {{ formatServiceDate() }}</p>
+                <p><strong>Indicaciones:</strong></p>
+                <textarea 
+                  class="instructions-input" 
+                  placeholder="Escriba las indicaciones para el servicio..."
+                  [(ngModel)]="createdService.instructions">
+                </textarea>
+                <button class="add-instructions-btn" (click)="addInstructions()">
+                  Agregar indicaciones
+                </button>
+              </div>
+            </div>
+
+            <!-- Información de la nanny -->
+            <div class="nanny-info">
+              <div class="nanny-card">
+                <div class="nanny-avatar">
+                  <img [src]="createdService.nanny.photo" [alt]="createdService.nanny.name">
+                </div>
+                <div class="nanny-details">
+                  <p class="nanny-assigned">Nanny asignada: {{ createdService.nanny.name }}</p>
+                  <button class="view-profile-btn" (click)="viewNannyProfile()">
+                    Ver perfil
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones del servicio -->
+          <div class="service-actions">
+            <button class="action-btn cancel-btn" (click)="cancelService()">
+              Cancelar
+            </button>
+            <button class="action-btn change-date-btn" (click)="changeServiceDate()">
+              Cambiar fecha
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Servicios -->
+      <div *ngIf="currentView === 'services'">
+        <div class="content-header">
+          <h2>Servicios</h2>
+          <p>Selecciona una fecha y hora</p>
+          <button class="contracted-services-btn" (click)="currentView = 'contracted-services'">
+            Servicios contratados
+          </button>
+        </div>
+        
+        <div class="services-container">
+          <!-- Selector de tipo de servicio -->
+          <div class="service-type-section">
+            <div class="service-type-card">
+              <div class="service-type-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+                <span>Tipo de servicio</span>
+              </div>
+              
+              <div class="service-selector">
+                <select class="service-select" 
+                        [value]="selectedServiceType" 
+                        (change)="onServiceTypeChange($event)">
+                  <option value="">Selecciona un servicio</option>
+                  <option *ngFor="let service of serviceTypes" [value]="service.id">
+                    {{ service.name }}
+                  </option>
+                </select>
+                
+                <div class="service-description" *ngIf="selectedServiceType">
+                  <p>{{ getSelectedServiceDescription() }}</p>
+                  <div class="multiple-days-info" *ngIf="allowsMultipleDays()">
+                    <p class="info-text">
+                      <strong>📅 Servicio de múltiples días:</strong> 
+                      Puedes seleccionar un rango de fechas consecutivas
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendario -->
+          <div class="calendar-section">
+            <div class="calendar-card">
+              <div class="calendar-header">
+                <button class="nav-btn" (click)="previousMonth()">‹</button>
+                <h3>{{ getMonthName() }}</h3>
+                <button class="nav-btn" (click)="nextMonth()">›</button>
+              </div>
+              
+              <div class="calendar-subtitle">
+                <span *ngIf="!allowsMultipleDays()">Selecciona una fecha</span>
+                <span *ngIf="allowsMultipleDays()">Selecciona fecha de inicio y fin (días consecutivos)</span>
+              </div>
+              
+              <!-- Indicador de estado de selección -->
+              <div class="selection-status" *ngIf="allowsMultipleDays()">
+                <span class="status-text">{{ getSelectionState() }}</span>
+                <div class="legend" *ngIf="selectedDate">
+                  <div class="legend-item">
+                    <span class="legend-color start-color"></span>
+                    <span>Inicio</span>
+                  </div>
+                  <div class="legend-item" *ngIf="selectedEndDate">
+                    <span class="legend-color end-color"></span>
+                    <span>Fin</span>
+                  </div>
+                  <div class="legend-item" *ngIf="selectedEndDate">
+                    <span class="legend-color range-color"></span>
+                    <span>Rango</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="calendar-grid">
+                <!-- Nombres de los días -->
+                <div class="day-names">
+                  <div *ngFor="let dayName of getDayNames()" class="day-name">
+                    {{ dayName }}
+                  </div>
+                </div>
+                
+                <!-- Días del mes -->
+                <div class="days-grid">
+                  <div *ngFor="let day of getDaysInMonth()" 
+                       class="day-cell"
+                       [class.empty]="day === 0"
+                       [class.selected]="isSelectedDate(day)"
+                       [class.start-date]="isStartDate(day)"
+                       [class.end-date]="isEndDate(day)"
+                       [class.in-range]="isInSelectedRange(day)"
+                       [class.past]="isPastDate(day)"
+                       [class.available]="day > 0 && !isPastDate(day)"
+                       (click)="selectDate(day)">
+                    {{ day || '' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector de horarios y confirmación -->
+          <div class="booking-section">
+            <!-- Selector de horarios -->
+            <div class="time-selector-card">
+              <div class="time-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
+                <span>Horario</span>
+                <span class="time-info" *ngIf="isNightService()">🌙 Servicio nocturno</span>
+              </div>
+              
+              <div class="time-grid" *ngIf="selectedDate && selectedServiceType">
+                <button *ngFor="let time of getAvailableTimesForService()" 
+                        class="time-slot"
+                        [class.selected]="selectedTime === time"
+                        [class.night-time]="isNightService()"
+                        (click)="selectTime(time)">
+                  {{ time }}
+                </button>
+              </div>
+              
+              <div class="no-date-selected" *ngIf="!selectedDate || !selectedServiceType">
+                <p *ngIf="!selectedServiceType">Selecciona un tipo de servicio primero</p>
+                <p *ngIf="selectedServiceType && !selectedDate">Selecciona una fecha</p>
+              </div>
+            </div>
+
+            <!-- Reserva seleccionada -->
+            <div class="reservation-card">
+              <h3>Reserva seleccionada:</h3>
+              <div class="reservation-info" *ngIf="hasValidReservation()">
+                <p><strong>Servicio:</strong> {{ getSelectedServiceName() }}</p>
+                <p><strong>Fechas:</strong> {{ getDateRangeText() }}</p>
+                <p><strong>Hora:</strong> {{ selectedTime }}</p>
+              </div>
+              <div class="no-reservation" *ngIf="!hasValidReservation()">
+                <p>aquí se mostrará el servicio, fecha(s) y hora</p>
+              </div>
+              
+              <div class="action-buttons">
+                <button class="confirm-btn" 
+                        [disabled]="!hasValidReservation()"
+                        (click)="confirmReservation()">
+                  ✓ Confirmar
+                </button>
+                <button class="cancel-btn" 
+                        [disabled]="!hasValidReservation()"
+                        (click)="cancelReservation()">
+                  ✗ Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Perfil -->
+      <div *ngIf="currentView === 'profile'" class="profile-view">
+        <div class="content-header">
+          <h2>Perfil</h2>
+          <p>Información del usuario</p>
+        </div>
+
+        <div class="profile-container">
+          <div class="profile-form-section">
+            <form class="profile-form">
+              <!-- Nombre y Apellido -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="firstName">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    Nombre
+                  </label>
+                  <input 
+                    type="text" 
+                    id="firstName" 
+                    class="form-input"
+                    [(ngModel)]="userProfile.firstName"
+                    name="firstName">
+                </div>
+                <div class="form-group">
+                  <label for="lastName">Apellido</label>
+                  <input 
+                    type="text" 
+                    id="lastName" 
+                    class="form-input"
+                    [(ngModel)]="userProfile.lastName"
+                    name="lastName">
+                </div>
+              </div>
+
+              <!-- Correo electrónico -->
+              <div class="form-group">
+                <label for="email">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Correo electrónico
+                </label>
+                <input 
+                  type="email" 
+                  id="email" 
+                  class="form-input"
+                  [(ngModel)]="userProfile.email"
+                  name="email">
+              </div>
+
+              <!-- Número de teléfono -->
+              <div class="form-group">
+                <label for="phone">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  Número de teléfono
+                </label>
+                <input 
+                  type="tel" 
+                  id="phone" 
+                  class="form-input"
+                  [(ngModel)]="userProfile.phone"
+                  name="phone">
+              </div>
+
+              <!-- Dirección -->
+              <div class="form-group">
+                <label for="address">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  Dirección
+                </label>
+                <input 
+                  type="text" 
+                  id="address" 
+                  class="form-input"
+                  [(ngModel)]="userProfile.address"
+                  name="address">
+              </div>
+
+              <!-- Identificación válida -->
+              <div class="form-group">
+                <label for="identification">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                  </svg>
+                  Identificación válida
+                </label>
+                <div class="file-upload-container">
+                  <input 
+                    type="file" 
+                    id="identification" 
+                    class="file-input"
+                    (change)="onFileSelected($event)"
+                    accept="image/*,.pdf"
+                    hidden>
+                  <button 
+                    type="button" 
+                    class="file-upload-btn"
+                    (click)="triggerFileInput()">
+                    Selecciona un archivo
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14,2 14,8 20,8"/>
+                    </svg>
+                  </button>
+                  <span class="file-name" *ngIf="selectedFileName">{{ selectedFileName }}</span>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Sección del avatar -->
+          <div class="profile-avatar-section">
+            <div class="avatar-container">
+              <div class="avatar-wrapper">
+                <img [src]="userProfile.avatar" [alt]="userProfile.firstName" class="profile-avatar">
+                <div class="verification-badge" *ngIf="userProfile.isVerified">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#3b82f6" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22,4 12,14.01 9,11.01"/>
+                  </svg>
+                </div>
+              </div>
+              <button class="edit-profile-btn" (click)="editProfile()">
+                Editar perfil
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Pagos -->
+      <div *ngIf="currentView === 'payments'" class="payments-view">
+        <div class="content-header">
+          <h2>Pagos</h2>
+          <p>Información y registro de pagos</p>
+        </div>
+
+        <div class="payments-container">
+          <!-- Botón para subir comprobante -->
+          <div class="upload-section">
+            <button class="upload-receipt-btn" (click)="triggerReceiptUpload()">
+              <span>Subir comprobante de pago</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+            <input 
+              type="file" 
+              id="receiptUpload" 
+              (change)="onReceiptSelected($event)"
+              accept="image/*,.pdf"
+              hidden>
+          </div>
+
+          <!-- Lista de pagos -->
+          <div class="payments-list">
+            <div *ngFor="let payment of paymentsList" class="payment-item">
+              <div class="payment-info">
+                <span class="payment-session">{{ payment.session }}</span>
+                <span class="payment-amount">importe: ${{ payment.amount }}</span>
+              </div>
+              <div class="payment-status" [class]="getPaymentStatusClass(payment.status)">
+                {{ payment.status }}
+              </div>
+            </div>
+
+            <!-- Mensaje cuando no hay pagos -->
+            <div class="no-payments-message" *ngIf="paymentsList.length === 0">
+              <div class="no-payments-content">
+                <h3>No hay pagos registrados</h3>
+                <p>Cuando realices pagos por servicios, aparecerán aquí.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
+
+  <!-- Modal de logout reutilizable -->
+  <app-logout-modal 
+    [isVisible]="showLogoutModal"
+    [userName]="currentUser.name"
+    [userRole]="currentUser.role"
+    [redirectRoute]="'/user-selection'"
+    (onCancel)="closeLogoutModal()"
+    (onConfirm)="confirmLogout()">
+  </app-logout-modal>
 </div>

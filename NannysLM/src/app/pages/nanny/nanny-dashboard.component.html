@@ -1,115 +1,167 @@
-<div class="development-container">
-  <div class="development-content">
-    <div class="back-button" routerLink="/user-selection">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-
-    <div class="logo-container">
-      <img src="/assets/logo.png" alt="NannysLM" class="logo">
+<div class="nanny-layout">
+  <!-- Header -->
+  <header class="nanny-header">
+    <div class="header-left">
+      <div class="logo-section">
+        <img src="/assets/logo.png" alt="NannysLM" class="logo">
+        <div class="brand-info">
+          <h1>NannysLM</h1>
+          <p>Panel de nanny</p>
+        </div>
+      </div>
     </div>
     
-    <div class="development-info">
-      <h1>⭐ Dashboard Cuidadora</h1>
-      <h2>🚧 En Proceso de Desarrollo</h2>
-      
-      <div class="progress-section">
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: 10%"></div>
-        </div>
-        <span class="progress-text">10% Completado</span>
-      </div>
-      
-      <div class="features-preview">
-        <h3>Funcionalidades Planificadas:</h3>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">👤</div>
-            <div class="feature-info">
-              <h4>Perfil Profesional</h4>
-              <p>Gestiona tu información, experiencia y certificaciones</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📅</div>
-            <div class="feature-info">
-              <h4>Calendario de Disponibilidad</h4>
-              <p>Administra tus horarios y disponibilidad</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📋</div>
-            <div class="feature-info">
-              <h4>Gestión de Reservas</h4>
-              <p>Ve y administra las solicitudes de servicio</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">⭐</div>
-            <div class="feature-info">
-              <h4>Calificaciones y Reseñas</h4>
-              <p>Revisa el feedback de las familias</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">💰</div>
-            <div class="feature-info">
-              <h4>Gestión de Ingresos</h4>
-              <p>Seguimiento de pagos y estadísticas financieras</p>
-            </div>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">💬</div>
-            <div class="feature-info">
-              <h4>Comunicación con Familias</h4>
-              <p>Chat directo con clientes potenciales</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="timeline-section">
-        <h3>📅 Cronograma de Desarrollo:</h3>
-        <div class="timeline">
-          <div class="timeline-item completed">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 1: Investigación UX</h4>
-              <p>Completado ✅</p>
-            </div>
-          </div>
-          
-          <div class="timeline-item in-progress">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 2: Diseño de Interfaces</h4>
-              <p>En desarrollo 🔄</p>
-            </div>
-          </div>
-          
-          <div class="timeline-item">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 3: Funcionalidades Core</h4>
-              <p>Próximamente ⏳</p>
-            </div>
-          </div>
-          
-          <div class="timeline-item">
-            <div class="timeline-marker"></div>
-            <div class="timeline-content">
-              <h4>Fase 4: Integración y Testing</h4>
-              <p>Próximamente ⏳</p>
-            </div>
-          </div>
+    <div class="header-right">
+      <div class="user-info">
+        <span class="user-name">{{ currentUser.name }}</span>
+        <span class="user-role">{{ currentUser.role }}</span>
+        <div class="user-avatar">
+          <img [src]="currentUser.avatar" alt="Avatar">
         </div>
       </div>
     </div>
+  </header>
+
+  <!-- Layout principal -->
+  <div class="main-layout">
+    <!-- Sidebar Reutilizable -->
+    <app-sidebar 
+      [config]="sidebarConfig" 
+      [currentView]="currentView"
+      (onViewChange)="onViewChange($event)"
+      (onLogoutClick)="onSidebarLogout()">
+    </app-sidebar>
+
+    <!-- Contenido principal -->
+    <main class="main-content">
+      <!-- Vista Inicio -->
+      <div *ngIf="currentView === 'dashboard'">
+        <div class="content-header">
+          <h2>Inicio</h2>
+          <p>Resumen general de la plataforma</p>
+        </div>
+        
+        <div class="dashboard-grid">
+          <!-- Próximo servicio -->
+          <div class="service-card main-card">
+            <div class="card-header">
+              <h3>Próximo servicio</h3>
+            </div>
+            <div class="service-details">
+              <div class="service-date">{{ nextService.date }}</div>
+              <div class="service-location">{{ nextService.location }}</div>
+              <div class="service-time">{{ nextService.time }}</div>
+              <button class="info-btn" (click)="getMoreInfo(1)">Más información</button>
+            </div>
+          </div>
+
+          <!-- Calificaciones -->
+          <div class="stats-card">
+            <div class="stats-header">
+              <h3>Calificaciones</h3>
+            </div>
+            <div class="rating-display">
+              <div class="rating-number">{{ stats.rating }}</div>
+              <div class="rating-stars">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#fbbf24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Servicios realizados -->
+          <div class="stats-card">
+            <div class="stats-header">
+              <h3>Servicios realizados</h3>
+            </div>
+            <div class="services-count">
+              <div class="count-number">{{ stats.totalServices }}</div>
+              <div class="count-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Servicios -->
+      <div *ngIf="currentView === 'services'">
+        <div class="content-header">
+          <h2>Servicios</h2>
+          <p>Actividades próximas y pasadas</p>
+        </div>
+        
+        <!-- Filtros de servicios -->
+        <div class="service-filters">
+          <button 
+            class="filter-btn" 
+            [class.active]="isServiceFilterActive('upcoming')"
+            (click)="setServiceFilter('upcoming')">
+            Próximos servicios
+          </button>
+          <button 
+            class="filter-btn" 
+            [class.active]="isServiceFilterActive('past')"
+            (click)="setServiceFilter('past')">
+            Servicios realizados
+          </button>
+        </div>
+
+        <!-- Lista de servicios -->
+        <div class="services-list">
+          <!-- Servicios filtrados según la selección actual -->
+          <div *ngFor="let service of getFilteredServices()" 
+               class="service-item" 
+               [class.past-service]="service.status === 'completed'">
+            <div class="service-info">
+              <div class="service-meta">
+                <span class="service-date-label">Fecha: {{ service.dateDisplay }}</span>
+                <span class="service-time-label">Horario: {{ service.time }}</span>
+              </div>
+              <div class="service-client">Cliente: {{ service.client }}</div>
+              <div class="service-location-full">
+                Ubicación: {{ service.location }}
+              </div>
+              <div class="service-instructions">
+                <strong>Indicaciones:</strong><br>
+                {{ service.instructions }}
+              </div>
+              <div class="service-rating" *ngIf="service.rating && service.status === 'completed'">
+                <strong>Calificación recibida:</strong> 
+                <span class="rating-stars">{{ getRatingStars(service.rating) }}</span>
+              </div>
+            </div>
+            <div class="service-actions">
+              <button 
+                class="profile-btn" 
+                [class.secondary]="service.status === 'completed'"
+                (click)="viewClientProfile(service.client)">
+                Ver perfil del cliente
+              </button>
+            </div>
+          </div>
+          
+          <!-- Mensaje cuando no hay servicios -->
+          <div *ngIf="getFilteredServices().length === 0" class="no-services-message">
+            <p *ngIf="currentServiceFilter === 'upcoming'">No tienes próximos servicios programados.</p>
+            <p *ngIf="currentServiceFilter === 'past'">No tienes servicios realizados aún.</p>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
+
+  <!-- Modal de logout reutilizable -->
+  <app-logout-modal 
+    [isVisible]="showLogoutModal"
+    [userName]="currentUser.name"
+    [userRole]="currentUser.role"
+    [redirectRoute]="'/user-selection'"
+    (onCancel)="closeLogoutModal()"
+    (onConfirm)="confirmLogout()">
+  </app-logout-modal>
 </div>

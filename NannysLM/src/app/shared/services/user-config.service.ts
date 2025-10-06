@@ -38,17 +38,17 @@ export class UserConfigService {
           {
             id: 'nannys',
             label: 'Nannys',
-            icon: 'users'
+            icon: 'baby'
           },
           {
             id: 'clients',
             label: 'Clientes',
-            icon: 'clients'
+            icon: 'users'
           },
           {
             id: 'payments',
             label: 'Pagos',
-            icon: 'payments'
+            icon: 'dollar-sign'
           }
         ]
       }
@@ -115,7 +115,7 @@ export class UserConfigService {
           {
             id: 'dashboard',
             label: 'Mi Dashboard',
-            icon: 'dashboard'
+            icon: 'home'
           },
           {
             id: 'availability',
@@ -125,22 +125,22 @@ export class UserConfigService {
           {
             id: 'bookings',
             label: 'Reservas',
-            icon: 'briefcase'
+            icon: 'calendar'
           },
           {
             id: 'clients',
             label: 'Mis Clientes',
-            icon: 'clients'
+            icon: 'users'
           },
           {
             id: 'earnings',
             label: 'Ganancias',
-            icon: 'payments'
+            icon: 'dollar-sign'
           },
           {
             id: 'profile',
             label: 'Mi Perfil',
-            icon: 'users'
+            icon: 'user'
           }
         ]
       }
