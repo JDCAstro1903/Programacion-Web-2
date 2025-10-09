@@ -397,18 +397,84 @@
       <!-- Vista Perfil -->
       <div *ngIf="currentView === 'profile'" class="profile-view">
         <div class="content-header">
-          <h2>Perfil</h2>
-          <p>Información del usuario</p>
+          <h2>Mi Perfil</h2>
+          <p>Gestiona tu información personal y configuración de cuenta</p>
         </div>
 
-        <div class="profile-container">
-          <div class="profile-form-section">
-            <form class="profile-form">
-              <!-- Nombre y Apellido -->
-              <div class="form-row">
+        <!-- Header del perfil con información principal -->
+        <div class="profile-header-card">
+          <div class="profile-header-content">
+            <div class="profile-avatar-large">
+              <img [src]="userProfile.avatar" [alt]="userProfile.firstName" class="avatar-image">
+              <div class="avatar-overlay">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </div>
+              <div class="verification-status" *ngIf="userProfile.isVerified">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#10b981" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01"/>
+                </svg>
+              </div>
+            </div>
+            
+            <div class="profile-basic-info">
+              <h3 class="profile-name">{{ userProfile.firstName }} {{ userProfile.lastName }}</h3>
+              <p class="profile-email">{{ userProfile.email }}</p>
+              <div class="profile-status">
+                <span class="status-badge verified" *ngIf="userProfile.isVerified">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12l2 2 4-4"/>
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  </svg>
+                  Cuenta Verificada
+                </span>
+                <span class="status-badge unverified" *ngIf="!userProfile.isVerified">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  Verificación Pendiente
+                </span>
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <button class="edit-profile-btn primary" (click)="editProfile()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Editar Perfil
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenido principal del perfil -->
+        <div class="profile-main-content">
+          <!-- Sección de información personal -->
+          <div class="profile-section">
+            <div class="section-header">
+              <div class="section-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <h4>Información Personal</h4>
+              </div>
+              <p class="section-description">Actualiza tus datos personales y de contacto</p>
+            </div>
+
+            <form class="profile-form modern">
+              <div class="form-grid">
+                <!-- Nombre y Apellido -->
                 <div class="form-group">
-                  <label for="firstName">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                  <label for="firstName" class="form-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                       <circle cx="12" cy="7" r="4"/>
                     </svg>
@@ -417,84 +483,117 @@
                   <input 
                     type="text" 
                     id="firstName" 
-                    class="form-input"
+                    class="form-input modern"
                     [(ngModel)]="userProfile.firstName"
-                    name="firstName">
+                    name="firstName"
+                    placeholder="Ingresa tu nombre">
                 </div>
+
                 <div class="form-group">
-                  <label for="lastName">Apellido</label>
+                  <label for="lastName" class="form-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    Apellido
+                  </label>
                   <input 
                     type="text" 
                     id="lastName" 
-                    class="form-input"
+                    class="form-input modern"
                     [(ngModel)]="userProfile.lastName"
-                    name="lastName">
+                    name="lastName"
+                    placeholder="Ingresa tu apellido">
+                </div>
+
+                <!-- Correo electrónico -->
+                <div class="form-group full-width">
+                  <label for="email" class="form-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    Correo electrónico
+                  </label>
+                  <input 
+                    type="email" 
+                    id="email" 
+                    class="form-input modern"
+                    [(ngModel)]="userProfile.email"
+                    name="email"
+                    placeholder="ejemplo@correo.com">
+                </div>
+
+                <!-- Número de teléfono -->
+                <div class="form-group">
+                  <label for="phone" class="form-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    Teléfono
+                  </label>
+                  <input 
+                    type="tel" 
+                    id="phone" 
+                    class="form-input modern"
+                    [(ngModel)]="userProfile.phone"
+                    name="phone"
+                    placeholder="+1 234 567 8900">
+                </div>
+
+                <!-- Dirección -->
+                <div class="form-group">
+                  <label for="address" class="form-label">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    Dirección
+                  </label>
+                  <input 
+                    type="text" 
+                    id="address" 
+                    class="form-input modern"
+                    [(ngModel)]="userProfile.address"
+                    name="address"
+                    placeholder="Calle, Ciudad, País">
                 </div>
               </div>
+            </form>
+          </div>
 
-              <!-- Correo electrónico -->
-              <div class="form-group">
-                <label for="email">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  Correo electrónico
-                </label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  class="form-input"
-                  [(ngModel)]="userProfile.email"
-                  name="email">
+          <!-- Sección de verificación -->
+          <div class="profile-section">
+            <div class="section-header">
+              <div class="section-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M21 12c0 1.66-1.34 3-3 3h-3l-3 3-3-3H6c-1.66 0-3-1.34-3-3V6c0-1.66 1.34-3 3-3h12c1.66 0 3 1.34 3 3v6z"/>
+                </svg>
+                <h4>Verificación de Cuenta</h4>
               </div>
+              <p class="section-description">Completa la verificación para acceder a todas las funciones</p>
+            </div>
 
-              <!-- Número de teléfono -->
-              <div class="form-group">
-                <label for="phone">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                  </svg>
-                  Número de teléfono
-                </label>
-                <input 
-                  type="tel" 
-                  id="phone" 
-                  class="form-input"
-                  [(ngModel)]="userProfile.phone"
-                  name="phone">
-              </div>
-
-              <!-- Dirección -->
-              <div class="form-group">
-                <label for="address">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                  Dirección
-                </label>
-                <input 
-                  type="text" 
-                  id="address" 
-                  class="form-input"
-                  [(ngModel)]="userProfile.address"
-                  name="address">
-              </div>
-
-              <!-- Identificación válida -->
-              <div class="form-group">
-                <label for="identification">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
-                  </svg>
-                  Identificación válida
-                </label>
-                <div class="file-upload-container">
+            <div class="verification-content">
+              <div class="verification-item">
+                <div class="verification-info">
+                  <div class="verification-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14,2 14,8 20,8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                  </div>
+                  <div class="verification-details">
+                    <h5>Documento de Identidad</h5>
+                    <p>Sube una foto clara de tu cédula o pasaporte para verificar tu identidad</p>
+                  </div>
+                </div>
+                
+                <div class="verification-action">
                   <input 
                     type="file" 
                     id="identification" 
@@ -504,36 +603,49 @@
                     hidden>
                   <button 
                     type="button" 
-                    class="file-upload-btn"
+                    class="upload-btn modern"
                     (click)="triggerFileInput()">
-                    Selecciona un archivo
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14,2 14,8 20,8"/>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,15 17,10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
+                    {{ selectedFileName ? 'Cambiar archivo' : 'Subir documento' }}
                   </button>
-                  <span class="file-name" *ngIf="selectedFileName">{{ selectedFileName }}</span>
                 </div>
               </div>
-            </form>
+
+              <div class="file-status" *ngIf="selectedFileName">
+                <div class="file-info">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <polyline points="9,15 11,17 15,13"/>
+                  </svg>
+                  <span class="file-name">{{ selectedFileName }}</span>
+                  <span class="file-size">Archivo cargado exitosamente</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Sección del avatar -->
-          <div class="profile-avatar-section">
-            <div class="avatar-container">
-              <div class="avatar-wrapper">
-                <img [src]="userProfile.avatar" [alt]="userProfile.firstName" class="profile-avatar">
-                <div class="verification-badge" *ngIf="userProfile.isVerified">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#3b82f6" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22,4 12,14.01 9,11.01"/>
-                  </svg>
-                </div>
-              </div>
-              <button class="edit-profile-btn" (click)="editProfile()">
-                Editar perfil
-              </button>
-            </div>
+          <!-- Botones de acción -->
+          <div class="profile-actions-footer">
+            <button class="save-btn" (click)="editProfile()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17,21 17,13 7,13 7,21"/>
+                <polyline points="7,3 7,8 15,8"/>
+              </svg>
+              Guardar Cambios
+            </button>
+            <button class="cancel-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Cancelar
+            </button>
           </div>
         </div>
       </div>
@@ -541,48 +653,323 @@
       <!-- Vista Pagos -->
       <div *ngIf="currentView === 'payments'" class="payments-view">
         <div class="content-header">
-          <h2>Pagos</h2>
-          <p>Información y registro de pagos</p>
+          <h2>Gestión de Pagos</h2>
+          <p>Administra tus pagos y transferencias de manera segura</p>
         </div>
 
-        <div class="payments-container">
-          <!-- Botón para subir comprobante -->
-          <div class="upload-section">
-            <button class="upload-receipt-btn" (click)="triggerReceiptUpload()">
-              <span>Subir comprobante de pago</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7,10 12,15 17,10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </button>
-            <input 
-              type="file" 
-              id="receiptUpload" 
-              (change)="onReceiptSelected($event)"
-              accept="image/*,.pdf"
-              hidden>
+        <div class="payments-main-container">
+          <!-- Información bancaria y acciones principales -->
+          <div class="payments-header-section">
+            <div class="payment-info-card">
+              <div class="info-header">
+                <div class="info-title">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
+                  <h3>Información de Pago</h3>
+                </div>
+                <p class="info-description">Realiza tus pagos mediante transferencia bancaria de forma segura</p>
+              </div>
+              
+              <div class="payment-actions">
+                <button class="bank-details-btn" (click)="showBankDetailsModal = true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                  </svg>
+                  Ver Datos Bancarios
+                </button>
+                
+                <button class="upload-receipt-btn modern" (click)="triggerReceiptUpload()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <path d="M12 18v-6"/>
+                    <path d="M9 15l3-3 3 3"/>
+                  </svg>
+                  Subir Comprobante
+                </button>
+              </div>
+            </div>
+
+            <!-- Estadísticas de pago -->
+            <div class="payment-stats">
+              <div class="stat-card">
+                <div class="stat-icon paid">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22,4 12,14.01 9,11.01"/>
+                  </svg>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-number">{{ getPaidPaymentsCount() }}</span>
+                  <span class="stat-label">Pagos Confirmados</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon pending">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12,6 12,12 16,14"/>
+                  </svg>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-number">{{ getPendingPaymentsCount() }}</span>
+                  <span class="stat-label">En Verificación</span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon total">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-number">${{ getTotalAmount() }}</span>
+                  <span class="stat-label">Total Pagado</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Lista de pagos -->
-          <div class="payments-list">
-            <div *ngFor="let payment of paymentsList" class="payment-item">
-              <div class="payment-info">
-                <span class="payment-session">{{ payment.session }}</span>
-                <span class="payment-amount">importe: ${{ payment.amount }}</span>
+          <!-- Lista de pagos mejorada -->
+          <div class="payments-history-section">
+            <div class="section-header">
+              <h4>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
+                Historial de Pagos
+              </h4>
+              <p>Registro detallado de todas tus transacciones</p>
+            </div>
+
+            <div class="payments-list-modern">
+              <div *ngFor="let payment of paymentsList; trackBy: trackByPayment" class="payment-card">
+                <div class="payment-main-info">
+                  <div class="payment-icon-section">
+                    <div class="payment-icon" [class]="getPaymentIconClass(payment.status)">
+                      <svg *ngIf="payment.status === 'pagado'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22,4 12,14.01 9,11.01"/>
+                      </svg>
+                      <svg *ngIf="payment.status !== 'pagado'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <div class="payment-details">
+                    <div class="payment-session-info">
+                      <h5>{{ payment.session }}</h5>
+                      <span class="payment-date">{{ getPaymentDate(payment) }}</span>
+                    </div>
+                    <div class="payment-amount-info">
+                      <span class="amount">${{ payment.amount }}</span>
+                      <span class="currency">USD</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="payment-status-section">
+                  <div class="status-badge" [class]="getPaymentStatusClass(payment.status)">
+                    <span class="status-dot"></span>
+                    <span class="status-text">{{ getStatusText(payment.status) }}</span>
+                  </div>
+                  
+                  <div class="payment-actions-mini">
+                    <button class="action-btn" [class.disabled]="payment.status === 'pagado'" 
+                            (click)="uploadReceiptForPayment(payment)" 
+                            [disabled]="payment.status === 'pagado'"
+                            title="Subir comprobante">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <path d="M12 18v-6"/>
+                        <path d="M9 15l3-3 3 3"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div class="payment-status" [class]="getPaymentStatusClass(payment.status)">
-                {{ payment.status }}
+
+              <!-- Mensaje cuando no hay pagos -->
+              <div class="no-payments-message" *ngIf="paymentsList.length === 0">
+                <div class="no-payments-illustration">
+                  <svg width="80" height="80" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="no-payments-content">
+                  <h3>No hay pagos registrados</h3>
+                  <p>Cuando realices pagos por servicios, aparecerán aquí con toda la información detallada.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input oculto para subir archivos -->
+        <input 
+          type="file" 
+          id="receiptUpload" 
+          (change)="onReceiptSelected($event)"
+          accept="image/*,.pdf"
+          hidden>
+      </div>
+
+      <!-- Modal de Datos Bancarios -->
+      <div class="bank-modal-overlay" *ngIf="showBankDetailsModal" (click)="showBankDetailsModal = false">
+        <div class="bank-modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Datos Bancarios para Transferencia</h3>
+            <button class="close-btn" (click)="showBankDetailsModal = false">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Tarjeta bancaria simulada -->
+          <div class="bank-card">
+            <div class="card-background">
+              <div class="card-pattern"></div>
+              <div class="card-content">
+                <div class="card-header">
+                  <div class="bank-logo">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                      <path d="M2 17l10 5 10-5"/>
+                      <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                  </div>
+                  <div class="card-type">
+                    <span>BANCO NACIONAL</span>
+                  </div>
+                </div>
+
+                <div class="card-number">
+                  <span class="number-group">1234</span>
+                  <span class="number-group">5678</span>
+                  <span class="number-group">9012</span>
+                  <span class="number-group">3456</span>
+                </div>
+
+                <div class="card-info">
+                  <div class="card-holder">
+                    <span class="label">TITULAR</span>
+                    <span class="value">NANNYS LM SERVICIOS</span>
+                  </div>
+                  <div class="card-expiry">
+                    <span class="label">VIGENCIA</span>
+                    <span class="value">12/28</span>
+                  </div>
+                </div>
+
+                <div class="chip">
+                  <div class="chip-lines"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detalles adicionales -->
+          <div class="bank-details-grid">
+            <div class="detail-item">
+              <div class="detail-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div class="detail-info">
+                <span class="detail-label">Banco</span>
+                <span class="detail-value">Banco Nacional de Desarrollo</span>
               </div>
             </div>
 
-            <!-- Mensaje cuando no hay pagos -->
-            <div class="no-payments-message" *ngIf="paymentsList.length === 0">
-              <div class="no-payments-content">
-                <h3>No hay pagos registrados</h3>
-                <p>Cuando realices pagos por servicios, aparecerán aquí.</p>
+            <div class="detail-item">
+              <div class="detail-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div class="detail-info">
+                <span class="detail-label">Titular</span>
+                <span class="detail-value">NannysLM Servicios S.A.</span>
               </div>
             </div>
+
+            <div class="detail-item">
+              <div class="detail-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <div class="detail-info">
+                <span class="detail-label">Número de Cuenta</span>
+                <span class="detail-value">1234-5678-9012-3456</span>
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+              </div>
+              <div class="detail-info">
+                <span class="detail-label">CLABE Interbancaria</span>
+                <span class="detail-value">014320123456789012</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Instrucciones -->
+          <div class="transfer-instructions">
+            <h4>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Instrucciones para la Transferencia
+            </h4>
+            <ul>
+              <li>Realiza la transferencia por el monto exacto del servicio</li>
+              <li>Incluye tu nombre completo en el concepto de pago</li>
+              <li>Guarda el comprobante de transferencia</li>
+              <li>Sube el comprobante en la sección de pagos</li>
+              <li>La verificación puede tomar hasta 24 horas</li>
+            </ul>
+          </div>
+
+          <div class="modal-actions">
+            <button class="copy-details-btn" (click)="copyBankDetails()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Copiar Datos
+            </button>
+            <button class="close-modal-btn" (click)="showBankDetailsModal = false">
+              Cerrar
+            </button>
           </div>
         </div>
       </div>

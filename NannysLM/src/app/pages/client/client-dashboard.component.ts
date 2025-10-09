@@ -35,6 +35,9 @@ export class ClientDashboardComponent implements OnInit {
   // Estado del modal de logout
   showLogoutModal: boolean = false;
 
+  // Estado del modal de datos bancarios
+  showBankDetailsModal: boolean = false;
+
   // Estado para mostrar servicio creado
   showServiceDetails: boolean = false;
   createdService: any = null;
@@ -78,19 +81,25 @@ export class ClientDashboardComponent implements OnInit {
   // Lista de pagos
   paymentsList = [
     {
+      id: 1,
       session: 'Sesion #1',
       amount: '500.00',
-      status: 'pagado'
+      status: 'pagado',
+      date: new Date(2025, 2, 15) // 15 de marzo 2025
     },
     {
+      id: 2,
       session: 'Sesion #2',
       amount: '500.00',
-      status: 'Sin verificar'
+      status: 'Sin verificar',
+      date: new Date(2025, 2, 22) // 22 de marzo 2025
     },
     {
+      id: 3,
       session: 'Sesion #3',
       amount: '500.00',
-      status: 'Sin verificar'
+      status: 'Sin verificar',
+      date: new Date(2025, 2, 29) // 29 de marzo 2025
     }
   ];
 
@@ -704,5 +713,102 @@ export class ClientDashboardComponent implements OnInit {
 
   getPaymentStatusClass(status: string): string {
     return status === 'pagado' ? 'status-paid' : 'status-pending';
+  }
+
+  // Métodos para el apartado de pagos mejorado
+  getPaidPaymentsCount(): number {
+    return this.paymentsList.filter(payment => payment.status === 'pagado').length;
+  }
+
+  getPendingPaymentsCount(): number {
+    return this.paymentsList.filter(payment => payment.status !== 'pagado').length;
+  }
+
+  getTotalAmount(): string {
+    const total = this.paymentsList
+      .filter(payment => payment.status === 'pagado')
+      .reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+    return total.toFixed(2);
+  }
+
+  trackByPayment(index: number, payment: any): any {
+    return payment.id;
+  }
+
+  getPaymentIconClass(status: string): string {
+    return status === 'pagado' ? 'icon-paid' : 'icon-pending';
+  }
+
+  getStatusText(status: string): string {
+    switch (status) {
+      case 'pagado':
+        return 'Confirmado';
+      case 'Sin verificar':
+        return 'En Verificación';
+      default:
+        return status;
+    }
+  }
+
+  getPaymentDate(payment: any): string {
+    if (!payment.date) return 'Sin fecha';
+    
+    const date = new Date(payment.date);
+    const day = date.getDate();
+    const monthNames = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day} ${month} ${year}`;
+  }
+
+  uploadReceiptForPayment(payment: any): void {
+    if (payment.status === 'pagado') return;
+    
+    console.log('Subir comprobante para:', payment.session);
+    this.triggerReceiptUpload();
+  }
+
+  copyBankDetails(): void {
+    const bankDetails = `
+Banco: Banco Nacional de Desarrollo
+Titular: NannysLM Servicios S.A.
+Número de Cuenta: 1234-5678-9012-3456
+CLABE: 014320123456789012
+    `.trim();
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(bankDetails).then(() => {
+        alert('Datos bancarios copiados al portapapeles');
+      }).catch(() => {
+        this.fallbackCopyTextToClipboard(bankDetails);
+      });
+    } else {
+      this.fallbackCopyTextToClipboard(bankDetails);
+    }
+  }
+
+  private fallbackCopyTextToClipboard(text: string): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      alert('Datos bancarios copiados al portapapeles');
+    } catch (err) {
+      console.error('Error al copiar al portapapeles:', err);
+      alert('No se pudieron copiar los datos. Por favor, cópialos manualmente.');
+    }
+    
+    document.body.removeChild(textArea);
   }
 }
