@@ -2,13 +2,13 @@
 Schemas de autenticación
 Modelos Pydantic para validación de datos de autenticación
 """
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
 class UserLogin(BaseModel):
     """Schema para login de usuario"""
-    email: EmailStr
+    email: str  # Temporalmente cambiado de EmailStr a str
     password: str
 
 class Token(BaseModel):

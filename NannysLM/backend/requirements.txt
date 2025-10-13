@@ -2,8 +2,8 @@
 # Dependencias necesarias para el proyecto
 
 # Framework principal
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
 
 # Base de datos
 sqlalchemy==2.0.23
@@ -16,15 +16,12 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 
 # Validación y serialización
-pydantic==2.5.0
-pydantic-settings==2.1.0
-
-# CORS y middleware
-python-cors==1.7.0
+pydantic>=2.12.0
+pydantic-settings>=2.5.0
+email-validator>=2.1.1
 
 # Utilidades
 python-dotenv==1.0.0
-email-validator==2.1.0
 
 # Desarrollo y testing
 pytest==7.4.3

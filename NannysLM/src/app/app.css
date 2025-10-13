@@ -1,0 +1,4 @@
+/* Estilos globales de la aplicación */
+:host {
+  display: block;
+}

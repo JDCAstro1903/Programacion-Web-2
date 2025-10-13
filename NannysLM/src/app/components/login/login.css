@@ -196,10 +196,16 @@
   margin-top: 6px;
 }
 
-.login-button:hover {
+.login-button:hover:not(:disabled) {
   background: #ff3bd1;
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(255, 59, 209, 0.3);
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .login-button:active {
@@ -311,6 +317,133 @@
     font-size: 1rem;
     margin-top: 1rem;
   }
+
+/* Estilos para estados de carga y errores */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: slideIn 0.3s ease-out;
+}
+
+.error-message:hover {
+  background: linear-gradient(135deg, #ff3742 0%, #ff2f3a 100%);
+}
+
+.error-message svg {
+  flex-shrink: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-spinner svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Usuarios de prueba */
+.test-users-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.test-users-toggle {
+  background: rgba(75, 85, 99, 0.1);
+  border: 1px solid rgba(75, 85, 99, 0.2);
+  color: #374151;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.test-users-toggle:hover {
+  background: rgba(75, 85, 99, 0.15);
+}
+
+.test-users-list {
+  margin-top: 15px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.test-users-list h4 {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.test-user {
+  background: rgba(249, 250, 251, 0.5);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.test-user:hover {
+  background: rgba(243, 244, 246, 0.8);
+  border-color: rgba(209, 213, 219, 0.8);
+  transform: translateY(-1px);
+}
+
+.test-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.test-user-info strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.test-user-info span {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.test-user-info .user-type {
+  color: #E31B7E;
+  font-weight: 500;
+  text-transform: capitalize;
+}
   
   .register-section {
     margin-top: 1.5rem;
