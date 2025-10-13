@@ -1,7 +1,7 @@
 """
 Modelos de base de datos usando SQLAlchemy
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Decimal, Enum, ForeignKey, JSON, Time, Date
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Enum, ForeignKey, JSON, Time, Date, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -84,12 +84,12 @@ class PerfilNanny(Base):
     id = Column(Integer, primary_key=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
     experiencia_anos = Column(Integer, default=0)
-    tarifa_hora = Column(Decimal(8, 2), nullable=False)
+    tarifa_hora = Column(Numeric(8, 2), nullable=False)
     disponibilidad = Column(JSON)
     especialidades = Column(Text)
     certificaciones = Column(Text)
     descripcion_personal = Column(Text)
-    calificacion_promedio = Column(Decimal(3, 2), default=0.00)
+    calificacion_promedio = Column(Numeric(3, 2), default=0.00)
     total_servicios_completados = Column(Integer, default=0)
     total_calificaciones = Column(Integer, default=0)
     estado_disponibilidad = Column(Enum(EstadoDisponibilidad), default=EstadoDisponibilidad.DISPONIBLE, index=True)
@@ -108,7 +108,7 @@ class TipoServicio(Base):
     nombre = Column(String(100), nullable=False)
     descripcion = Column(Text)
     permite_multiples_dias = Column(Boolean, default=False)
-    tarifa_base = Column(Decimal(8, 2))
+    tarifa_base = Column(Numeric(8, 2))
     activo = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -130,9 +130,9 @@ class Servicio(Base):
     ubicacion = Column(Text, nullable=False)
     instrucciones_especiales = Column(Text)
     estado = Column(Enum(EstadoServicio), default=EstadoServicio.PENDIENTE, index=True)
-    tarifa_acordada = Column(Decimal(8, 2), nullable=False)
-    total_horas = Column(Decimal(4, 2))
-    costo_total = Column(Decimal(10, 2), nullable=False)
+    tarifa_acordada = Column(Numeric(8, 2), nullable=False)
+    total_horas = Column(Numeric(4, 2))
+    costo_total = Column(Numeric(10, 2), nullable=False)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     motivo_cancelacion = Column(Text)
@@ -153,7 +153,7 @@ class Pago(Base):
     servicio_id = Column(Integer, ForeignKey("servicios.id", ondelete="CASCADE"), nullable=False)
     cliente_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
     nanny_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
-    monto = Column(Decimal(10, 2), nullable=False)
+    monto = Column(Numeric(10, 2), nullable=False)
     estado = Column(Enum(EstadoPago), default=EstadoPago.PENDIENTE, index=True)
     metodo_pago = Column(Enum(MetodoPago), default=MetodoPago.TRANSFERENCIA)
     comprobante_pago = Column(String(500))

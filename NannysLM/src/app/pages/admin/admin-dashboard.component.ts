@@ -76,6 +76,55 @@ export class AdminDashboardComponent implements OnInit {
   
   // Estado del desplegable de filtros de fecha
   showDateFilters: boolean = false;
+  
+  // Variables para el calendario
+  showCalendar: boolean = false;
+  selectedDate: Date | null = null;
+  currentCalendarMonth: Date = new Date();
+  selectedYear: number = new Date().getFullYear();
+  selectedMonth: number = new Date().getMonth();
+  
+  // Estado del modal para agregar nanny
+  showAddNannyModal: boolean = false;
+  
+  // Estado del modal para agregar cliente
+  showAddClientModal: boolean = false;
+  
+  // Datos para nueva nanny
+  newNannyData = {
+    name: '',
+    email: '',
+    phone: '',
+    age: 25,
+    location: '',
+    experience: '',
+    hourlyRate: 15,
+    description: '',
+    status: 'active',
+    skills: {
+      childcare: false,
+      firstAid: false,
+      education: false,
+      cooking: false,
+      languages: false,
+      specialNeeds: false
+    },
+    availability: {
+      weekdays: false,
+      weekends: false,
+      nights: false,
+      emergency: false
+    }
+  };
+
+  // Datos para nuevo cliente
+  newClient = {
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    children: 1
+  };
 
   // Datos de ejemplo para clientes
   clientsData = {
@@ -345,6 +394,7 @@ export class AdminDashboardComponent implements OnInit {
 
   // Métodos de navegación
   setCurrentView(view: string) {
+    console.log('Cambiando a vista:', view);
     this.currentView = view;
   }
 
@@ -370,6 +420,10 @@ export class AdminDashboardComponent implements OnInit {
 
   setPaymentDateFilter(filter: string) {
     this.paymentDateFilter = filter;
+    if (filter !== 'custom') {
+      this.selectedDate = null;
+      this.showCalendar = false;
+    }
   }
 
   // Método para alternar filtros de fecha
@@ -403,27 +457,38 @@ export class AdminDashboardComponent implements OnInit {
     // Aplicar filtro de fecha
     if (this.paymentDateFilter !== 'all') {
       const today = new Date();
-      const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
       payments = payments.filter(payment => {
         const paymentDate = new Date(payment.date);
-        const paymentDateOnly = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate());
         
         switch(this.paymentDateFilter) {
           case 'today':
-            return paymentDateOnly.getTime() === currentDate.getTime();
+            return this.isSameDay(paymentDate, startOfToday);
+          
           case 'week':
-            const weekAgo = new Date(currentDate);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            return paymentDateOnly >= weekAgo;
+            const startOfWeek = new Date(startOfToday);
+            startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+            return paymentDate >= startOfWeek && paymentDate <= endOfWeek;
+          
           case 'month':
-            const monthAgo = new Date(currentDate);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            return paymentDateOnly >= monthAgo;
+            return paymentDate.getMonth() === today.getMonth() && 
+                   paymentDate.getFullYear() === today.getFullYear();
+          
           case 'quarter':
-            const quarterAgo = new Date(currentDate);
-            quarterAgo.setMonth(quarterAgo.getMonth() - 3);
-            return paymentDateOnly >= quarterAgo;
+            const quarter = Math.floor(today.getMonth() / 3);
+            const quarterStart = quarter * 3;
+            const quarterEnd = quarterStart + 2;
+            return paymentDate.getFullYear() === today.getFullYear() &&
+                   paymentDate.getMonth() >= quarterStart &&
+                   paymentDate.getMonth() <= quarterEnd;
+          
+          case 'custom':
+            return this.selectedDate ? this.isSameDay(paymentDate, this.selectedDate) : true;
+          
           default:
             return true;
         }
@@ -465,29 +530,40 @@ export class AdminDashboardComponent implements OnInit {
     if (dateFilter === 'all') {
       return allPayments.length;
     }
-    
+
     const today = new Date();
-    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
     return allPayments.filter(payment => {
       const paymentDate = new Date(payment.date);
-      const paymentDateOnly = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate());
       
-      switch(dateFilter) {
+      switch (dateFilter) {
         case 'today':
-          return paymentDateOnly.getTime() === currentDate.getTime();
+          return this.isSameDay(paymentDate, startOfToday);
+        
         case 'week':
-          const weekAgo = new Date(currentDate);
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          return paymentDateOnly >= weekAgo;
+          const startOfWeek = new Date(startOfToday);
+          startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          endOfWeek.setHours(23, 59, 59, 999);
+          return paymentDate >= startOfWeek && paymentDate <= endOfWeek;
+        
         case 'month':
-          const monthAgo = new Date(currentDate);
-          monthAgo.setMonth(monthAgo.getMonth() - 1);
-          return paymentDateOnly >= monthAgo;
+          return paymentDate.getMonth() === today.getMonth() && 
+                 paymentDate.getFullYear() === today.getFullYear();
+        
         case 'quarter':
-          const quarterAgo = new Date(currentDate);
-          quarterAgo.setMonth(quarterAgo.getMonth() - 3);
-          return paymentDateOnly >= quarterAgo;
+          const quarter = Math.floor(today.getMonth() / 3);
+          const quarterStart = quarter * 3;
+          const quarterEnd = quarterStart + 2;
+          return paymentDate.getFullYear() === today.getFullYear() &&
+                 paymentDate.getMonth() >= quarterStart &&
+                 paymentDate.getMonth() <= quarterEnd;
+        
+        case 'custom':
+          return this.selectedDate ? this.isSameDay(paymentDate, this.selectedDate) : true;
+        
         default:
           return true;
       }
@@ -605,5 +681,384 @@ export class AdminDashboardComponent implements OnInit {
     // Navegar a la selección de usuario
     this.router.navigate(['/user-selection']);
     console.log('Usuario cerró sesión');
+  }
+
+  // Métodos para el modal de agregar nanny
+  openAddNannyModal() {
+    this.showAddNannyModal = true;
+    // Resetear formulario
+    this.resetNewNannyData();
+  }
+
+  closeAddNannyModal() {
+    this.showAddNannyModal = false;
+  }
+
+  resetNewNannyData() {
+    this.newNannyData = {
+      name: '',
+      email: '',
+      phone: '',
+      age: 25,
+      location: '',
+      experience: '',
+      hourlyRate: 15,
+      description: '',
+      status: 'active',
+      skills: {
+        childcare: false,
+        firstAid: false,
+        education: false,
+        cooking: false,
+        languages: false,
+        specialNeeds: false
+      },
+      availability: {
+        weekdays: false,
+        weekends: false,
+        nights: false,
+        emergency: false
+      }
+    };
+  }
+
+  onSubmitAddNanny(form: any) {
+    if (form.valid) {
+      // Crear nuevo objeto nanny
+      const newNanny = {
+        id: this.getTotalNannys() + 1,
+        name: this.newNannyData.name,
+        rating: 5.0, // Rating inicial
+        experience: parseInt(this.newNannyData.experience),
+        location: this.newNannyData.location,
+        hourlyRate: this.newNannyData.hourlyRate
+      };
+
+      // Agregar a la categoría correspondiente
+      if (this.newNannyData.status === 'active') {
+        this.nannysData.active.push(newNanny);
+      } else {
+        this.nannysData.inactive.push(newNanny);
+      }
+
+      // Actualizar stats
+      this.stats.nanniesAvailable = this.nannysData.active.length;
+      
+      // Actualizar contadores del sidebar
+      this.updateSidebarCounts();
+
+      // Cerrar modal
+      this.closeAddNannyModal();
+
+      // Mostrar mensaje de éxito (aquí podrías agregar un toast o notificación)
+      console.log('Nanny agregada exitosamente:', newNanny);
+    }
+  }
+
+  // Métodos auxiliares para el manejo de nannys
+  getTotalNannys(): number {
+    return this.nannysData.active.length + this.nannysData.inactive.length + this.nannysData.busy.length;
+  }
+
+  getFilterLabel(): string {
+    switch (this.nannyFilter) {
+      case 'active': return 'activas';
+      case 'busy': return 'ocupadas';
+      case 'inactive': return 'inactivas';
+      default: return '';
+    }
+  }
+
+  getStatusText(status: string): string {
+    switch (status) {
+      case 'active': return 'Activa';
+      case 'busy': return 'Ocupada';
+      case 'inactive': return 'Inactiva';
+      default: return '';
+    }
+  }
+
+  getStatusFromData(nanny: any): string {
+    // Determinar el estado basado en qué array contiene esta nanny
+    if (this.nannysData.active.some(n => n.id === nanny.id)) {
+      return 'active';
+    } else if (this.nannysData.busy.some(n => n.id === nanny.id)) {
+      return 'busy';
+    } else if (this.nannysData.inactive.some(n => n.id === nanny.id)) {
+      return 'inactive';
+    }
+    return 'active'; // default
+  }
+
+  // Métodos para clientes
+  getClientStatusFromData(client: any): string {
+    // Determinar el estado basado en qué array contiene este cliente
+    if (this.clientsData.verified.some(c => c.id === client.id)) {
+      return 'verified';
+    } else if (this.clientsData.unverified.some(c => c.id === client.id)) {
+      return 'unverified';
+    }
+    return 'verified'; // default
+  }
+
+  getClientStatusText(status: string): string {
+    switch (status) {
+      case 'verified': return 'Verificado';
+      case 'unverified': return 'Pendiente';
+      default: return '';
+    }
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { 
+      month: 'short', 
+      year: 'numeric' 
+    };
+    return date.toLocaleDateString('es-ES', options);
+  }
+
+  getClientBookings(clientId: number): string {
+    // Simulación de datos de reservas
+    const bookings = Math.floor(Math.random() * 15) + 1;
+    return bookings.toString();
+  }
+
+  getLastActivity(clientId: number): string {
+    // Simulación de última actividad
+    const activities = ['Hoy', 'Ayer', '2 días', '1 semana', '2 semanas'];
+    return activities[Math.floor(Math.random() * activities.length)];
+  }
+
+  openAddClientModal(): void {
+    this.showAddClientModal = true;
+  }
+
+  closeAddClientModal(): void {
+    this.showAddClientModal = false;
+    this.resetClientForm();
+  }
+
+  resetClientForm(): void {
+    this.newClient = {
+      name: '',
+      email: '',
+      phone: '',
+      location: '',
+      children: 1
+    };
+  }
+
+  // Métodos para pagos
+  getPaymentStatusFromData(payment: any): string {
+    // Determinar el estado basado en qué array contiene este pago
+    if (this.paymentsData.verified.some(p => p.id === payment.id)) {
+      return 'verified';
+    } else if (this.paymentsData.unverified.some(p => p.id === payment.id)) {
+      return 'unverified';
+    }
+    return 'verified'; // default
+  }
+
+  getPaymentStatusText(status: string): string {
+    switch (status) {
+      case 'verified': return 'Completado';
+      case 'unverified': return 'Pendiente';
+      default: return '';
+    }
+  }
+
+  formatPaymentDate(dateString: string): string {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { 
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    };
+    return date.toLocaleDateString('es-ES', options);
+  }
+
+  getTotalRevenue(): number {
+    const allPayments = [...this.paymentsData.verified, ...this.paymentsData.unverified];
+    return allPayments.reduce((total, payment) => total + payment.amount, 0);
+  }
+
+  getMonthlyRevenue(): number {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const allPayments = [...this.paymentsData.verified, ...this.paymentsData.unverified];
+    
+    return allPayments
+      .filter(payment => {
+        const paymentDate = new Date(payment.date);
+        return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+      })
+      .reduce((total, payment) => total + payment.amount, 0);
+  }
+
+  getHourlyRate(payment: any): number {
+    return Math.round(payment.amount / payment.hours);
+  }
+
+  getCommission(payment: any): number {
+    return Math.round(payment.amount * 0.15); // 15% de comisión
+  }
+
+  viewNannyProfile(nannyId: number) {
+    console.log('Ver perfil de nanny:', nannyId);
+    // Aquí podrías implementar la navegación al perfil completo
+  }
+
+  contactNanny(nannyId: number) {
+    console.log('Contactar nanny:', nannyId);
+    // Aquí podrías implementar la funcionalidad de contacto
+  }
+
+  // Funciones del calendario
+  toggleCalendar() {
+    this.showCalendar = !this.showCalendar;
+    if (this.showCalendar) {
+      this.paymentDateFilter = 'custom';
+    }
+  }
+
+  getCurrentMonthYear(): string {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return `${months[this.currentCalendarMonth.getMonth()]} ${this.currentCalendarMonth.getFullYear()}`;
+  }
+
+  previousMonth() {
+    this.currentCalendarMonth = new Date(
+      this.currentCalendarMonth.getFullYear(),
+      this.currentCalendarMonth.getMonth() - 1,
+      1
+    );
+  }
+
+  nextMonth() {
+    this.currentCalendarMonth = new Date(
+      this.currentCalendarMonth.getFullYear(),
+      this.currentCalendarMonth.getMonth() + 1,
+      1
+    );
+  }
+
+  getDayHeaders(): string[] {
+    return ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+  }
+
+  getCalendarDays(): Date[] {
+    const year = this.currentCalendarMonth.getFullYear();
+    const month = this.currentCalendarMonth.getMonth();
+    
+    // Primer día del mes
+    const firstDay = new Date(year, month, 1);
+    // Último día del mes
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // Días a mostrar
+    const days: Date[] = [];
+    
+    // Agregar días del mes anterior para completar la primera semana
+    const firstDayOfWeek = firstDay.getDay();
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      days.push(new Date(year, month, -i));
+    }
+    
+    // Agregar todos los días del mes actual
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      days.push(new Date(year, month, day));
+    }
+    
+    // Agregar días del mes siguiente para completar la última semana
+    const totalDays = days.length;
+    const remainingDays = 42 - totalDays; // 6 semanas * 7 días
+    for (let day = 1; day <= remainingDays; day++) {
+      days.push(new Date(year, month + 1, day));
+    }
+    
+    return days.slice(0, 42); // Máximo 6 semanas
+  }
+
+  isToday(date: Date): boolean {
+    const today = new Date();
+    return this.isSameDay(date, today);
+  }
+
+  isSelectedDate(date: Date): boolean {
+    return this.selectedDate ? this.isSameDay(date, this.selectedDate) : false;
+  }
+
+  isCurrentMonth(date: Date): boolean {
+    return date.getMonth() === this.currentCalendarMonth.getMonth() &&
+           date.getFullYear() === this.currentCalendarMonth.getFullYear();
+  }
+
+  hasPaymentsOnDate(date: Date): boolean {
+    const allPayments = [...this.paymentsData.verified, ...this.paymentsData.unverified];
+    return allPayments.some(payment => this.isSameDay(new Date(payment.date), date));
+  }
+
+  selectDate(date: Date) {
+    if (this.isCurrentMonth(date)) {
+      this.selectedDate = date;
+      this.paymentDateFilter = 'custom';
+      this.showCalendar = false;
+    }
+  }
+
+  clearSelectedDate() {
+    this.selectedDate = null;
+    this.paymentDateFilter = 'all';
+  }
+
+  formatSelectedDate(date: Date): string {
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return date.toLocaleDateString('es-ES', options);
+  }
+
+  // Métodos para selectores de año y mes
+  getAvailableYears(): number[] {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+      years.push(year);
+    }
+    return years;
+  }
+
+  getAvailableMonths(): string[] {
+    return [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+  }
+
+  onYearChange(): void {
+    this.currentCalendarMonth = new Date(this.selectedYear, this.selectedMonth, 1);
+  }
+
+  onMonthChange(): void {
+    this.currentCalendarMonth = new Date(this.selectedYear, this.selectedMonth, 1);
+  }
+
+  goToToday(): void {
+    const today = new Date();
+    this.selectedYear = today.getFullYear();
+    this.selectedMonth = today.getMonth();
+    this.currentCalendarMonth = new Date(this.selectedYear, this.selectedMonth, 1);
+  }
+
+  private isSameDay(date1: Date, date2: Date): boolean {
+    return date1.getDate() === date2.getDate() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getFullYear() === date2.getFullYear();
   }
 }
