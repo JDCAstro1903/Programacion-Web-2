@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
@@ -8,7 +9,7 @@ import { UserConfigService } from '../../shared/services/user-config.service';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent, LogoutModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, LogoutModalComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -35,6 +36,8 @@ export class AdminDashboardComponent implements OnInit {
       this.clientsData.verified.length + this.clientsData.unverified.length);
     this.userConfigService.updateSidebarItemCount('admin', 'payments', 
       this.paymentsData.verified.length + this.paymentsData.unverified.length);
+    this.userConfigService.updateSidebarItemCount('admin', 'datos-bancarios', 
+      this.datosBancarios.length);
   }
 
   // Datos del dashboard
@@ -279,6 +282,60 @@ export class AdminDashboardComponent implements OnInit {
     ]
   };
 
+  // Datos bancarios de las nannys
+  datosBancarios = [
+    {
+      id: 1,
+      nanny_id: 5,
+      nombre_titular: 'Leslie Ruiz',
+      banco: 'BBVA Bancomer',
+      numero_cuenta_oculto: '****7890',
+      numero_cuenta_completo: '1234567890',
+      clabe: '012180001234567890',
+      tipo_cuenta: 'ahorro',
+      es_activa: true,
+      fecha_creacion: '2024-01-15',
+      nanny_nombre: 'Leslie Ruiz',
+      nanny_email: 'leslie.ruiz@nannyslm.com',
+      nanny_verificada: true
+    },
+    {
+      id: 2,
+      nanny_id: 6,
+      nombre_titular: 'Ana Martínez',
+      banco: 'Santander',
+      numero_cuenta_oculto: '****4321',
+      numero_cuenta_completo: '0987654321',
+      clabe: '014320000987654321',
+      tipo_cuenta: 'corriente',
+      es_activa: true,
+      fecha_creacion: '2024-02-10',
+      nanny_nombre: 'Ana Martínez',
+      nanny_email: 'ana.martinez@nannyslm.com',
+      nanny_verificada: true
+    },
+    {
+      id: 3,
+      nanny_id: 7,
+      nombre_titular: 'Sofia López',
+      banco: 'Banorte',
+      numero_cuenta_oculto: '****9876',
+      numero_cuenta_completo: '5678909876',
+      clabe: '072580005678909876',
+      tipo_cuenta: 'ahorro',
+      es_activa: false,
+      fecha_creacion: '2024-03-05',
+      nanny_nombre: 'Sofia López',
+      nanny_email: 'sofia.lopez@nannyslm.com',
+      nanny_verificada: false
+    }
+  ];
+
+  // Estados y filtros para datos bancarios
+  showBankDetailsModal: boolean = false;
+  selectedBankData: any = null;
+  editingBankData: boolean = false;
+
   // Usuario actual (temporal)
   currentUser = {
     name: 'Usuario 1',
@@ -435,6 +492,103 @@ export class AdminDashboardComponent implements OnInit {
           return true;
       }
     }).length;
+  }
+
+  // Métodos para manejar datos bancarios
+  openBankDetailsModal(bankData?: any) {
+    if (bankData) {
+      this.selectedBankData = { ...bankData };
+      this.editingBankData = true;
+    } else {
+      this.selectedBankData = {
+        id: null,
+        nanny_id: null,
+        nombre_titular: '',
+        banco: '',
+        numero_cuenta_completo: '',
+        clabe: '',
+        tipo_cuenta: 'ahorro',
+        es_activa: true
+      };
+      this.editingBankData = false;
+    }
+    this.showBankDetailsModal = true;
+  }
+
+  closeBankDetailsModal() {
+    this.showBankDetailsModal = false;
+    this.selectedBankData = null;
+    this.editingBankData = false;
+  }
+
+  saveBankDetails() {
+    if (this.editingBankData) {
+      // Actualizar datos existentes
+      const index = this.datosBancarios.findIndex(d => d.id === this.selectedBankData.id);
+      if (index !== -1) {
+        // Mantener información de la nanny
+        const nannyInfo = {
+          nanny_nombre: this.datosBancarios[index].nanny_nombre,
+          nanny_email: this.datosBancarios[index].nanny_email,
+          nanny_verificada: this.datosBancarios[index].nanny_verificada
+        };
+        
+        this.datosBancarios[index] = {
+          ...this.selectedBankData,
+          ...nannyInfo,
+          numero_cuenta_oculto: `****${this.selectedBankData.numero_cuenta_completo.slice(-4)}`,
+          fecha_actualizacion: new Date().toISOString().split('T')[0]
+        };
+      }
+    } else {
+      // Crear nuevos datos
+      const newId = Math.max(...this.datosBancarios.map(d => d.id)) + 1;
+      
+      // Buscar información de la nanny seleccionada
+      const nannyData = this.nannysData.active.find(n => n.id === this.selectedBankData.nanny_id) ||
+                       this.nannysData.inactive.find(n => n.id === this.selectedBankData.nanny_id) ||
+                       this.nannysData.busy.find(n => n.id === this.selectedBankData.nanny_id);
+      
+      this.datosBancarios.push({
+        ...this.selectedBankData,
+        id: newId,
+        numero_cuenta_oculto: `****${this.selectedBankData.numero_cuenta_completo.slice(-4)}`,
+        fecha_creacion: new Date().toISOString().split('T')[0],
+        nanny_nombre: nannyData ? nannyData.name : 'Nanny no encontrada',
+        nanny_email: nannyData ? `${nannyData.name.toLowerCase().replace(' ', '.')}@nannyslm.com` : '',
+        nanny_verificada: nannyData ? true : false
+      });
+    }
+    
+    this.closeBankDetailsModal();
+    this.updateSidebarCounts();
+  }
+
+  deleteBankData(id: number) {
+    if (confirm('¿Estás seguro de que quieres eliminar estos datos bancarios?')) {
+      const index = this.datosBancarios.findIndex(d => d.id === id);
+      if (index !== -1) {
+        // Soft delete - marcar como inactiva
+        this.datosBancarios[index].es_activa = false;
+        this.updateSidebarCounts();
+      }
+    }
+  }
+
+  toggleBankDataStatus(id: number) {
+    const index = this.datosBancarios.findIndex(d => d.id === id);
+    if (index !== -1) {
+      this.datosBancarios[index].es_activa = !this.datosBancarios[index].es_activa;
+      this.updateSidebarCounts();
+    }
+  }
+
+  // Obtener nannys disponibles para agregar datos bancarios
+  getAvailableNannysForBankData() {
+    const allNannys = [...this.nannysData.active, ...this.nannysData.inactive, ...this.nannysData.busy];
+    const nannysWithBankData = this.datosBancarios.filter(d => d.es_activa).map(d => d.nanny_id);
+    
+    return allNannys.filter(nanny => !nannysWithBankData.includes(nanny.id));
   }
 
   // Métodos para el modal de logout

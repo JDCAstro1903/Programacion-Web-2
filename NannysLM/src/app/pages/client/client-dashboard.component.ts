@@ -38,6 +38,9 @@ export class ClientDashboardComponent implements OnInit {
   // Estado del modal de datos bancarios
   showBankDetailsModal: boolean = false;
 
+  // Datos bancarios activos para mostrar en el modal
+  currentBankData: any = null;
+
   // Estado para mostrar servicio creado
   showServiceDetails: boolean = false;
   createdService: any = null;
@@ -170,6 +173,43 @@ export class ClientDashboardComponent implements OnInit {
   } = {
     upcoming: [],
     past: []
+  };
+
+  // Datos bancarios de las nannys (simulando datos desde backend)
+  nannyBankData: { [nannyName: string]: any } = {
+    'Leslie Ruiz': {
+      id: 1,
+      nanny_nombre: 'Leslie Ruiz',
+      banco: 'BBVA Bancomer',
+      numero_cuenta: '1234567890',
+      numero_cuenta_oculto: '****7890',
+      clabe: '012180001234567890',
+      nombre_titular: 'Leslie Ruiz',
+      tipo_cuenta: 'ahorro',
+      es_activa: true
+    },
+    'Ana Martínez': {
+      id: 2,
+      nanny_nombre: 'Ana Martínez',
+      banco: 'Santander',
+      numero_cuenta: '0987654321',
+      numero_cuenta_oculto: '****4321',
+      clabe: '014320000987654321',
+      nombre_titular: 'Ana Martínez',
+      tipo_cuenta: 'corriente',
+      es_activa: true
+    },
+    'Sofia López': {
+      id: 3,
+      nanny_nombre: 'Sofia López',
+      banco: 'Banorte',
+      numero_cuenta: '5678909876',
+      numero_cuenta_oculto: '****9876',
+      clabe: '072580005678909876',
+      nombre_titular: 'Sofia López',
+      tipo_cuenta: 'ahorro',
+      es_activa: false
+    }
   };
 
   constructor(private userConfigService: UserConfigService, private router: Router) {
@@ -810,5 +850,56 @@ CLABE: 014320123456789012
     }
     
     document.body.removeChild(textArea);
+  }
+
+  // Función para abrir modal de datos bancarios con datos específicos de la nanny
+  openBankDetailsModal(nannyName?: string): void {
+    if (nannyName && this.nannyBankData[nannyName]) {
+      this.currentBankData = this.nannyBankData[nannyName];
+    } else {
+      // Datos por defecto si no se encuentra la nanny específica
+      this.currentBankData = {
+        nanny_nombre: 'NannysLM',
+        banco: 'Banco Nacional de Desarrollo',
+        numero_cuenta: '1234567890123456',
+        numero_cuenta_oculto: '****3456',
+        clabe: '014320123456789012',
+        nombre_titular: 'NannysLM Servicios S.A.',
+        tipo_cuenta: 'corriente',
+        es_activa: true
+      };
+    }
+    this.showBankDetailsModal = true;
+  }
+
+  // Función mejorada para copiar datos bancarios específicos
+  copyBankDetailsImproved(): void {
+    if (!this.currentBankData) return;
+
+    const bankDetails = `
+Banco: ${this.currentBankData.banco}
+Titular: ${this.currentBankData.nombre_titular}
+Número de Cuenta: ${this.currentBankData.numero_cuenta}
+CLABE: ${this.currentBankData.clabe || 'No disponible'}
+Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Ahorro' : 'Cuenta Corriente'}
+    `.trim();
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(bankDetails).then(() => {
+        alert('Datos bancarios copiados al portapapeles');
+      }).catch(() => {
+        this.fallbackCopyTextToClipboard(bankDetails);
+      });
+    } else {
+      this.fallbackCopyTextToClipboard(bankDetails);
+    }
+  }
+
+  // Función para obtener datos bancarios por servicio
+  getBankDataForService(service: any): any {
+    if (service.nanny && service.nanny.name) {
+      return this.nannyBankData[service.nanny.name] || null;
+    }
+    return null;
   }
 }

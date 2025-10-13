@@ -49,6 +49,11 @@ export class UserConfigService {
             id: 'payments',
             label: 'Pagos',
             icon: 'dollar-sign'
+          },
+          {
+            id: 'datos-bancarios',
+            label: 'Datos Bancarios',
+            icon: 'credit-card'
           }
         ]
       }

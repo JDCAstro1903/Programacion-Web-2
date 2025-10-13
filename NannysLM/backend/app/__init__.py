@@ -1,0 +1,1 @@
+# Backend vacío para estructura de carpetas
