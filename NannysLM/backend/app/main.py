@@ -50,8 +50,9 @@ async def health_check():
     }
 
 # Incluir routers
-from app.routers import datos_bancarios, auth
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
+from app.routers import datos_bancarios
+from app.routers.auth import router as auth_router
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(datos_bancarios.router, prefix="/api/v1/datos-bancarios", tags=["datos-bancarios"])
 
 # Routers pendientes de implementar

@@ -31,6 +31,15 @@ class UserBasic(BaseModel):
     tipo_usuario: str
     es_verificado: bool
 
+class UserCreate(BaseModel):
+    """Schema para crear nuevo usuario"""
+    nombre: str
+    apellido: str
+    email: str  # Temporalmente str en lugar de EmailStr
+    password: str
+    telefono: Optional[str] = None
+    tipo_usuario: str = "cliente"  # Por defecto cliente
+
 class UserResponse(BaseModel):
     """Schema completo de respuesta de usuario"""
     id: int
@@ -42,6 +51,7 @@ class UserResponse(BaseModel):
     es_verificado: bool
     fecha_registro: datetime
     ultimo_acceso: Optional[datetime] = None
+    activo: bool = True
 
     class Config:
         from_attributes = True

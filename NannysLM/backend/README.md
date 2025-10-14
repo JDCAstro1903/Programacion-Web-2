@@ -1,237 +1,110 @@
-# NannysLM Backend - Guía de Instalación y Configuración
+# Backend NannysLM
 
-Este documento te guiará paso a paso para configurar y ejecutar el backend de NannysLM con FastAPI y MySQL.
+Backend de la aplicación NannysLM desarrollado con FastAPI.
 
-## 📋 Prerrequisitos
-
-Antes de comenzar, asegúrate de tener instalado:
-
-- **Python 3.8+** - [Descargar aquí](https://www.python.org/downloads/)
-- **MySQL 8.0+** - [Descargar aquí](https://dev.mysql.com/downloads/mysql/)
-- **Git** - [Descargar aquí](https://git-scm.com/downloads)
-
-## 🗄️ Configuración de MySQL
-
-### 1. Instalación de MySQL
-
-#### Windows:
-1. Descarga MySQL Community Server desde el sitio oficial
-2. Ejecuta el instalador y sigue las instrucciones
-3. Durante la instalación, configura la contraseña del usuario root
-4. Asegúrate de que el servicio MySQL esté ejecutándose
-
-#### Linux (Ubuntu/Debian):
-```bash
-sudo apt update
-sudo apt install mysql-server
-sudo mysql_secure_installation
-```
-
-#### macOS:
-```bash
-brew install mysql
-brew services start mysql
-```
-
-### 2. Crear la Base de Datos
-
-1. **Conectarse a MySQL:**
-   ```bash
-   mysql -u root -p
-   ```
-
-2. **Ejecutar el script de la base de datos:**
-   ```sql
-   source /ruta/completa/backend/database/nannys_db.sql
-   ```
-   
-   O alternativamente:
-   ```bash
-   mysql -u root -p < backend/database/nannys_db.sql
-   ```
-
-3. **Verificar que la base de datos se creó correctamente:**
-   ```sql
-   USE nannys_lm;
-   SHOW TABLES;
-   ```
-
-## 🐍 Configuración del Backend
-
-### 1. Crear Entorno Virtual
-
-```bash
-# Navegar al directorio del backend
-cd backend
-
-# Crear entorno virtual
-python -m venv venv
-
-# Activar entorno virtual
-# Windows:
-venv\Scripts\activate
-
-# Linux/macOS:
-source venv/bin/activate
-```
-
-### 2. Instalar Dependencias
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configurar Variables de Entorno
-
-1. **Copiar el archivo de ejemplo:**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Editar el archivo `.env`** con tus configuraciones:
-   ```env
-   # Base de datos MySQL
-   DATABASE_URL=mysql+pymysql://root:tu_password@localhost:3306/nannys_lm
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=tu_password_mysql
-   DB_NAME=nannys_lm
-
-   # Seguridad
-   SECRET_KEY=cambia-esta-clave-por-una-muy-segura-en-produccion
-   
-   # CORS (para conectar con Angular)
-   ALLOWED_ORIGINS=http://localhost:4200,http://127.0.0.1:4200
-   ```
-
-### 4. Verificar Conexión a Base de Datos
-
-Puedes crear un script de prueba:
-
-```python
-# test_connection.py
-from app.database import engine
-from sqlalchemy import text
-
-try:
-    with engine.connect() as connection:
-        result = connection.execute(text("SELECT 1"))
-        print("✅ Conexión a la base de datos exitosa!")
-except Exception as e:
-    print(f"❌ Error de conexión: {e}")
-```
-
-```bash
-python test_connection.py
-```
-
-## 🚀 Ejecutar el Backend
-
-### Modo Desarrollo
-
-```bash
-# Desde el directorio backend/
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-O alternativamente:
-
-```bash
-python app/main.py
-```
-
-### Verificar que está funcionando
-
-1. **Abrir navegador en:** http://localhost:8000
-2. **Documentación automática:** http://localhost:8000/docs
-3. **ReDoc:** http://localhost:8000/redoc
-
-## 🧪 Datos de Prueba
-
-La base de datos incluye datos de ejemplo:
-
-### Usuarios Admin:
-- **Email:** admin@nannyslm.com
-- **Password:** (hash de ejemplo, implementar autenticación)
-
-### Usuarios Cliente:
-- **Email:** juan.perez@email.com
-- **Email:** maria.garcia@email.com
-- **Email:** carlos.mendoza@email.com
-
-### Usuarios Nanny:
-- **Email:** leslie.ruiz@nannyslm.com
-- **Email:** ana.martinez@nannyslm.com
-- **Email:** sofia.lopez@nannyslm.com
-
-## 📁 Estructura del Proyecto
+## 🏗️ Estructura del Proyecto
 
 ```
 backend/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py              # Aplicación principal FastAPI
-│   ├── config.py            # Configuración y settings
-│   ├── database.py          # Configuración de SQLAlchemy
-│   ├── models.py            # Modelos de base de datos
-│   ├── schemas/             # Schemas de Pydantic (próximamente)
-│   ├── routers/             # Endpoints de la API (próximamente)
-│   ├── services/            # Lógica de negocio (próximamente)
-│   └── utils/               # Utilidades (próximamente)
+│   ├── routers/
+│   │   ├── auth/
+│   │   │   ├── login.py      # APIs de autenticación
+│   │   │   └── register.py   # APIs de registro
+│   │   └── datos_bancarios.py
+│   ├── schemas/              # Modelos Pydantic
+│   ├── services/            # Lógica de negocio
+│   ├── config.py           # Configuración
+│   ├── database.py         # Conexión DB
+│   ├── models.py           # Modelos SQLAlchemy
+│   └── main.py             # Aplicación principal
 ├── database/
-│   └── nannys_db.sql        # Script de base de datos
-├── uploads/                 # Archivos subidos
-├── requirements.txt         # Dependencias de Python
-├── .env.example            # Ejemplo de variables de entorno
-└── README.md               # Este archivo
+│   └── nannys_db.sql       # Script de base de datos
+├── tests/                  # Archivos de prueba
+├── uploads/               # Archivos subidos
+├── .env                   # Variables de entorno
+└── requirements.txt       # Dependencias
 ```
 
-## 🔧 Próximos Pasos
+## 🚀 Tecnologías
 
-Una vez que tengas el backend básico funcionando, los próximos pasos serían:
+- **FastAPI**: Framework web moderno y rápido
+- **MySQL**: Base de datos relacional
+- **SQLAlchemy**: ORM para Python
+- **JWT**: Autenticación con tokens
+- **Bcrypt**: Encriptación de contraseñas
+- **Pydantic**: Validación de datos
 
-1. **Implementar autenticación JWT**
-2. **Crear endpoints para usuarios**
-3. **Crear endpoints para servicios**
-4. **Crear endpoints para pagos**
-5. **Implementar validaciones con Pydantic**
-6. **Agregar tests**
+## 📦 Instalación
 
-## 🐛 Solución de Problemas
-
-### Error de conexión a MySQL
+1. **Crear entorno virtual:**
 ```bash
-# Verificar que MySQL esté ejecutándose
-# Windows:
-net start mysql80
-
-# Linux:
-sudo systemctl start mysql
-
-# macOS:
-brew services restart mysql
+python -m venv venv
 ```
 
-### Error de puerto ocupado
+2. **Activar entorno virtual:**
 ```bash
-# Cambiar puerto en el comando uvicorn
-uvicorn app.main:app --reload --port 8001
+# Windows PowerShell
+.\venv\Scripts\Activate.ps1
+# Windows CMD
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
 ```
 
-### Error de dependencias
+3. **Instalar dependencias:**
 ```bash
-# Actualizar pip y reinstalar
-pip install --upgrade pip
-pip install -r requirements.txt --force-reinstall
+pip install -r requirements.txt
 ```
 
-## 📞 Soporte
+## ⚙️ Configuración
 
-Si tienes problemas:
-1. Revisa que todos los prerrequisitos estén instalados
-2. Verifica que MySQL esté ejecutándose
-3. Asegúrate de que las variables de entorno estén configuradas correctamente
-4. Revisa los logs en la consola donde ejecutas uvicorn
+1. Copiar `.env.example` a `.env`
+2. Configurar las variables de entorno en `.env`
+3. Crear la base de datos MySQL
+4. Ejecutar el script SQL: `database/nannys_db.sql`
 
-¡Tu backend de NannysLM estará listo para conectarse con el frontend de Angular! 🎉
+## 🏃‍♂️ Ejecución
+
+**Opción 1 - Uvicorn directo:**
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**Opción 2 - Desde main.py:**
+```bash
+python -m app.main
+```
+
+## 📚 APIs Disponibles
+
+### 🔐 Autenticación (`/api/v1/auth`)
+- `POST /login` - Iniciar sesión
+- `POST /logout` - Cerrar sesión
+- `POST /register` - Registro general
+- `POST /register/cliente` - Registro de cliente
+- `POST /register/cuidadora` - Registro de cuidadora
+- `GET /test-users` - Ver usuarios de prueba
+
+### 🏦 Datos Bancarios (`/api/v1/datos-bancarios`)
+- Endpoints para gestión de información bancaria
+
+## 📖 Documentación
+
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/health
+
+## 🧪 Testing
+
+```bash
+# Ejecutar pruebas de conexión
+python tests/test_connection.py
+python tests/test_mysql_simple.py
+```
+
+## 🔧 Setup de Base de Datos
+
+```bash
+python setup_database.py
+```

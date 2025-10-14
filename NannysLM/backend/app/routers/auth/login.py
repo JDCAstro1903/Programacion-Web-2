@@ -1,6 +1,6 @@
 """
-Router de autenticación
-Maneja login y gestión básica de usuarios
+Router de Login
+Maneja la autenticación de usuarios
 """
 from datetime import datetime, timedelta
 from typing import Optional
@@ -23,10 +23,6 @@ router = APIRouter()
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verificar contraseña"""
     return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    """Obtener hash de contraseña"""
-    return pwd_context.hash(password)
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[Usuario]:
     """Autenticar usuario"""
@@ -53,6 +49,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
     Iniciar sesión con email y contraseña
+    
+    - **username**: Email del usuario
+    - **password**: Contraseña del usuario
+    
+    Retorna un token JWT válido por el tiempo configurado
     """
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -86,6 +87,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 async def get_test_users(db: Session = Depends(get_db)):
     """
     Endpoint para ver usuarios disponibles (solo desarrollo)
+    Útil para probar el login con usuarios existentes
     """
     users = db.query(Usuario).limit(5).all()
     return [
@@ -98,3 +100,12 @@ async def get_test_users(db: Session = Depends(get_db)):
         }
         for user in users
     ]
+
+@router.post("/logout", summary="Cerrar sesión")
+async def logout():
+    """
+    Cerrar sesión del usuario
+    Nota: Con JWT stateless, el logout se maneja del lado del cliente
+    eliminando el token. Aquí se puede implementar una blacklist si es necesario.
+    """
+    return {"message": "Sesión cerrada exitosamente"}
