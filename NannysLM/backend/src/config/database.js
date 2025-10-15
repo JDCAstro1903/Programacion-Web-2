@@ -30,13 +30,13 @@ const pool = mysql.createPool(dbConfig);
 const testConnection = async () => {
     try {
         const connection = await pool.getConnection();
-        console.log('✅ Conexión exitosa a la base de datos MySQL');
-        console.log(`📊 Base de datos: ${process.env.DB_NAME}`);
-        console.log(`🏠 Host: ${process.env.DB_HOST}:${process.env.DB_PORT}`);
+        console.log(' Conexión exitosa a la base de datos MySQL');
+        console.log(` Base de datos: ${process.env.DB_NAME}`);
+        console.log(` Host: ${process.env.DB_HOST}:${process.env.DB_PORT}`);
         connection.release();
         return true;
     } catch (error) {
-        console.error('❌ Error al conectar a la base de datos:', error.message);
+        console.error(' Error al conectar a la base de datos:', error.message);
         return false;
     }
 };
