@@ -29,6 +29,9 @@ export class ClientDashboardComponent implements OnInit {
   // Vista actual del dashboard
   currentView: string = 'dashboard';
   
+  // Vista de servicios específica
+  servicesView: string = 'services-history'; // 'services-history' o 'new-service'
+  
   // Configuración del sidebar
   sidebarConfig: SidebarConfig;
   
@@ -57,11 +60,65 @@ export class ClientDashboardComponent implements OnInit {
       instructions: 'El niño tiene que comer temprano',
       service: { name: 'Cuidado Nocturno' },
       nanny: {
-        name: 'Leslie RuiZ',
+        name: 'Leslie Ruiz',
+        photo: 'assets/logo.png'
+      },
+      isRated: true,
+      rating: 5,
+      showRating: false,
+      tempRating: 0
+    },
+    {
+      id: 2,
+      title: 'Sesion 15 de Marzo',
+      status: 'Finalizado',
+      startTime: '08:00',
+      endTime: '18:00',
+      date: new Date(2025, 2, 15), // 15 de marzo 2025
+      instructions: 'Llevar al parque después del almuerzo',
+      service: { name: 'Niñeras a domicilio' },
+      nanny: {
+        name: 'Ana Martínez',
+        photo: 'assets/logo.png'
+      },
+      isRated: true,
+      rating: 4,
+      showRating: false,
+      tempRating: 0
+    },
+    {
+      id: 3,
+      title: 'Sesion 10 de Marzo',
+      status: 'Finalizado',
+      startTime: '14:00',
+      endTime: '20:00',
+      date: new Date(2025, 2, 10), // 10 de marzo 2025
+      instructions: 'Ayuda con tareas escolares',
+      service: { name: 'Niñeras a domicilio' },
+      nanny: {
+        name: 'Sofia López',
         photo: 'assets/logo.png'
       },
       isRated: false,
       rating: 0,
+      showRating: false,
+      tempRating: 0
+    },
+    {
+      id: 4,
+      title: 'Sesion 5 de Marzo',
+      status: 'Finalizado',
+      startTime: '19:00',
+      endTime: '07:00',
+      date: new Date(2025, 2, 5), // 5 de marzo 2025
+      instructions: 'Cuidado nocturno para bebé de 6 meses',
+      service: { name: 'Cuidado Nocturno' },
+      nanny: {
+        name: 'María González',
+        photo: 'assets/logo.png'
+      },
+      isRated: true,
+      rating: 5,
       showRating: false,
       tempRating: 0
     }
@@ -111,6 +168,8 @@ export class ClientDashboardComponent implements OnInit {
   selectedEndDate: Date | null = null;
   selectedTime: string = '';
   selectedServiceType: string = '';
+  selectedChildren: number = 1;
+  selectedNannys: number = 1;
   currentMonth: number = new Date().getMonth();
   currentYear: number = new Date().getFullYear();
   availableTimes: string[] = [
@@ -209,6 +268,17 @@ export class ClientDashboardComponent implements OnInit {
       nombre_titular: 'Sofia López',
       tipo_cuenta: 'ahorro',
       es_activa: false
+    },
+    'María González': {
+      id: 4,
+      nanny_nombre: 'María González',
+      banco: 'Banamex',
+      numero_cuenta: '1122334455',
+      numero_cuenta_oculto: '****4455',
+      clabe: '002180001122334455',
+      nombre_titular: 'María González',
+      tipo_cuenta: 'ahorro',
+      es_activa: true
     }
   };
 
@@ -256,10 +326,30 @@ export class ClientDashboardComponent implements OnInit {
   // Métodos de navegación
   setCurrentView(view: string) {
     this.currentView = view;
+    // Si estamos cambiando a servicios, mostrar historial por defecto
+    if (view === 'services') {
+      this.servicesView = 'services-history';
+    }
   }
 
   onViewChange(view: string) {
     this.setCurrentView(view);
+  }
+
+  // Métodos para manejar las vistas de servicios
+  showServicesHistory() {
+    this.servicesView = 'services-history';
+  }
+
+  showNewServiceForm() {
+    this.servicesView = 'new-service';
+    // Limpiar selecciones previas
+    this.selectedDate = null;
+    this.selectedEndDate = null;
+    this.selectedTime = '';
+    this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   onSidebarLogout() {
@@ -389,6 +479,36 @@ export class ClientDashboardComponent implements OnInit {
     return this.selectedServiceType === 'night-care';
   }
 
+  // Métodos para manejar número de niños y nannys
+  onChildrenChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.selectedChildren = parseInt(target.value, 10);
+    
+    // Auto-sugerir número de nannys basado en número de niños
+    if (this.selectedChildren >= 3 && this.selectedNannys < 2) {
+      this.selectedNannys = 2;
+    }
+  }
+
+  onNannysChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.selectedNannys = parseInt(target.value, 10);
+  }
+
+  // Verificar si mostrar la alerta de recomendación
+  shouldShowNannyRecommendation(): boolean {
+    return this.selectedChildren >= 3 && this.selectedNannys < 2;
+  }
+
+  // Generar opciones para los combobox
+  getChildrenOptions(): number[] {
+    return Array.from({length: 8}, (_, i) => i + 1); // 1-8 niños
+  }
+
+  getNannysOptions(): number[] {
+    return Array.from({length: 5}, (_, i) => i + 1); // 1-5 nannys
+  }
+
   getDaysInMonth(): number[] {
     const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1).getDay();
@@ -431,6 +551,8 @@ export class ClientDashboardComponent implements OnInit {
     this.selectedEndDate = null;
     this.selectedTime = '';
     this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   nextMonth() {
@@ -444,6 +566,8 @@ export class ClientDashboardComponent implements OnInit {
     this.selectedEndDate = null;
     this.selectedTime = '';
     this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   isSelectedDate(day: number): boolean {
@@ -518,7 +642,7 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   confirmReservation() {
-    if (this.selectedDate && this.selectedTime && this.selectedServiceType) {
+    if (this.selectedDate && this.selectedTime && this.selectedServiceType && this.selectedChildren && this.selectedNannys) {
       // Crear el servicio con los datos seleccionados
       const endDate = this.selectedEndDate || this.selectedDate;
       
@@ -531,6 +655,8 @@ export class ClientDashboardComponent implements OnInit {
         date: this.selectedDate,
         endDate: endDate,
         instructions: '',
+        children: this.selectedChildren,
+        nannys: this.selectedNannys,
         service: this.serviceTypes.find(s => s.id === this.selectedServiceType),
         nanny: {
           name: 'Leslie RuiZ',
@@ -567,6 +693,11 @@ export class ClientDashboardComponent implements OnInit {
       tempRating: 0
     };
     this.contractedServices.unshift(contractedService);
+    
+    // Después de agregar el servicio, volver al historial
+    this.showServiceDetails = false;
+    this.currentView = 'services';
+    this.servicesView = 'services-history';
   }
 
   // Cancelar servicio
@@ -641,10 +772,12 @@ export class ClientDashboardComponent implements OnInit {
     this.selectedEndDate = null;
     this.selectedTime = '';
     this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   hasValidReservation(): boolean {
-    return !!(this.selectedDate && this.selectedTime && this.selectedServiceType);
+    return !!(this.selectedDate && this.selectedTime && this.selectedServiceType && this.selectedChildren && this.selectedNannys);
   }
 
   viewContractedServices() {
@@ -703,6 +836,18 @@ export class ClientDashboardComponent implements OnInit {
   // Generar array de estrellas para mostrar
   getStarsArray(): number[] {
     return [1, 2, 3, 4, 5];
+  }
+
+  // Obtener texto de la calificación
+  getRatingText(rating: number): string {
+    switch (rating) {
+      case 1: return 'Muy malo';
+      case 2: return 'Malo';
+      case 3: return 'Regular';
+      case 4: return 'Bueno';
+      case 5: return 'Excelente';
+      default: return 'Sin calificar';
+    }
   }
 
   // Método para verificar si no hay servicios

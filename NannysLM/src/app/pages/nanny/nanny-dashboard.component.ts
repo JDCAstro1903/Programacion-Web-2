@@ -203,4 +203,15 @@ export class NannyDashboardComponent implements OnInit {
   getRatingStars(rating: number): string {
     return '★'.repeat(rating) + '☆'.repeat(5 - rating);
   }
+
+  getRatingText(rating: number): string {
+    switch (rating) {
+      case 1: return 'Muy malo';
+      case 2: return 'Malo';
+      case 3: return 'Regular';
+      case 4: return 'Bueno';
+      case 5: return 'Excelente';
+      default: return 'Sin calificar';
+    }
+  }
 }

@@ -358,6 +358,92 @@
   line-height: 1.3;
 }
 
+/* Sección de selección de niños y nannys */
+.children-nannys-section {
+  margin-bottom: 20px;
+}
+
+.children-nannys-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.selection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.selection-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selection-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.selection-select {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  color: #374151;
+  transition: border-color 0.2s ease;
+}
+
+.selection-select:focus {
+  outline: none;
+  border-color: #E31B7E;
+  box-shadow: 0 0 0 3px rgba(227, 27, 126, 0.1);
+}
+
+.selection-select:hover {
+  border-color: #d1d5db;
+}
+
+/* Alerta de recomendación */
+.nanny-recommendation-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 15px;
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+.alert-content strong {
+  color: #78350f;
+}
+
 /* Sección del calendario */
 .calendar-section {
   display: flex;
@@ -838,6 +924,21 @@
   
   .service-type-section {
     grid-column: span 1;
+  }
+
+  /* Responsive para selección de niños y nannys */
+  .selection-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .nanny-recommendation-alert {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .alert-content p {
+    font-size: 0.85rem;
   }
 }
 
@@ -2977,6 +3078,367 @@
   color: #64748b;
   margin: 0;
   font-size: 1rem;
+}
+
+/* ================================================
+   NUEVOS ESTILOS PARA HISTORIAL DE SERVICIOS
+   ================================================ */
+
+/* Vista del historial de servicios */
+.services-history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.service-history-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.service-history-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Header del servicio */
+.service-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.service-info-left h3.service-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.service-info-left .service-type {
+  font-size: 0.9rem;
+  color: #e31b7e;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+}
+
+.service-info-left .service-date {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.service-status .status-badge.completed {
+  background: #dcfce7;
+  color: #166534;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Detalles del servicio */
+.service-details-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.nanny-info-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nanny-avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f1f5f9;
+}
+
+.nanny-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.nanny-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.nanny-role {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Sección de calificación */
+.rating-section {
+  display: flex;
+  align-items: center;
+}
+
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stars-display {
+  display: flex;
+  gap: 2px;
+}
+
+.star-icon {
+  fill: #e5e7eb;
+  transition: fill 0.2s ease;
+}
+
+.star-icon.filled {
+  fill: #fbbf24;
+}
+
+.rating-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.rating-action .rate-btn {
+  background: #e31b7e;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+.rating-action .rate-btn:hover {
+  background: #be185d;
+  transform: translateY(-1px);
+}
+
+/* Sistema de calificación activo */
+.rating-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.stars-input {
+  display: flex;
+  gap: 4px;
+}
+
+.star-input {
+  fill: #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.star-input:hover,
+.star-input.filled {
+  fill: #fbbf24;
+  transform: scale(1.1);
+}
+
+.rating-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.save-rating-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.save-rating-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.save-rating-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.cancel-rating-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.cancel-rating-btn:hover {
+  background: #dc2626;
+}
+
+/* Acciones del servicio */
+.service-actions-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.action-btn.view-details {
+  background: #049bd7;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+.action-btn.view-details:hover {
+  background: #0284c7;
+  transform: translateY(-1px);
+}
+
+.service-cost {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.cost-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.cost-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+/* Instrucciones especiales */
+.service-instructions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.service-instructions h5 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+}
+
+.service-instructions p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Botón de volver */
+.back-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  background: #e5e7eb;
+  transform: translateX(-2px);
+}
+
+/* Responsive para historial de servicios */
+@media (max-width: 768px) {
+  .service-details-row {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .service-actions-compact {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .service-cost {
+    align-items: flex-start;
+  }
+
+  .rating-input {
+    width: 100%;
+  }
+
+  .rating-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .service-history-card {
+    padding: 1rem;
+  }
+
+  .service-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .service-info-left h3.service-title {
+    font-size: 1.1rem;
+  }
+
+  .nanny-info-compact {
+    gap: 0.5rem;
+  }
+
+  .nanny-avatar-small {
+    width: 35px;
+    height: 35px;
+  }
 }
 
 .stats-grid-modern {

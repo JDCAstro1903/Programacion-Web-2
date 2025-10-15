@@ -472,15 +472,143 @@
 
       <!-- Vista Servicios -->
       <div *ngIf="currentView === 'services'">
-        <div class="content-header">
-          <h2>Servicios</h2>
-          <p>Selecciona una fecha y hora</p>
-          <button class="contracted-services-btn" (click)="currentView = 'contracted-services'">
-            Servicios contratados
-          </button>
+        <!-- Vista del historial de servicios (por defecto) -->
+        <div *ngIf="servicesView === 'services-history'">
+          <div class="content-header">
+            <h2>Mis Servicios</h2>
+            <p>Historial de servicios completados y calificaciones</p>
+            <button class="contracted-services-btn" (click)="showNewServiceForm()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C13.1 2 14 2.9 14 4V10H20C21.1 10 22 10.9 22 12C22 13.1 21.1 14 20 14H14V20C14 21.1 13.1 22 12 22C10.9 22 10 21.1 10 20V14H4C2.9 14 2 13.1 2 12C2 10.9 2.9 10 4 10H10V4C10 2.9 10.9 2 12 2Z"/>
+              </svg>
+              Nuevo Servicio
+            </button>
+          </div>
+
+          <!-- Lista de servicios del historial -->
+          <div class="services-history-container">
+            <div *ngFor="let service of contractedServices" class="service-history-card">
+              <!-- Header del servicio -->
+              <div class="service-header">
+                <div class="service-info-left">
+                  <h3 class="service-title">{{ service.title }}</h3>
+                  <p class="service-type">{{ service.service.name }}</p>
+                  <p class="service-date">{{ formatContractedServiceDate(service) }}</p>
+                </div>
+                <div class="service-status">
+                  <span class="status-badge completed">{{ service.status }}</span>
+                </div>
+              </div>
+
+              <!-- Detalles del servicio -->
+              <div class="service-details-row">
+                <div class="nanny-info-compact">
+                  <img [src]="service.nanny.photo" [alt]="service.nanny.name" class="nanny-avatar-small">
+                  <div class="nanny-details">
+                    <span class="nanny-name">{{ service.nanny.name }}</span>
+                    <span class="nanny-role">Niñera certificada</span>
+                  </div>
+                </div>
+
+                <!-- Sección de calificación -->
+                <div class="rating-section">
+                  <div *ngIf="service.isRated" class="rating-display">
+                    <div class="stars-display">
+                      <svg *ngFor="let star of getStarsArray()" 
+                           [class.filled]="star <= service.rating"
+                           class="star-icon" width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                      </svg>
+                    </div>
+                    <span class="rating-text">{{ getRatingText(service.rating) }}</span>
+                  </div>
+
+                  <div *ngIf="!service.isRated && !service.showRating" class="rating-action">
+                    <button class="rate-btn" (click)="rateService(service.id)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                      </svg>
+                      Calificar
+                    </button>
+                  </div>
+
+                  <!-- Sistema de calificación activo -->
+                  <div *ngIf="service.showRating" class="rating-input">
+                    <div class="stars-input">
+                      <svg *ngFor="let star of getStarsArray()" 
+                           [class.filled]="star <= service.tempRating"
+                           class="star-input" 
+                           width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                           (click)="setRating(service.id, star)"
+                           (mouseenter)="onStarHover(service.id, star)"
+                           (mouseleave)="onStarLeave(service.id)">
+                        <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                      </svg>
+                    </div>
+                    <div class="rating-actions">
+                      <button class="save-rating-btn" (click)="setRating(service.id, service.tempRating)" [disabled]="service.tempRating === 0">
+                        Guardar
+                      </button>
+                      <button class="cancel-rating-btn" (click)="cancelRating(service.id)">
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Acciones del servicio -->
+              <div class="service-actions-compact">
+                <button class="action-btn view-details" (click)="openBankDetailsModal(service.nanny.name)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 4C2 3.45 2.45 3 3 3H21C21.55 3 22 3.45 22 4V20C22 20.55 21.55 21 21 21H3C2.45 21 2 20.55 2 20V4ZM4 5V19H20V5H4ZM6 7H18V9H6V7ZM6 11H14V13H6V11ZM6 15H10V17H6V15Z"/>
+                  </svg>
+                  Datos bancarios
+                </button>
+                
+                <div class="service-cost">
+                  <span class="cost-label">Costo:</span>
+                  <span class="cost-amount">$500.00 MXN</span>
+                </div>
+              </div>
+
+              <!-- Instrucciones si las hay -->
+              <div *ngIf="service.instructions" class="service-instructions">
+                <h5>Instrucciones especiales:</h5>
+                <p>{{ service.instructions }}</p>
+              </div>
+            </div>
+
+            <!-- Mensaje cuando no hay servicios -->
+            <div class="no-services-message" *ngIf="contractedServices.length === 0">
+              <div class="no-services-content">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="#e5e7eb" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+                <h3>No tienes servicios completados</h3>
+                <p>Cuando contrates y completes servicios, aparecerán aquí.</p>
+                <button class="book-service-btn" (click)="showNewServiceForm()">
+                  Contratar primer servicio
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div class="services-container">
+
+        <!-- Vista del formulario para nuevo servicio -->
+        <div *ngIf="servicesView === 'new-service'">
+          <div class="content-header">
+            <button class="back-btn" (click)="showServicesHistory()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 11H7.83L13.42 5.41L12 4L4 12L12 20L13.41 18.59L7.83 13H20V11Z"/>
+              </svg>
+              Volver al historial
+            </button>
+            <h2>Nuevo Servicio</h2>
+            <p>Selecciona fecha, hora y tipo de servicio</p>
+          </div>
+          
+          <div class="services-container">
           <!-- Selector de tipo de servicio -->
           <div class="service-type-section">
             <div class="service-type-card">
@@ -509,6 +637,61 @@
                       Puedes seleccionar un rango de fechas consecutivas
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector de niños y nannys -->
+          <div class="children-nannys-section">
+            <div class="children-nannys-card">
+              <div class="selection-grid">
+                <!-- Selector de número de niños -->
+                <div class="selection-item">
+                  <div class="selection-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2M4 18v-6h3v-3.5c0-1.1.9-2 2-2s2 .9 2 2V12h3v6H4z"/>
+                      <circle cx="12" cy="8" r="2"/>
+                      <path d="M15 13v5h-2v-8.5c0-1.1-.9-2-2-2s-2 .9-2 2V18H7v-5"/>
+                    </svg>
+                    <span>Número de niños</span>
+                  </div>
+                  <select class="selection-select" 
+                          [value]="selectedChildren" 
+                          (change)="onChildrenChange($event)">
+                    <option *ngFor="let num of getChildrenOptions()" [value]="num">
+                      {{ num }} {{ num === 1 ? 'niño' : 'niños' }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Selector de número de nannys -->
+                <div class="selection-item">
+                  <div class="selection-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7.5V8.5C15 9.1 14.6 9.5 14 9.5S13 9.1 13 8.5V7L12 6.5L11 7V8.5C11 9.1 10.6 9.5 10 9.5S9 9.1 9 8.5V7.5L3 7V9C3 10.1 3.9 11 5 11V19H19V11C20.1 11 21 10.1 21 9Z"/>
+                    </svg>
+                    <span>Número de nannys</span>
+                  </div>
+                  <select class="selection-select" 
+                          [value]="selectedNannys" 
+                          (change)="onNannysChange($event)">
+                    <option *ngFor="let num of getNannysOptions()" [value]="num">
+                      {{ num }} {{ num === 1 ? 'nanny' : 'nannys' }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Alerta de recomendación -->
+              <div class="nanny-recommendation-alert" *ngIf="shouldShowNannyRecommendation()">
+                <div class="alert-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5zM11 14h2v2h-2v-2zm0-6h2v4h-2V8z"/>
+                  </svg>
+                </div>
+                <div class="alert-content">
+                  <p><strong>Recomendación:</strong> Para 3 o más niños, se recomienda contratar 2 o más nannys para garantizar la mejor atención y seguridad.</p>
                 </div>
               </div>
             </div>
@@ -610,9 +793,11 @@
                 <p><strong>Servicio:</strong> {{ getSelectedServiceName() }}</p>
                 <p><strong>Fechas:</strong> {{ getDateRangeText() }}</p>
                 <p><strong>Hora:</strong> {{ selectedTime }}</p>
+                <p><strong>Niños:</strong> {{ selectedChildren }} {{ selectedChildren === 1 ? 'niño' : 'niños' }}</p>
+                <p><strong>Nannys:</strong> {{ selectedNannys }} {{ selectedNannys === 1 ? 'nanny' : 'nannys' }}</p>
               </div>
               <div class="no-reservation" *ngIf="!hasValidReservation()">
-                <p>aquí se mostrará el servicio, fecha(s) y hora</p>
+                <p>aquí se mostrará el servicio, fecha(s), hora, niños y nannys</p>
               </div>
               
               <div class="action-buttons">
@@ -628,6 +813,7 @@
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
