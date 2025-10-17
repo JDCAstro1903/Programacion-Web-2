@@ -13,7 +13,7 @@ export class LogoutModalComponent {
   @Input() isVisible: boolean = false;
   @Input() userName: string = '';
   @Input() userRole: string = '';
-  @Input() redirectRoute: string = '/user-selection'; // Ruta por defecto
+  @Input() redirectRoute: string = '/'; // Ruta por defecto - redirige al home
   
   @Output() onCancel = new EventEmitter<void>();
   @Output() onConfirm = new EventEmitter<void>();

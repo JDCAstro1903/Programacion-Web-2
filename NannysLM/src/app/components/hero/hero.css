@@ -326,12 +326,40 @@
   transform: translateY(-2px);
 }
 
+/* Transition Section */
+.hero-features-transition {
+  height: 80px;
+  background: linear-gradient(180deg, 
+    rgba(248, 250, 252, 0.8) 0%, 
+    rgba(226, 232, 240, 0.6) 30%,
+    rgba(248, 250, 252, 0.4) 70%,
+    rgba(248, 250, 252, 0.2) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-features-transition::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, 
+    rgba(108, 99, 255, 0.02) 0%, 
+    rgba(255, 105, 180, 0.01) 50%,
+    transparent 100%
+  );
+}
+
 /* Features Section */
 .features {
   padding: 5rem 2rem;
   text-align: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
   position: relative;
+  margin-top: -1px; /* Elimina cualquier espacio entre secciones */
 }
 
 .features::before {

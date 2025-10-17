@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
+import { AuthService } from '../../services/auth.service';
 
 // Interfaz para definir la estructura de un servicio
 interface Service {
@@ -105,7 +106,11 @@ export class NannyDashboardComponent implements OnInit {
     ]
   };
 
-  constructor(private userConfigService: UserConfigService, private router: Router) {
+  constructor(
+    private userConfigService: UserConfigService, 
+    private router: Router,
+    private authService: AuthService
+  ) {
     // Configurar sidebar específico para nanny con tema rosa como el admin
     this.sidebarConfig = {
       userType: 'admin', // Usar tema admin (rosa) para nanny también
@@ -160,7 +165,7 @@ export class NannyDashboardComponent implements OnInit {
 
   confirmLogout() {
     this.showLogoutModal = false;
-    this.router.navigate(['/user-selection']);
+    this.router.navigate(['/']);
     console.log('Nanny cerró sesión');
   }
 

@@ -2,6 +2,11 @@
 -- BASE DE DATOS NANNYSLM
 -- =====================================================
 
+-- Aspectos a considerar
+-- Quitar la pagina del login que nos redirecciona a los distintos usuarios
+-- Checar bien el Backend, carpetas, rutas y funcionamiento principalmente
+-- Hacer validaciones con directivas (hay q aprovechar el uso del framework)
+
 -- Crear la base de datos
 CREATE DATABASE IF NOT EXISTS nannyslm_db;
 USE nannyslm_db;
@@ -27,6 +32,7 @@ CREATE TABLE users (
     last_login TIMESTAMP NULL                             -- Última vez que inició sesión (para estadísticas)
 );
 
+-- cree la bd hasta aqui para ir probando el backend :)
 
 -- =====================================================
 -- TABLA DE CLIENTES
@@ -54,18 +60,6 @@ CREATE TABLE clients (
 CREATE TABLE nannys (
     id INT PRIMARY KEY AUTO_INCREMENT,                    -- ID único de la niñera en el sistema
     user_id INT UNIQUE NOT NULL,                          -- Referencia al usuario base (relación 1:1)
-    experience_years INT DEFAULT 0,                       -- Años de experiencia en cuidado infantil
-    --education_level VARCHAR(100),                         -- Nivel educativo (secundaria, universitario, etc.)
-    --certifications TEXT,                                  -- JSON con certificaciones (primeros auxilios, CPR, etc.)
-    --languages JSON,                                       -- Array de idiomas que habla (para familias multilingües)
-    availability_schedule JSON,                           -- Horarios disponibles por día de la semana
-    background_check_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending', -- Estado de verificación de antecedentes
-    background_check_date TIMESTAMP NULL,                 -- Fecha cuando se completó la verificación de antecedentes
-    --references TEXT,                                      -- JSON con referencias laborales y personales
-    --specialties JSON,                                     -- Especialidades (bebés, niños especiales, tareas educativas, etc.)
-    --transportation BOOLEAN DEFAULT FALSE,                 -- Si tiene vehículo propio para transporte de niños
-    --smoking BOOLEAN DEFAULT FALSE,                        -- Si fuma (importante para familias con alergias/preferencias)
-    --pets_comfortable BOOLEAN DEFAULT TRUE,                -- Si se siente cómoda con mascotas en el hogar
     description TEXT,                                     -- Descripción personal y enfoque de cuidado
     rating_average DECIMAL(3,2) DEFAULT 0.00,            -- Promedio de calificaciones recibidas (1.00 a 5.00)
     total_ratings INT DEFAULT 0,                         -- Total de calificaciones recibidas (para validar promedio)
@@ -92,10 +86,8 @@ CREATE TABLE services (
     start_time TIME NOT NULL,                             -- Hora de inicio del servicio
     end_time TIME NOT NULL,                               -- Hora de finalización del servicio
     total_hours DECIMAL(5,2),                            -- Total de horas del servicio (calculado)
-    --hourly_rate DECIMAL(10,2),                           -- Tarifa por hora acordada para este servicio
     total_amount DECIMAL(10,2),                          -- Monto total a pagar (horas × tarifa)
     number_of_children INT DEFAULT 1,                    -- Número de niños a cuidar en este servicio
-    --children_ages JSON,                                   -- Array con las edades de los niños a cuidar
     special_instructions TEXT,                            -- Instrucciones específicas para la niñera
     address TEXT,                                         -- Dirección donde se realizará el servicio
     status ENUM('pending', 'confirmed', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending', -- Estado actual del servicio
@@ -138,15 +130,12 @@ CREATE TABLE payments (
     client_id INT NOT NULL,                               -- Cliente que realiza el pago
     nanny_id INT NOT NULL,                                -- Niñera que recibirá el pago
     amount DECIMAL(10,2) NOT NULL,                        -- Monto total del pago
-    --payment_method ENUM('credit_card', 'debit_card', 'bank_transfer', 'cash', 'paypal') NOT NULL, -- Método de pago utilizado
     payment_status ENUM('pending', 'processing', 'completed', 'failed', 'refunded') DEFAULT 'pending', -- Estado del pago
     transaction_id VARCHAR(100),                          -- ID de transacción del procesador de pagos
     platform_fee DECIMAL(10,2) DEFAULT 0.00,             -- Comisión que retiene la plataforma
     nanny_amount DECIMAL(10,2),                           -- Cantidad neta que recibe la niñera (monto - comisión)
     payment_date TIMESTAMP NULL,                          -- Fecha cuando se procesó exitosamente el pago
-    --due_date TIMESTAMP,                                   -- Fecha límite para realizar el pago
     receipt_url VARCHAR(500),                             -- URL del comprobante de pago subido por el cliente
-    --notes TEXT,                                           -- Notas adicionales sobre el pago
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,       -- Fecha cuando se creó el registro de pago
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Última actualización del pago
     FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
@@ -165,7 +154,6 @@ CREATE TABLE bank_details (
     bank_name VARCHAR(100) NOT NULL,                      -- Nombre del banco (BBVA, Santander, Banorte, etc.)
     account_number VARCHAR(50) NOT NULL,                  -- Número de cuenta bancaria
     clabe VARCHAR(18),                                    -- CLABE interbancaria (para México, 18 dígitos)
-    --routing_number VARCHAR(20),                           -- Número de routing (para otros países como USA)
     account_type ENUM('checking', 'savings') DEFAULT 'checking', -- Tipo de cuenta (corriente o ahorro)
     is_primary BOOLEAN DEFAULT FALSE,                     -- Si es la cuenta principal para recibir pagos
     is_active BOOLEAN DEFAULT TRUE,                       -- Si la cuenta está activa para recibir transferencias
@@ -205,26 +193,6 @@ CREATE TABLE client_favorites (
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
     FOREIGN KEY (nanny_id) REFERENCES nannys(id) ON DELETE CASCADE,
     UNIQUE KEY unique_favorite (client_id, nanny_id)      -- Un cliente no puede marcar la misma niñera dos veces
-);
-
--- =====================================================
--- TABLA DE MENSAJES/CHAT
--- Sistema de mensajería entre usuarios de la plataforma
--- =====================================================
-CREATE TABLE messages (
-    id INT PRIMARY KEY AUTO_INCREMENT,                    -- ID único del mensaje
-    service_id INT,                                       -- Servicio relacionado (opcional, para contexto)
-    sender_id INT NOT NULL,                               -- Usuario que envía el mensaje
-    receiver_id INT NOT NULL,                             -- Usuario que recibe el mensaje
-    message TEXT NOT NULL,                                -- Contenido del mensaje
-    message_type ENUM('text', 'image', 'file') DEFAULT 'text', -- Tipo de mensaje (texto, imagen o archivo)
-    file_url VARCHAR(500),                                -- URL del archivo si el mensaje incluye uno
-    is_read BOOLEAN DEFAULT FALSE,                        -- Si el receptor ya leyó el mensaje
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,       -- Fecha y hora del envío
-    read_at TIMESTAMP NULL,                               -- Fecha y hora cuando se leyó
-    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL,
-    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- =====================================================

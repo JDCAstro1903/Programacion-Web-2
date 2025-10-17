@@ -10,8 +10,8 @@ require('dotenv').config();
 // Importar configuración de base de datos
 const { testConnection } = require('./src/config/database');
 
-// Importar rutas (las crearemos después)
-// const authRoutes = require('./src/routes/auth');
+// Importar rutas
+const authRoutes = require('./src/routes/auth');
 // const userRoutes = require('./src/routes/users');
 
 const app = express();
@@ -87,8 +87,8 @@ app.get('/api/info', (req, res) => {
     });
 });
 
-// Aquí irán las rutas principales cuando las creemos
-// app.use('/api/auth', authRoutes);
+// Rutas principales de la API
+app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
 
 // ===============================================
@@ -123,36 +123,36 @@ const startServer = async () => {
         const dbConnected = await testConnection();
         
         if (!dbConnected) {
-            console.error('❌ No se pudo conectar a la base de datos');
-            console.log('🔧 Verifica la configuración en el archivo .env');
+            console.error(' No se pudo conectar a la base de datos');
+            console.log(' Verifica la configuración en el archivo .env');
             process.exit(1);
         }
         
         // Iniciar servidor
         app.listen(PORT, () => {
-            console.log('🚀 ==========================================');
-            console.log(`🚀 Servidor NannysLM iniciado exitosamente`);
-            console.log(`🚀 Puerto: ${PORT}`);
-            console.log(`🚀 Entorno: ${process.env.NODE_ENV}`);
-            console.log(`🚀 URL: http://localhost:${PORT}`);
-            console.log(`🚀 API Health: http://localhost:${PORT}/api/health`);
-            console.log('🚀 ==========================================');
+            console.log(' ==========================================');
+            console.log(` Servidor NannysLM iniciado exitosamente`);
+            console.log(` Puerto: ${PORT}`);
+            console.log(` Entorno: ${process.env.NODE_ENV}`);
+            console.log(` URL: http://localhost:${PORT}`);
+            console.log(` API Health: http://localhost:${PORT}/api/health`);
+            console.log(' ==========================================');
         });
         
     } catch (error) {
-        console.error('❌ Error al iniciar el servidor:', error);
+        console.error(' Error al iniciar el servidor:', error);
         process.exit(1);
     }
 };
 
 // Manejo de cierre graceful
 process.on('SIGTERM', () => {
-    console.log('🛑 Recibida señal SIGTERM, cerrando servidor...');
+    console.log(' Recibida señal SIGTERM, cerrando servidor...');
     process.exit(0);
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 Recibida señal SIGINT, cerrando servidor...');
+    console.log(' Recibida señal SIGINT, cerrando servidor...');
     process.exit(0);
 });
 

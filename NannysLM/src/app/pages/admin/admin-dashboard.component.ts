@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -20,7 +21,11 @@ export class AdminDashboardComponent implements OnInit {
   // Configuración del sidebar
   sidebarConfig: SidebarConfig;
 
-  constructor(private userConfigService: UserConfigService, private router: Router) {
+    constructor(
+    private router: Router,
+    private userConfigService: UserConfigService,
+    private authService: AuthService
+  ) {
     this.sidebarConfig = this.userConfigService.getSidebarConfig('admin');
   }
 
@@ -679,7 +684,7 @@ export class AdminDashboardComponent implements OnInit {
   confirmLogout() {
     this.showLogoutModal = false;
     // Navegar a la selección de usuario
-    this.router.navigate(['/user-selection']);
+    this.router.navigate(['/']);
     console.log('Usuario cerró sesión');
   }
 
