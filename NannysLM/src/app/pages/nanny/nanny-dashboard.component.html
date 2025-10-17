@@ -35,120 +35,355 @@
     <!-- Contenido principal -->
     <main class="main-content">
       <!-- Vista Inicio -->
-      <div *ngIf="currentView === 'dashboard'">
+      <div *ngIf="currentView === 'dashboard'" class="dashboard-home">
         <div class="content-header">
-          <h2>Inicio</h2>
-          <p>Resumen general de la plataforma</p>
+          <h2>¡Bienvenida de vuelta, {{ currentUser.name }}!</h2>
+          <p>Resumen de tu actividad y próximos servicios</p>
         </div>
         
-        <div class="dashboard-grid">
+        <!-- Tarjeta de bienvenida principal -->
+        <div class="welcome-hero-card">
+          <div class="hero-content">
+            <div class="hero-text">
+              <h3>Tu trabajo como niñera profesional</h3>
+              <p>Gestiona tus servicios programados y mantén un registro de tu excelente trabajo con las familias.</p>
+              <div class="hero-actions">
+                <button class="cta-btn primary" (click)="currentView = 'services'">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19ZM7 10H9V12H7V10ZM11 10H13V12H11V10ZM15 10H17V12H15V10Z"/>
+                  </svg>
+                  Ver servicios
+                </button>
+                <button class="cta-btn secondary" (click)="getMoreInfo(1)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1V3H9V1L3 7V9H21ZM12 8L19.5 15.5L12 23L4.5 15.5L12 8Z"/>
+                  </svg>
+                  Próximo servicio
+                </button>
+              </div>
+            </div>
+            <div class="hero-illustration">
+              <div class="floating-card">
+                <div class="floating-content">
+                  <div class="service-preview">
+                    <h4>{{ nextService.date }}</h4>
+                    <p>{{ nextService.time }}</p>
+                    <span class="client-name">{{ nextService.client }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid de resumen rápido -->
+        <div class="dashboard-overview-grid">
           <!-- Próximo servicio -->
-          <div class="service-card main-card">
+          <div class="overview-card next-service">
             <div class="card-header">
-              <h3>Próximo servicio</h3>
+              <div class="card-icon services">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19ZM7 10H9V12H7V10ZM11 10H13V12H11V10ZM15 10H17V12H15V10Z"/>
+                </svg>
+              </div>
+              <div class="card-title">
+                <h3>Próximo Servicio</h3>
+                <p>Tu siguiente trabajo programado</p>
+              </div>
             </div>
-            <div class="service-details">
-              <div class="service-date">{{ nextService.date }}</div>
-              <div class="service-location">{{ nextService.location }}</div>
-              <div class="service-time">{{ nextService.time }}</div>
-              <button class="info-btn" (click)="getMoreInfo(1)">Más información</button>
+            <div class="card-content">
+              <div class="service-details-compact">
+                <div class="service-date-large">{{ nextService.date }}</div>
+                <div class="service-time-highlight">{{ nextService.time }}</div>
+                <div class="service-client-info">
+                  <strong>Cliente:</strong> {{ nextService.client }}
+                </div>
+                <div class="service-location-brief">{{ nextService.location }}</div>
+              </div>
+              <button class="card-action-btn" (click)="getMoreInfo(1)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C13.65 2 15 3.35 15 5C15 6.65 13.65 8 12 8C10.35 8 9 6.65 9 5C9 3.35 10.35 2 12 2ZM21 9V7L15 1V3H9V1L3 7V9H21Z"/>
+                </svg>
+                Ver detalles
+              </button>
             </div>
           </div>
 
-          <!-- Calificaciones -->
-          <div class="stats-card">
-            <div class="stats-header">
-              <h3>Calificaciones</h3>
-            </div>
-            <div class="rating-display">
-              <div class="rating-number">{{ stats.rating }}</div>
-              <div class="rating-stars">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#fbbf24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+          <!-- Calificaciones promedio -->
+          <div class="overview-card rating-summary">
+            <div class="card-header">
+              <div class="card-icon rating">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                 </svg>
+              </div>
+              <div class="card-title">
+                <h3>Calificación Promedio</h3>
+                <p>Evaluación de las familias</p>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="rating-display-large">
+                <div class="rating-number">{{ stats.rating }}</div>
+                <div class="rating-stars-row">
+                  <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= stats.rating" class="star-icon" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                  </svg>
+                </div>
+                <span class="rating-label">Excelente trabajo</span>
               </div>
             </div>
           </div>
 
-          <!-- Servicios realizados -->
-          <div class="stats-card">
-            <div class="stats-header">
-              <h3>Servicios realizados</h3>
-            </div>
-            <div class="services-count">
-              <div class="count-number">{{ stats.totalServices }}</div>
-              <div class="count-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
+          <!-- Servicios completados -->
+          <div class="overview-card services-summary">
+            <div class="card-header">
+              <div class="card-icon completed">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01"/>
+                  <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" fill="none"/>
                 </svg>
+              </div>
+              <div class="card-title">
+                <h3>Servicios Realizados</h3>
+                <p>Total de trabajos completados</p>
+              </div>
+            </div>
+            <div class="card-content">
+              <div class="service-stats">
+                <div class="stat-item">
+                  <span class="stat-number">{{ stats.totalServices }}</span>
+                  <span class="stat-label">Completados</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-number">{{ services.upcoming.length }}</span>
+                  <span class="stat-label">Próximos</span>
+                </div>
+              </div>
+              <button class="card-action-btn" (click)="currentView = 'services'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3Z"/>
+                </svg>
+                Ver todos
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de acceso rápido -->
+        <div class="quick-access-section">
+          <div class="section-header">
+            <h3>Acceso Rápido</h3>
+            <p>Funciones más utilizadas</p>
+          </div>
+          
+          <div class="quick-access-grid">
+            <button class="quick-access-item" (click)="currentView = 'services'">
+              <div class="access-icon primary">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19Z"/>
+                </svg>
+              </div>
+              <div class="access-content">
+                <h4>Mis Servicios</h4>
+                <p>Ver programación completa</p>
+              </div>
+              <div class="access-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </div>
+            </button>
+
+            <button class="quick-access-item" (click)="setServiceFilter('upcoming')">
+              <div class="access-icon secondary">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C13.65 2 15 3.35 15 5C15 6.65 13.65 8 12 8C10.35 8 9 6.65 9 5C9 3.35 10.35 2 12 2Z"/>
+                </svg>
+              </div>
+              <div class="access-content">
+                <h4>Próximos Servicios</h4>
+                <p>Trabajos programados</p>
+              </div>
+              <div class="access-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </div>
+            </button>
+
+            <button class="quick-access-item" (click)="setServiceFilter('past')">
+              <div class="access-icon tertiary">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </div>
+              <div class="access-content">
+                <h4>Historial</h4>
+                <p>Servicios completados</p>
+              </div>
+              <div class="access-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Últimos servicios completados (si los hay) -->
+        <div class="recent-activity-section" *ngIf="services.past.length > 0">
+          <div class="section-header">
+            <h3>Actividad Reciente</h3>
+            <p>Tus últimos servicios completados</p>
+          </div>
+          
+          <div class="recent-services-list">
+            <div *ngFor="let service of services.past.slice(0, 2)" class="recent-service-item">
+              <div class="service-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </div>
+              <div class="service-details">
+                <h4>{{ service.client }}</h4>
+                <p>{{ service.dateDisplay }} - {{ service.time }}</p>
+              </div>
+              <div class="service-status">
+                <div class="rating-compact" *ngIf="service.rating">
+                  <span class="rating-stars">{{ getRatingStars(service.rating) }}</span>
+                </div>
               </div>
             </div>
           </div>
+          
+          <button class="view-all-btn" (click)="currentView = 'services'; setServiceFilter('past')">
+            Ver todos los servicios
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" fill="none"/>
+            </svg>
+          </button>
         </div>
       </div>
 
       <!-- Vista Servicios -->
-      <div *ngIf="currentView === 'services'">
+      <div *ngIf="currentView === 'services'" class="services-view">
         <div class="content-header">
-          <h2>Servicios</h2>
-          <p>Actividades próximas y pasadas</p>
+          <h2>Mis Servicios</h2>
+          <p>Gestiona tus trabajos programados y completados</p>
         </div>
         
-        <!-- Filtros de servicios -->
-        <div class="service-filters">
-          <button 
-            class="filter-btn" 
-            [class.active]="isServiceFilterActive('upcoming')"
-            (click)="setServiceFilter('upcoming')">
-            Próximos servicios
-          </button>
-          <button 
-            class="filter-btn" 
-            [class.active]="isServiceFilterActive('past')"
-            (click)="setServiceFilter('past')">
-            Servicios realizados
-          </button>
+        <!-- Filtros de servicios modernizados -->
+        <div class="services-filter-section">
+          <div class="filter-header">
+            <h3>Filtrar servicios</h3>
+            <p>Selecciona el tipo de servicios que deseas ver</p>
+          </div>
+          <div class="service-filters-modern">
+            <button 
+              class="filter-btn-modern" 
+              [class.active]="isServiceFilterActive('upcoming')"
+              (click)="setServiceFilter('upcoming')">
+              <div class="filter-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19ZM7 10H9V12H7V10ZM11 10H13V12H11V10ZM15 10H17V12H15V10Z"/>
+                </svg>
+              </div>
+              <div class="filter-content">
+                <span class="filter-title">Próximos Servicios</span>
+                <span class="filter-count">{{ services.upcoming.length }}</span>
+              </div>
+            </button>
+            
+            <button 
+              class="filter-btn-modern" 
+              [class.active]="isServiceFilterActive('past')"
+              (click)="setServiceFilter('past')">
+              <div class="filter-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>
+              </div>
+              <div class="filter-content">
+                <span class="filter-title">Servicios Realizados</span>
+                <span class="filter-count">{{ services.past.length }}</span>
+              </div>
+            </button>
+          </div>
         </div>
 
-        <!-- Lista de servicios -->
-        <div class="services-list">
-          <!-- Servicios filtrados según la selección actual -->
-          <div *ngFor="let service of getFilteredServices()" 
-               class="service-item" 
-               [class.past-service]="service.status === 'completed'">
-            <div class="service-info">
-              <div class="service-meta">
-                <span class="service-date-label">Fecha: {{ service.dateDisplay }}</span>
-                <span class="service-time-label">Horario: {{ service.time }}</span>
+        <!-- Lista de servicios modernizada -->
+        <div class="services-list-modern">
+          <div *ngFor="let service of getFilteredServices()" class="service-card-modern">
+            <!-- Header del servicio -->
+            <div class="service-header-modern">
+              <div class="service-info-left">
+                <h3 class="service-client-name">{{ service.client }}</h3>
+                <p class="service-date-time">{{ service.dateDisplay }} • {{ service.time }}</p>
+                <p class="service-location-compact">{{ service.location }}</p>
               </div>
-              <div class="service-client">Cliente: {{ service.client }}</div>
-              <div class="service-location-full">
-                Ubicación: {{ service.location }}
-              </div>
-              <div class="service-instructions">
-                <strong>Indicaciones:</strong><br>
-                {{ service.instructions }}
-              </div>
-              <div class="service-rating" *ngIf="service.rating && service.status === 'completed'">
-                <strong>Calificación recibida:</strong> 
-                <span class="rating-stars">{{ getRatingStars(service.rating) }}</span>
+              <div class="service-status-right">
+                <span class="status-badge" [class]="service.status === 'upcoming' ? 'upcoming' : 'completed'">
+                  {{ service.status === 'upcoming' ? 'Próximo' : 'Completado' }}
+                </span>
               </div>
             </div>
-            <div class="service-actions">
-              <button 
-                class="profile-btn" 
-                [class.secondary]="service.status === 'completed'"
-                (click)="viewClientProfile(service.client)">
+
+            <!-- Contenido del servicio -->
+            <div class="service-content-modern">
+              <div class="service-instructions-section">
+                <h5>Instrucciones especiales:</h5>
+                <p>{{ service.instructions }}</p>
+              </div>
+
+              <!-- Calificación (solo para servicios completados) -->
+              <div class="service-rating-section" *ngIf="service.rating && service.status === 'completed'">
+                <div class="rating-received">
+                  <span class="rating-label">Calificación recibida:</span>
+                  <div class="rating-stars-display">
+                    <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= service.rating" class="star-icon" width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                    </svg>
+                  </div>
+                  <span class="rating-text">{{ getRatingText(service.rating) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones del servicio -->
+            <div class="service-actions-modern">
+              <button class="action-btn-modern primary" (click)="viewClientProfile(service.client)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"/>
+                </svg>
                 Ver perfil del cliente
+              </button>
+              
+              <button class="action-btn-modern secondary" (click)="getMoreInfo(service.id)" *ngIf="service.status === 'upcoming'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM12 8C13.1 8 14 8.9 14 10C14 11.1 13.1 12 12 12C10.9 12 10 11.1 10 10C10 8.9 10.9 8 12 8ZM12 14C13.1 14 14 14.9 14 16C14 17.1 13.1 18 12 18C10.9 18 10 17.1 10 16C10 14.9 10.9 14 12 14Z"/>
+                </svg>
+                Más información
               </button>
             </div>
           </div>
           
           <!-- Mensaje cuando no hay servicios -->
-          <div *ngIf="getFilteredServices().length === 0" class="no-services-message">
-            <p *ngIf="currentServiceFilter === 'upcoming'">No tienes próximos servicios programados.</p>
-            <p *ngIf="currentServiceFilter === 'past'">No tienes servicios realizados aún.</p>
+          <div *ngIf="getFilteredServices().length === 0" class="no-services-message-modern">
+            <div class="no-services-content">
+              <div class="no-services-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="#e5e7eb" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19Z"/>
+                </svg>
+              </div>
+              <h3 *ngIf="currentServiceFilter === 'upcoming'">No tienes próximos servicios</h3>
+              <h3 *ngIf="currentServiceFilter === 'past'">No tienes servicios completados</h3>
+              <p *ngIf="currentServiceFilter === 'upcoming'">Cuando tengas servicios programados, aparecerán aquí.</p>
+              <p *ngIf="currentServiceFilter === 'past'">Cuando completes servicios, aparecerán aquí con sus calificaciones.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -160,7 +395,7 @@
     [isVisible]="showLogoutModal"
     [userName]="currentUser.name"
     [userRole]="currentUser.role"
-    [redirectRoute]="'/user-selection'"
+    [redirectRoute]="'/'"
     (onCancel)="closeLogoutModal()"
     (onConfirm)="confirmLogout()">
   </app-logout-modal>

@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
+import { AuthService } from '../../services/auth.service';
 
 // Interfaz para definir la estructura de un servicio del cliente
 interface ClientService {
@@ -29,11 +30,20 @@ export class ClientDashboardComponent implements OnInit {
   // Vista actual del dashboard
   currentView: string = 'dashboard';
   
+  // Vista de servicios específica
+  servicesView: string = 'services-history'; // 'services-history' o 'new-service'
+  
   // Configuración del sidebar
   sidebarConfig: SidebarConfig;
   
   // Estado del modal de logout
   showLogoutModal: boolean = false;
+
+  // Estado del modal de datos bancarios
+  showBankDetailsModal: boolean = false;
+
+  // Datos bancarios activos para mostrar en el modal
+  currentBankData: any = null;
 
   // Estado para mostrar servicio creado
   showServiceDetails: boolean = false;
@@ -51,11 +61,65 @@ export class ClientDashboardComponent implements OnInit {
       instructions: 'El niño tiene que comer temprano',
       service: { name: 'Cuidado Nocturno' },
       nanny: {
-        name: 'Leslie RuiZ',
+        name: 'Leslie Ruiz',
+        photo: 'assets/logo.png'
+      },
+      isRated: true,
+      rating: 5,
+      showRating: false,
+      tempRating: 0
+    },
+    {
+      id: 2,
+      title: 'Sesion 15 de Marzo',
+      status: 'Finalizado',
+      startTime: '08:00',
+      endTime: '18:00',
+      date: new Date(2025, 2, 15), // 15 de marzo 2025
+      instructions: 'Llevar al parque después del almuerzo',
+      service: { name: 'Niñeras a domicilio' },
+      nanny: {
+        name: 'Ana Martínez',
+        photo: 'assets/logo.png'
+      },
+      isRated: true,
+      rating: 4,
+      showRating: false,
+      tempRating: 0
+    },
+    {
+      id: 3,
+      title: 'Sesion 10 de Marzo',
+      status: 'Finalizado',
+      startTime: '14:00',
+      endTime: '20:00',
+      date: new Date(2025, 2, 10), // 10 de marzo 2025
+      instructions: 'Ayuda con tareas escolares',
+      service: { name: 'Niñeras a domicilio' },
+      nanny: {
+        name: 'Sofia López',
         photo: 'assets/logo.png'
       },
       isRated: false,
       rating: 0,
+      showRating: false,
+      tempRating: 0
+    },
+    {
+      id: 4,
+      title: 'Sesion 5 de Marzo',
+      status: 'Finalizado',
+      startTime: '19:00',
+      endTime: '07:00',
+      date: new Date(2025, 2, 5), // 5 de marzo 2025
+      instructions: 'Cuidado nocturno para bebé de 6 meses',
+      service: { name: 'Cuidado Nocturno' },
+      nanny: {
+        name: 'María González',
+        photo: 'assets/logo.png'
+      },
+      isRated: true,
+      rating: 5,
       showRating: false,
       tempRating: 0
     }
@@ -78,19 +142,25 @@ export class ClientDashboardComponent implements OnInit {
   // Lista de pagos
   paymentsList = [
     {
+      id: 1,
       session: 'Sesion #1',
       amount: '500.00',
-      status: 'pagado'
+      status: 'pagado',
+      date: new Date(2025, 2, 15) // 15 de marzo 2025
     },
     {
+      id: 2,
       session: 'Sesion #2',
       amount: '500.00',
-      status: 'Sin verificar'
+      status: 'Sin verificar',
+      date: new Date(2025, 2, 22) // 22 de marzo 2025
     },
     {
+      id: 3,
       session: 'Sesion #3',
       amount: '500.00',
-      status: 'Sin verificar'
+      status: 'Sin verificar',
+      date: new Date(2025, 2, 29) // 29 de marzo 2025
     }
   ];
 
@@ -99,6 +169,8 @@ export class ClientDashboardComponent implements OnInit {
   selectedEndDate: Date | null = null;
   selectedTime: string = '';
   selectedServiceType: string = '';
+  selectedChildren: number = 1;
+  selectedNannys: number = 1;
   currentMonth: number = new Date().getMonth();
   currentYear: number = new Date().getFullYear();
   availableTimes: string[] = [
@@ -163,7 +235,59 @@ export class ClientDashboardComponent implements OnInit {
     past: []
   };
 
-  constructor(private userConfigService: UserConfigService, private router: Router) {
+  // Datos bancarios de las nannys (simulando datos desde backend)
+  nannyBankData: { [nannyName: string]: any } = {
+    'Leslie Ruiz': {
+      id: 1,
+      nanny_nombre: 'Leslie Ruiz',
+      banco: 'BBVA Bancomer',
+      numero_cuenta: '1234567890',
+      numero_cuenta_oculto: '****7890',
+      clabe: '012180001234567890',
+      nombre_titular: 'Leslie Ruiz',
+      tipo_cuenta: 'ahorro',
+      es_activa: true
+    },
+    'Ana Martínez': {
+      id: 2,
+      nanny_nombre: 'Ana Martínez',
+      banco: 'Santander',
+      numero_cuenta: '0987654321',
+      numero_cuenta_oculto: '****4321',
+      clabe: '014320000987654321',
+      nombre_titular: 'Ana Martínez',
+      tipo_cuenta: 'corriente',
+      es_activa: true
+    },
+    'Sofia López': {
+      id: 3,
+      nanny_nombre: 'Sofia López',
+      banco: 'Banorte',
+      numero_cuenta: '5678909876',
+      numero_cuenta_oculto: '****9876',
+      clabe: '072580005678909876',
+      nombre_titular: 'Sofia López',
+      tipo_cuenta: 'ahorro',
+      es_activa: false
+    },
+    'María González': {
+      id: 4,
+      nanny_nombre: 'María González',
+      banco: 'Banamex',
+      numero_cuenta: '1122334455',
+      numero_cuenta_oculto: '****4455',
+      clabe: '002180001122334455',
+      nombre_titular: 'María González',
+      tipo_cuenta: 'ahorro',
+      es_activa: true
+    }
+  };
+
+  constructor(
+    private userConfigService: UserConfigService, 
+    private router: Router,
+    private authService: AuthService
+  ) {
     // Configurar sidebar específico para cliente con tema rosa
     this.sidebarConfig = {
       userType: 'admin', // Usar tema admin (rosa) para consistencia
@@ -207,10 +331,30 @@ export class ClientDashboardComponent implements OnInit {
   // Métodos de navegación
   setCurrentView(view: string) {
     this.currentView = view;
+    // Si estamos cambiando a servicios, mostrar historial por defecto
+    if (view === 'services') {
+      this.servicesView = 'services-history';
+    }
   }
 
   onViewChange(view: string) {
     this.setCurrentView(view);
+  }
+
+  // Métodos para manejar las vistas de servicios
+  showServicesHistory() {
+    this.servicesView = 'services-history';
+  }
+
+  showNewServiceForm() {
+    this.servicesView = 'new-service';
+    // Limpiar selecciones previas
+    this.selectedDate = null;
+    this.selectedEndDate = null;
+    this.selectedTime = '';
+    this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   onSidebarLogout() {
@@ -228,7 +372,7 @@ export class ClientDashboardComponent implements OnInit {
 
   confirmLogout() {
     this.showLogoutModal = false;
-    this.router.navigate(['/user-selection']);
+    this.router.navigate(['/']);
     console.log('Cliente cerró sesión');
   }
 
@@ -340,6 +484,36 @@ export class ClientDashboardComponent implements OnInit {
     return this.selectedServiceType === 'night-care';
   }
 
+  // Métodos para manejar número de niños y nannys
+  onChildrenChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.selectedChildren = parseInt(target.value, 10);
+    
+    // Auto-sugerir número de nannys basado en número de niños
+    if (this.selectedChildren >= 3 && this.selectedNannys < 2) {
+      this.selectedNannys = 2;
+    }
+  }
+
+  onNannysChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.selectedNannys = parseInt(target.value, 10);
+  }
+
+  // Verificar si mostrar la alerta de recomendación
+  shouldShowNannyRecommendation(): boolean {
+    return this.selectedChildren >= 3 && this.selectedNannys < 2;
+  }
+
+  // Generar opciones para los combobox
+  getChildrenOptions(): number[] {
+    return Array.from({length: 8}, (_, i) => i + 1); // 1-8 niños
+  }
+
+  getNannysOptions(): number[] {
+    return Array.from({length: 5}, (_, i) => i + 1); // 1-5 nannys
+  }
+
   getDaysInMonth(): number[] {
     const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(this.currentYear, this.currentMonth, 1).getDay();
@@ -382,6 +556,8 @@ export class ClientDashboardComponent implements OnInit {
     this.selectedEndDate = null;
     this.selectedTime = '';
     this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   nextMonth() {
@@ -395,6 +571,8 @@ export class ClientDashboardComponent implements OnInit {
     this.selectedEndDate = null;
     this.selectedTime = '';
     this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   isSelectedDate(day: number): boolean {
@@ -469,7 +647,7 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   confirmReservation() {
-    if (this.selectedDate && this.selectedTime && this.selectedServiceType) {
+    if (this.selectedDate && this.selectedTime && this.selectedServiceType && this.selectedChildren && this.selectedNannys) {
       // Crear el servicio con los datos seleccionados
       const endDate = this.selectedEndDate || this.selectedDate;
       
@@ -482,6 +660,8 @@ export class ClientDashboardComponent implements OnInit {
         date: this.selectedDate,
         endDate: endDate,
         instructions: '',
+        children: this.selectedChildren,
+        nannys: this.selectedNannys,
         service: this.serviceTypes.find(s => s.id === this.selectedServiceType),
         nanny: {
           name: 'Leslie RuiZ',
@@ -518,6 +698,11 @@ export class ClientDashboardComponent implements OnInit {
       tempRating: 0
     };
     this.contractedServices.unshift(contractedService);
+    
+    // Después de agregar el servicio, volver al historial
+    this.showServiceDetails = false;
+    this.currentView = 'services';
+    this.servicesView = 'services-history';
   }
 
   // Cancelar servicio
@@ -592,10 +777,12 @@ export class ClientDashboardComponent implements OnInit {
     this.selectedEndDate = null;
     this.selectedTime = '';
     this.selectedServiceType = '';
+    this.selectedChildren = 1;
+    this.selectedNannys = 1;
   }
 
   hasValidReservation(): boolean {
-    return !!(this.selectedDate && this.selectedTime && this.selectedServiceType);
+    return !!(this.selectedDate && this.selectedTime && this.selectedServiceType && this.selectedChildren && this.selectedNannys);
   }
 
   viewContractedServices() {
@@ -656,6 +843,18 @@ export class ClientDashboardComponent implements OnInit {
     return [1, 2, 3, 4, 5];
   }
 
+  // Obtener texto de la calificación
+  getRatingText(rating: number): string {
+    switch (rating) {
+      case 1: return 'Muy malo';
+      case 2: return 'Malo';
+      case 3: return 'Regular';
+      case 4: return 'Bueno';
+      case 5: return 'Excelente';
+      default: return 'Sin calificar';
+    }
+  }
+
   // Método para verificar si no hay servicios
   hasNoServices(): boolean {
     return this.services.upcoming.length === 0 && this.services.past.length === 0;
@@ -704,5 +903,153 @@ export class ClientDashboardComponent implements OnInit {
 
   getPaymentStatusClass(status: string): string {
     return status === 'pagado' ? 'status-paid' : 'status-pending';
+  }
+
+  // Métodos para el apartado de pagos mejorado
+  getPaidPaymentsCount(): number {
+    return this.paymentsList.filter(payment => payment.status === 'pagado').length;
+  }
+
+  getPendingPaymentsCount(): number {
+    return this.paymentsList.filter(payment => payment.status !== 'pagado').length;
+  }
+
+  getTotalAmount(): string {
+    const total = this.paymentsList
+      .filter(payment => payment.status === 'pagado')
+      .reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+    return total.toFixed(2);
+  }
+
+  trackByPayment(index: number, payment: any): any {
+    return payment.id;
+  }
+
+  getPaymentIconClass(status: string): string {
+    return status === 'pagado' ? 'icon-paid' : 'icon-pending';
+  }
+
+  getStatusText(status: string): string {
+    switch (status) {
+      case 'pagado':
+        return 'Confirmado';
+      case 'Sin verificar':
+        return 'En Verificación';
+      default:
+        return status;
+    }
+  }
+
+  getPaymentDate(payment: any): string {
+    if (!payment.date) return 'Sin fecha';
+    
+    const date = new Date(payment.date);
+    const day = date.getDate();
+    const monthNames = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day} ${month} ${year}`;
+  }
+
+  uploadReceiptForPayment(payment: any): void {
+    if (payment.status === 'pagado') return;
+    
+    console.log('Subir comprobante para:', payment.session);
+    this.triggerReceiptUpload();
+  }
+
+  copyBankDetails(): void {
+    const bankDetails = `
+Banco: Banco Nacional de Desarrollo
+Titular: NannysLM Servicios S.A.
+Número de Cuenta: 1234-5678-9012-3456
+CLABE: 014320123456789012
+    `.trim();
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(bankDetails).then(() => {
+        alert('Datos bancarios copiados al portapapeles');
+      }).catch(() => {
+        this.fallbackCopyTextToClipboard(bankDetails);
+      });
+    } else {
+      this.fallbackCopyTextToClipboard(bankDetails);
+    }
+  }
+
+  private fallbackCopyTextToClipboard(text: string): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+      alert('Datos bancarios copiados al portapapeles');
+    } catch (err) {
+      console.error('Error al copiar al portapapeles:', err);
+      alert('No se pudieron copiar los datos. Por favor, cópialos manualmente.');
+    }
+    
+    document.body.removeChild(textArea);
+  }
+
+  // Función para abrir modal de datos bancarios con datos específicos de la nanny
+  openBankDetailsModal(nannyName?: string): void {
+    if (nannyName && this.nannyBankData[nannyName]) {
+      this.currentBankData = this.nannyBankData[nannyName];
+    } else {
+      // Datos por defecto si no se encuentra la nanny específica
+      this.currentBankData = {
+        nanny_nombre: 'NannysLM',
+        banco: 'Banco Nacional de Desarrollo',
+        numero_cuenta: '1234567890123456',
+        numero_cuenta_oculto: '****3456',
+        clabe: '014320123456789012',
+        nombre_titular: 'NannysLM Servicios S.A.',
+        tipo_cuenta: 'corriente',
+        es_activa: true
+      };
+    }
+    this.showBankDetailsModal = true;
+  }
+
+  // Función mejorada para copiar datos bancarios específicos
+  copyBankDetailsImproved(): void {
+    if (!this.currentBankData) return;
+
+    const bankDetails = `
+Banco: ${this.currentBankData.banco}
+Titular: ${this.currentBankData.nombre_titular}
+Número de Cuenta: ${this.currentBankData.numero_cuenta}
+CLABE: ${this.currentBankData.clabe || 'No disponible'}
+Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Ahorro' : 'Cuenta Corriente'}
+    `.trim();
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(bankDetails).then(() => {
+        alert('Datos bancarios copiados al portapapeles');
+      }).catch(() => {
+        this.fallbackCopyTextToClipboard(bankDetails);
+      });
+    } else {
+      this.fallbackCopyTextToClipboard(bankDetails);
+    }
+  }
+
+  // Función para obtener datos bancarios por servicio
+  getBankDataForService(service: any): any {
+    if (service.nanny && service.nanny.name) {
+      return this.nannyBankData[service.nanny.name] || null;
+    }
+    return null;
   }
 }

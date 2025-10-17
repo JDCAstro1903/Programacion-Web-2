@@ -1,0 +1,3 @@
+# Este archivo mantiene la carpeta uploads en el repositorio
+# Los archivos subidos por usuarios serán ignorados por .gitignore
+# pero la carpeta debe existir para el funcionamiento correcto

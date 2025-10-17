@@ -2,10 +2,11 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login';
 import { RegisterComponent } from './components/register/register';
 import { HomeComponent } from './components/home/home';
-import { UserSelectionComponent } from './components/user-selection/user-selection.component';
 import { AdminDashboardComponent } from './pages/admin/admin-dashboard.component';
 import { ClientDashboardComponent } from './pages/client/client-dashboard.component';
 import { NannyDashboardComponent } from './pages/nanny/nanny-dashboard.component';
+import { AuthGuard } from './guards/auth.guard';
+import { RoleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -21,19 +22,25 @@ export const routes: Routes = [
     component: RegisterComponent
   },
   {
-    path: 'user-selection',
-    component: UserSelectionComponent
+    path: 'dashboard/admin',
+    component: AdminDashboardComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { role: 'admin' }
   },
   {
-    path: 'admin/dashboard',
-    component: AdminDashboardComponent
+    path: 'dashboard/client',
+    component: ClientDashboardComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { role: 'client' }
   },
   {
-    path: 'client/dashboard',
-    component: ClientDashboardComponent
+    path: 'dashboard/nanny',
+    component: NannyDashboardComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { role: 'nanny' }
   },
   {
-    path: 'nanny/dashboard',
-    component: NannyDashboardComponent
+    path: '**',
+    redirectTo: ''
   }
 ];

@@ -35,260 +35,612 @@
     <!-- Contenido principal -->
     <main class="main-content">
       <!-- Vista Dashboard -->
-      <div *ngIf="currentView === 'dashboard'">
+      <div *ngIf="currentView === 'dashboard'" class="dashboard-view">
         <div class="content-header">
           <h2>Dashboard</h2>
-          <p>Resumen general de la plataforma</p>
+          <p>Panel de control principal para la gestión de NannysLM</p>
         </div>
         
-        <div class="stats-grid">
-          <!-- Nannys disponibles -->
-          <div class="stat-card nannys-card">
-            <div class="stat-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="8" r="7" stroke="currentColor" stroke-width="2"/>
-                <polyline points="8.21,13.89 7,23 12,20 17,23 15.79,13.88" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">
-                Nannys disponibles
+        <!-- Métricas principales con diseño moderno -->
+        <div class="metrics-grid">
+          <!-- Tarjeta de Nannys -->
+          <div class="metric-card nannys-metric">
+            <div class="metric-background">
+              <div class="metric-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                </svg>
               </div>
-              <div class="stat-number">{{ stats.nanniesAvailable }}</div>
+              <div class="metric-content">
+                <h3>Nannys Disponibles</h3>
+                <div class="metric-number">{{ stats.nanniesAvailable }}</div>
+                <div class="metric-detail">
+                  <span class="trend-positive">+3 este mes</span>
+                </div>
+              </div>
+            </div>
+            <div class="metric-actions">
+              <button class="quick-action-btn" (click)="setCurrentView('nannys')">
+                Ver Todas
+              </button>
             </div>
           </div>
 
-          <!-- Clientes verificados -->
-          <div class="stat-card verified-card">
-            <div class="stat-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">
-                Clientes verificados
+          <!-- Tarjeta de Clientes Verificados -->
+          <div class="metric-card clients-metric">
+            <div class="metric-background">
+              <div class="metric-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </div>
-              <div class="stat-number">{{ stats.verifiedClients }}</div>
+              <div class="metric-content">
+                <h3>Clientes Verificados</h3>
+                <div class="metric-number">{{ stats.verifiedClients }}</div>
+                <div class="metric-detail">
+                  <span class="trend-positive">+5 esta semana</span>
+                </div>
+              </div>
+            </div>
+            <div class="metric-actions">
+              <button class="quick-action-btn" (click)="setCurrentView('clients')">
+                Gestionar
+              </button>
             </div>
           </div>
 
-          <!-- Clientes sin verificar -->
-          <div class="stat-card unverified-card">
-            <div class="stat-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
-                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">
-                Clientes sin verificar
+          <!-- Tarjeta de Ingresos -->
+          <div class="metric-card revenue-metric">
+            <div class="metric-background">
+              <div class="metric-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" fill="currentColor"/>
+                </svg>
               </div>
-              <div class="stat-number">{{ stats.unverifiedClients }}</div>
+              <div class="metric-content">
+                <h3>Ingresos del Mes</h3>
+                <div class="metric-number">${{ stats.monthlyRevenue.toLocaleString() }}</div>
+                <div class="metric-detail">
+                  <span class="trend-positive">+12% vs mes anterior</span>
+                </div>
+              </div>
+            </div>
+            <div class="metric-actions">
+              <button class="quick-action-btn" (click)="setCurrentView('payments')">
+                Ver Reportes
+              </button>
             </div>
           </div>
 
-          <!-- Pagos del mes -->
-          <div class="stat-card revenue-card">
-            <div class="stat-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">
-                Pagos del mes
+          <!-- Tarjeta de Datos Bancarios -->
+          <div class="metric-card banking-metric">
+            <div class="metric-background">
+              <div class="metric-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
+                </svg>
               </div>
-              <div class="stat-number">${{ stats.monthlyRevenue.toLocaleString() }}</div>
+              <div class="metric-content">
+                <h3>Datos Bancarios</h3>
+                <div class="metric-number">{{ datosBancarios.length }}</div>
+                <div class="metric-detail">
+                  <span class="trend-neutral">Cuentas configuradas</span>
+                </div>
+              </div>
+            </div>
+            <div class="metric-actions">
+              <button class="quick-action-btn" (click)="setCurrentView('datos-bancarios')">
+                Gestionar
+              </button>
             </div>
           </div>
         </div>
-        
-        <!-- Área adicional para futuras funcionalidades -->
-        <div class="additional-content">
-          <div class="content-placeholder">
-            <h3> Dashboard en desarrollo</h3>
+
+        <!-- Sección de actividad reciente -->
+        <div class="activity-section">
+          <div class="section-header">
+            <h3>Actividad Reciente</h3>
+            <button class="view-all-btn">Ver Todo</button>
+          </div>
+          
+          <div class="activity-grid">
+            <!-- Panel de actividad de nannys -->
+            <div class="activity-panel">
+              <div class="panel-header">
+                <div class="panel-icon nannys-color">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <h4>Nannys Activas</h4>
+              </div>
+              <div class="activity-content">
+                <div *ngFor="let nanny of nannysData.active.slice(0, 3)" class="activity-item">
+                  <div class="activity-info">
+                    <span class="activity-name">{{ nanny.name }}</span>
+                    <span class="activity-detail">{{ nanny.rating }}⭐ • ${{ nanny.hourlyRate }}/h</span>
+                  </div>
+                  <div class="activity-status status-active">Activa</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Panel de pagos recientes -->
+            <div class="activity-panel">
+              <div class="panel-header">
+                <div class="panel-icon payments-color">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <h4>Pagos Recientes</h4>
+              </div>
+              <div class="activity-content">
+                <div *ngFor="let payment of paymentsData.verified.slice(0, 3)" class="activity-item">
+                  <div class="activity-info">
+                    <span class="activity-name">{{ payment.clientName }}</span>
+                    <span class="activity-detail">{{ payment.date }} • {{ payment.hours }}h</span>
+                  </div>
+                  <div class="activity-amount">${{ payment.amount }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-            </div>
+
+        <!-- Sección de acciones rápidas -->
+        <div class="quick-actions-section">
+          <div class="section-header">
+            <h3>Acciones Rápidas</h3>
+            <p>Herramientas de gestión frecuentes</p>
+          </div>
+          
+          <div class="quick-actions-grid">
+            <button class="quick-action-card" (click)="openBankDetailsModal()">
+              <div class="action-icon banking">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+              <div class="action-content">
+                <h4>Agregar Datos Bancarios</h4>
+                <p>Configurar información bancaria para nannys</p>
+              </div>
+            </button>
+
+            <button class="quick-action-card" (click)="setCurrentView('clients')">
+              <div class="action-icon clients">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="action-content">
+                <h4>Verificar Clientes</h4>
+                <p>Revisar y aprobar nuevos registros</p>
+              </div>
+            </button>
+
+            <button class="quick-action-card" (click)="setCurrentView('payments')">
+              <div class="action-icon payments">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 11H7v9h2v-9zm4 0h-2v9h2v-9zm4 0h-2v9h2v-9zm2-7v2H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8h1V6H8V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2h4z" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="action-content">
+                <h4>Procesar Pagos</h4>
+                <p>Revisar y validar transacciones pendientes</p>
+              </div>
+            </button>
+
+            <button class="quick-action-card" (click)="setCurrentView('nannys')">
+              <div class="action-icon nannys">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="action-content">
+                <h4>Gestionar Nannys</h4>
+                <p>Administrar perfiles y disponibilidad</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
 
 
       <!-- Vista Nannys -->
-      <div *ngIf="currentView === 'nannys'">
+      <div *ngIf="currentView === 'nannys'" class="nannys-view">
         <div class="content-header">
-          <h2>Nannys</h2>
-          <p>Gestión de cuidadoras</p>
+          <div class="header-content">
+            <h2>Gestión de Nannys</h2>
+            <p>Administra las cuidadoras registradas en la plataforma</p>
+          </div>
+          <button class="add-nanny-btn" (click)="openAddNannyModal()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Agregar Nanny
+          </button>
         </div>
         
-        <!-- Filtros de estado -->
-        <div class="filter-tabs">
+        <!-- Estadísticas rápidas -->
+        <div class="nannys-stats">
+          <div class="stat-item">
+            <div class="stat-number">{{ nannysData.active.length }}</div>
+            <div class="stat-label">Activas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ nannysData.busy.length }}</div>
+            <div class="stat-label">Ocupadas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ nannysData.inactive.length }}</div>
+            <div class="stat-label">Inactivas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">{{ getTotalNannys() }}</div>
+            <div class="stat-label">Total</div>
+          </div>
+        </div>
+        
+        <!-- Filtros de estado modernos -->
+        <div class="modern-filter-tabs">
           <button 
             (click)="setNannyFilter('active')" 
-            class="filter-tab success"
+            class="modern-filter-tab active-tab"
             [class.active]="nannyFilter === 'active'">
-            <div class="tab-icon success">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+            <div class="tab-indicator"></div>
+            <div class="tab-content">
+              <div class="tab-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="tab-text">Activas</span>
+              <span class="tab-count">{{ nannysData.active.length }}</span>
             </div>
-            <span>Nannys activas</span>
-          </button>
-          
-          <button 
-            (click)="setNannyFilter('inactive')" 
-            class="filter-tab danger"
-            [class.active]="nannyFilter === 'inactive'">
-            <div class="tab-icon danger">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
-                <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <span>Nannys Inactivas</span>
           </button>
           
           <button 
             (click)="setNannyFilter('busy')" 
-            class="filter-tab info"
+            class="modern-filter-tab busy-tab"
             [class.active]="nannyFilter === 'busy'">
-            <div class="tab-icon info">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
-                <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
-                <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
-                <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
-              </svg>
+            <div class="tab-indicator"></div>
+            <div class="tab-content">
+              <div class="tab-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                  <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                  <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+              <span class="tab-text">Ocupadas</span>
+              <span class="tab-count">{{ nannysData.busy.length }}</span>
             </div>
-            <span>Nannys ocupadas</span>
+          </button>
+          
+          <button 
+            (click)="setNannyFilter('inactive')" 
+            class="modern-filter-tab inactive-tab"
+            [class.active]="nannyFilter === 'inactive'">
+            <div class="tab-indicator"></div>
+            <div class="tab-content">
+              <div class="tab-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
+                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+              <span class="tab-text">Inactivas</span>
+              <span class="tab-count">{{ nannysData.inactive.length }}</span>
+            </div>
           </button>
         </div>
 
-        <!-- Lista de Nannys -->
-        <div class="nannys-content">
-          <div class="nannys-list">
-            <div *ngFor="let nanny of getCurrentNannys()" class="nanny-card">
-              <div class="nanny-avatar">
-                <div class="avatar-placeholder">
-                  {{ nanny.name.charAt(0) }}
+        <!-- Lista de Nannys modernizada -->
+        <div class="modern-nannys-grid">
+          <div *ngFor="let nanny of getCurrentNannys()" class="modern-nanny-card">
+            <!-- Header de la tarjeta -->
+            <div class="nanny-card-header">
+              <div class="nanny-profile">
+                <div class="nanny-avatar-container">
+                  <div class="nanny-avatar">
+                    <div class="avatar-image">
+                      {{ nanny.name.charAt(0) }}
+                    </div>
+                  </div>
+                  <div class="nanny-status-indicator" [class]="'status-' + getStatusFromData(nanny)"></div>
                 </div>
-                <div class="status-indicator" [class]="nannyFilter"></div>
-              </div>
-              
-              <div class="nanny-info">
-                <h4>{{ nanny.name }}</h4>
-                <div class="nanny-details">
-                  <span class="rating">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill="#fbbf24"/>
-                    </svg>
-                    {{ nanny.rating }}
-                  </span>
-                  <span class="experience">{{ nanny.experience }} años exp.</span>
-                  <span class="location">{{ nanny.location }}</span>
+                <div class="nanny-basic-info">
+                  <div class="name-with-status">
+                    <h3 class="nanny-name">{{ nanny.name }}</h3>
+                    <span class="status-text" [class]="'status-' + getStatusFromData(nanny)">
+                      {{ getStatusText(getStatusFromData(nanny)) }}
+                    </span>
+                  </div>
+                  <div class="nanny-rating">
+                    <div class="stars">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill="#fbbf24"/>
+                      </svg>
+                      <span class="rating-value">{{ nanny.rating }}</span>
+                    </div>
+                    <span class="experience-text">{{ nanny.experience }} años</span>
+                  </div>
                 </div>
               </div>
-              
-              <div class="nanny-rate">
-                <span class="rate-amount">{{ nanny.hourlyRate }}€/h</span>
+              <div class="nanny-rate-info">
+                <div class="hourly-rate">
+                  <span class="rate-amount">{{ nanny.hourlyRate }}€</span>
+                  <span class="rate-period">/hora</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cuerpo de la tarjeta -->
+            <div class="nanny-card-body">
+              <div class="nanny-location">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 5.02944 7.02944 1 12 1C16.9706 1 21 5.02944 21 10Z" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span>{{ nanny.location }}</span>
               </div>
               
-              <div class="nanny-actions">
-                <button class="action-btn primary">Ver perfil</button>
-                <button class="action-btn secondary">Contactar</button>
+              <div class="nanny-skills">
+                <div class="skill-tag">Cuidado infantil</div>
+                <div class="skill-tag">Primeros auxilios</div>
+                <div class="skill-tag">Educación</div>
               </div>
+            </div>
+
+            <!-- Footer de la tarjeta -->
+            <div class="nanny-card-footer">
+              <button class="nanny-action-btn secondary" (click)="viewNannyProfile(nanny.id)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Ver Perfil
+              </button>
+              <button class="nanny-action-btn primary" (click)="contactNanny(nanny.id)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 2L11 13" stroke="currentColor" stroke-width="2"/>
+                  <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Contactar
+              </button>
             </div>
           </div>
           
           <!-- Estado vacío si no hay nannys en la categoría -->
-          <div *ngIf="getCurrentNannys().length === 0" class="empty-state">
-            <div class="empty-icon">🔍</div>
-            <h3>No hay cuidadoras en esta categoría</h3>
-            <p>No se encontraron cuidadoras con el filtro seleccionado.</p>
+          <div *ngIf="getCurrentNannys().length === 0" class="empty-state-modern">
+            <div class="empty-illustration">
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 21V19C20 16.7909 18.2091 15 16 15H8C5.79086 15 4 16.7909 4 19V21" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>No hay nannys {{ getFilterLabel() }}</h3>
+            <p>No se encontraron cuidadoras en esta categoría.</p>
+            <button class="add-first-nanny-btn" (click)="openAddNannyModal()">
+              Agregar Primera Nanny
+            </button>
           </div>
         </div>
       </div>
 
       <!-- Vista Clientes -->
-      <div *ngIf="currentView === 'clients'">
+      <div *ngIf="currentView === 'clients'" class="clients-view">
         <div class="content-header">
-          <h2>Clientes</h2>
-          <p>Gestión de clientes</p>
+          <h2>Gestión de Clientes</h2>
+          <p>Administra y supervisa a todos los clientes de la plataforma</p>
         </div>
         
-        <!-- Filtros de estado -->
-        <div class="filter-tabs">
-          <button 
-            (click)="setClientFilter('verified')" 
-            class="filter-tab success"
-            [class.active]="clientFilter === 'verified'">
-            <div class="tab-icon success">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Estadísticas rápidas -->
+        <div class="clients-stats">
+          <div class="stat-card verified">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <span>Clientes verificados</span>
-          </button>
-          
-          <button 
-            (click)="setClientFilter('unverified')" 
-            class="filter-tab danger"
-            [class.active]="clientFilter === 'unverified'">
-            <div class="tab-icon danger">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
-                <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <span>Clientes sin verificar</span>
-          </button>
-        </div>
-
-        <!-- Lista de Clientes -->
-        <div class="clients-content">
-          <div class="clients-list">
-            <div *ngFor="let client of getCurrentClients()" class="client-card">
-              <div class="client-avatar">
-                <div class="avatar-placeholder">
-                  {{ client.name.charAt(0) }}
-                </div>
-                <div class="status-indicator" [class]="clientFilter"></div>
-              </div>
-              
-              <div class="client-info">
-                <h4>{{ client.name }}</h4>
-                <div class="client-details">
-                  <span class="email">{{ client.email }}</span>
-                  <span class="phone">{{ client.phone }}</span>
-                  <span class="location">{{ client.location }}</span>
-                  <span class="children">{{ client.children }} niño{{ client.children > 1 ? 's' : '' }}</span>
-                </div>
-              </div>
-              
-              <div class="client-status">
-                <span class="member-since">Miembro desde: {{ client.memberSince }}</span>
-                <span class="status-badge" [class]="clientFilter">
-                  {{ clientFilter === 'verified' ? 'Verificado' : 'Sin verificar' }}
-                </span>
-              </div>
-              
-              <div class="client-actions">
-                <button class="action-btn primary">Ver perfil</button>
-                <button class="action-btn secondary" *ngIf="clientFilter === 'unverified'">Verificar</button>
-                <button class="action-btn secondary" *ngIf="clientFilter === 'verified'">Contactar</button>
-              </div>
+            <div class="stat-content">
+              <h3>{{ clientsData.verified.length }}</h3>
+              <p>Clientes Verificados</p>
             </div>
           </div>
           
-          <!-- Estado vacío si no hay clientes en la categoría -->
-          <div *ngIf="getCurrentClients().length === 0" class="empty-state">
-            <div class="empty-icon">🔍</div>
+          <div class="stat-card pending">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <h3>{{ clientsData.unverified.length }}</h3>
+              <p>Pendientes de Verificación</p>
+            </div>
+          </div>
+          
+          <div class="stat-card total">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2045 16.7006C21.6935 16.047 20.9877 15.5856 20.194 15.3893" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <h3>{{ clientsData.verified.length + clientsData.unverified.length }}</h3>
+              <p>Total de Clientes</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros de estado modernos -->
+        <div class="modern-filter-section">
+          <div class="filter-header">
+            <h3>Filtrar Clientes</h3>
+          </div>
+          
+          <div class="modern-filter-tabs">
+            <button 
+              (click)="setClientFilter('verified')" 
+              class="modern-filter-tab"
+              [class.active]="clientFilter === 'verified'">
+              <div class="filter-tab-content">
+                <div class="tab-icon verified">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="tab-info">
+                  <span class="tab-title">Verificados</span>
+                  <span class="tab-count">{{ clientsData.verified.length }}</span>
+                </div>
+              </div>
+            </button>
+            
+            <button 
+              (click)="setClientFilter('unverified')" 
+              class="modern-filter-tab"
+              [class.active]="clientFilter === 'unverified'">
+              <div class="filter-tab-content">
+                <div class="tab-icon pending">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="tab-info">
+                  <span class="tab-title">Pendientes</span>
+                  <span class="tab-count">{{ clientsData.unverified.length }}</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid moderno de clientes -->
+        <div class="modern-clients-grid">
+          <div *ngFor="let client of getCurrentClients()" class="modern-client-card">
+            <!-- Header de la tarjeta -->
+            <div class="client-card-header">
+              <div class="client-profile">
+                <div class="client-avatar-container">
+                  <div class="client-avatar">
+                    <div class="avatar-image">
+                      {{ client.name.charAt(0) }}
+                    </div>
+                  </div>
+                  <div class="client-status-indicator" [class]="'status-' + getClientStatusFromData(client)"></div>
+                </div>
+                <div class="client-basic-info">
+                  <div class="name-with-status">
+                    <h3 class="client-name">{{ client.name }}</h3>
+                    <span class="verification-badge" [class]="getClientStatusFromData(client)">
+                      {{ getClientStatusText(getClientStatusFromData(client)) }}
+                    </span>
+                  </div>
+                  <div class="client-contact">
+                    <span class="email">{{ client.email }}</span>
+                    <span class="phone">{{ client.phone }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contenido de la tarjeta -->
+            <div class="client-card-content">
+              <div class="client-details">
+                <div class="detail-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ client.location }}</span>
+                </div>
+                <div class="detail-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ client.children }} niño{{ client.children !== 1 ? 's' : '' }}</span>
+                </div>
+                <div class="detail-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Desde {{ formatDate(client.memberSince) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer con acciones -->
+            <div class="client-card-footer">
+              <div class="client-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Reservas</span>
+                  <span class="stat-value">{{ getClientBookings(client.id) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Última actividad</span>
+                  <span class="stat-value">{{ getLastActivity(client.id) }}</span>
+                </div>
+              </div>
+              <div class="client-actions">
+                <button class="action-btn secondary" title="Ver perfil">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Ver Perfil
+                </button>
+                <button 
+                  *ngIf="clientFilter === 'unverified'" 
+                  class="action-btn primary" 
+                  title="Verificar cliente">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Verificar
+                </button>
+                <button 
+                  *ngIf="clientFilter === 'verified'" 
+                  class="action-btn primary" 
+                  title="Contactar cliente">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Contactar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Estado vacío -->
+        <div *ngIf="getCurrentClients().length === 0" class="modern-empty-state">
+          <div class="empty-content">
+            <div class="empty-icon">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2045 16.7006C21.6935 16.047 20.9877 15.5856 20.194 15.3893" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
             <h3>No hay clientes en esta categoría</h3>
             <p>No se encontraron clientes con el filtro seleccionado.</p>
           </div>
@@ -296,139 +648,951 @@
       </div>
 
       <!-- Vista Pagos -->
-      <div *ngIf="currentView === 'payments'">
+      <div *ngIf="currentView === 'payments'" class="payments-view">
         <div class="content-header">
-          <h2>Pagos</h2>
-          <p>Gestión de pagos</p>
+          <h2>Gestión de Pagos</h2>
+          <p>Administra y supervisa todas las transacciones de la plataforma</p>
         </div>
         
-        <!-- Filtros de estado con botón desplegable -->
-        <div class="filter-tabs-container">
-          <div class="filter-tabs">
-            <button 
-              (click)="setPaymentFilter('verified')" 
-              class="filter-tab success"
-              [class.active]="paymentFilter === 'verified'">
-              <div class="tab-icon success">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-              <span>Pagos verificados</span>
-            </button>
-            
-            <button 
-              (click)="setPaymentFilter('unverified')" 
-              class="filter-tab danger"
-              [class.active]="paymentFilter === 'unverified'">
-              <div class="tab-icon danger">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
-                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
-                </svg>
-              </div>
-              <span>pagos sin verificar</span>
-            </button>
+        <!-- Estadísticas rápidas de pagos -->
+        <div class="payments-stats">
+          <div class="stat-card verified">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <h3>{{ paymentsData.verified.length }}</h3>
+              <p>Pagos Completados</p>
+            </div>
           </div>
           
-          <!-- Botón desplegable para filtros de fecha -->
-          <button class="dropdown-toggle-btn" (click)="toggleDateFilters()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
-              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
-              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
-              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            <span>Filtrar por fecha</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" 
-                 [style.transform]="showDateFilters ? 'rotate(180deg)' : 'rotate(0deg)'"
-                 style="transition: transform 0.3s ease;">
-              <polyline points="6,9 12,15 18,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Filtros de fecha (desplegables) -->
-        <div class="date-filter-section" 
-             [class.expanded]="showDateFilters">
-          <h4>Filtrar por fecha:</h4>
-          <div class="date-filter-tabs">
-            <button 
-              (click)="setPaymentDateFilter('all')" 
-              class="date-filter-tab"
-              [class.active]="paymentDateFilter === 'all'">
-              <span>Todos ({{ getPaymentCountByDate('all') }})</span>
-            </button>
-            
-            <button 
-              (click)="setPaymentDateFilter('today')" 
-              class="date-filter-tab"
-              [class.active]="paymentDateFilter === 'today'">
-              <span>Hoy ({{ getPaymentCountByDate('today') }})</span>
-            </button>
-            
-            <button 
-              (click)="setPaymentDateFilter('week')" 
-              class="date-filter-tab"
-              [class.active]="paymentDateFilter === 'week'">
-              <span>Última semana ({{ getPaymentCountByDate('week') }})</span>
-            </button>
-            
-            <button 
-              (click)="setPaymentDateFilter('month')" 
-              class="date-filter-tab"
-              [class.active]="paymentDateFilter === 'month'">
-              <span>Último mes ({{ getPaymentCountByDate('month') }})</span>
-            </button>
-            
-            <button 
-              (click)="setPaymentDateFilter('quarter')" 
-              class="date-filter-tab"
-              [class.active]="paymentDateFilter === 'quarter'">
-              <span>Último trimestre ({{ getPaymentCountByDate('quarter') }})</span>
-            </button>
+          <div class="stat-card pending">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <h3>{{ paymentsData.unverified.length }}</h3>
+              <p>Pagos Pendientes</p>
+            </div>
+          </div>
+          
+          <div class="stat-card total">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <h3>{{ getTotalRevenue() }}€</h3>
+              <p>Ingresos Totales</p>
+            </div>
+          </div>
+          
+          <div class="stat-card revenue">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3V21H21" stroke="currentColor" stroke-width="2"/>
+                <polyline points="7,8 12,3 17,8 22,3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <h3>{{ getMonthlyRevenue() }}€</h3>
+              <p>Ingresos del Mes</p>
+            </div>
           </div>
         </div>
 
-        <!-- Lista de Pagos -->
-        <div class="payments-content">
-          <div class="payments-list">
-            <div *ngFor="let payment of getCurrentPayments()" class="payment-card">
-              <div class="payment-info">
-                <h4>Pago #{{ payment.id }}</h4>
-                <div class="payment-details">
-                  <span class="client-name">Cliente: {{ payment.clientName }}</span>
-                  <span class="nanny-name">Nanny: {{ payment.nannyName }}</span>
-                  <span class="date">Fecha: {{ payment.date }}</span>
-                  <span class="hours">{{ payment.hours }} horas de servicio</span>
+        <!-- Sección de filtros moderna -->
+        <div class="modern-filter-section">
+          <div class="filter-header">
+            <h3>Filtrar Pagos</h3>
+            <button class="toggle-date-filters-btn" (click)="toggleDateFilters()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              Filtros por Fecha
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" 
+                   [style.transform]="showDateFilters ? 'rotate(180deg)' : 'rotate(0deg)'"
+                   style="transition: transform 0.3s ease;">
+                <polyline points="6,9 12,15 18,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Filtros de fecha desplegables -->
+          <div class="date-filter-section" [class.expanded]="showDateFilters">
+            <div class="date-filter-content">
+              <h4>Filtrar por Fecha</h4>
+              
+              <!-- Filtros rápidos de fecha -->
+              <div class="date-filter-tabs">
+                <button 
+                  (click)="setPaymentDateFilter('all')" 
+                  class="date-filter-btn"
+                  [class.active]="paymentDateFilter === 'all'">
+                  <div class="filter-content">
+                    <span class="filter-label">Todos</span>
+                    <span class="filter-count">{{ getPaymentCountByDate('all') }}</span>
+                  </div>
+                </button>
+                
+                <button 
+                  (click)="setPaymentDateFilter('today')" 
+                  class="date-filter-btn"
+                  [class.active]="paymentDateFilter === 'today'">
+                  <div class="filter-content">
+                    <span class="filter-label">Hoy</span>
+                    <span class="filter-count">{{ getPaymentCountByDate('today') }}</span>
+                  </div>
+                </button>
+                
+                <button 
+                  (click)="setPaymentDateFilter('week')" 
+                  class="date-filter-btn"
+                  [class.active]="paymentDateFilter === 'week'">
+                  <div class="filter-content">
+                    <span class="filter-label">Esta Semana</span>
+                    <span class="filter-count">{{ getPaymentCountByDate('week') }}</span>
+                  </div>
+                </button>
+                
+                <button 
+                  (click)="setPaymentDateFilter('month')" 
+                  class="date-filter-btn"
+                  [class.active]="paymentDateFilter === 'month'">
+                  <div class="filter-content">
+                    <span class="filter-label">Este Mes</span>
+                    <span class="filter-count">{{ getPaymentCountByDate('month') }}</span>
+                  </div>
+                </button>
+
+                <button 
+                  (click)="setPaymentDateFilter('quarter')" 
+                  class="date-filter-btn"
+                  [class.active]="paymentDateFilter === 'quarter'">
+                  <div class="filter-content">
+                    <span class="filter-label">Este Trimestre</span>
+                    <span class="filter-count">{{ getPaymentCountByDate('quarter') }}</span>
+                  </div>
+                </button>
+                
+                <button 
+                  (click)="setPaymentDateFilter('custom')" 
+                  class="date-filter-btn custom-date"
+                  [class.active]="paymentDateFilter === 'custom'">
+                  <div class="filter-content">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                      <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                      <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span class="filter-label">Fecha Específica</span>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Calendario para fecha específica -->
+              <div *ngIf="paymentDateFilter === 'custom'" class="calendar-section">
+                <div class="calendar-layout">
+                  <!-- Calendario a la izquierda -->
+                  <div class="calendar-left-panel">
+                    <div class="calendar-container">
+                      <div class="calendar-header">
+                        <div class="calendar-title-display">{{ getCurrentMonthYear() }}</div>
+                      </div>
+                      
+                      <div class="calendar-grid">
+                        <div class="calendar-days">
+                          <button 
+                            *ngFor="let date of getCalendarDays()" 
+                            type="button"
+                            class="calendar-day"
+                            [class.today]="isToday(date)"
+                            [class.selected]="isSelectedDate(date)"
+                            [class.other-month]="!isCurrentMonth(date)"
+                            [class.has-payments]="hasPaymentsOnDate(date)"
+                            (click)="selectDate(date)">
+                            {{ date.getDate() }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Controles a la derecha -->
+                  <div class="calendar-right-panel">
+                    <div class="date-selectors">
+                      <div class="selectors-header">
+                        <h4 class="selectors-title">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                            <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                            <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                          </svg>
+                          Navegación Rápida
+                        </h4>
+                      </div>
+                      
+                      <div class="year-month-selectors">
+                        <div class="selector-group">
+                          <label for="yearSelect" class="selector-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                              <path d="M12 1v6m0 6v6" stroke="currentColor" stroke-width="2"/>
+                              <path d="m21 12-6-6-6 6" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            Año
+                          </label>
+                          <div class="selector-wrapper">
+                            <select id="yearSelect" 
+                                    [(ngModel)]="selectedYear" 
+                                    (change)="onYearChange()"
+                                    class="year-selector">
+                              <option *ngFor="let year of getAvailableYears()" [value]="year">{{ year }}</option>
+                            </select>
+                            <div class="selector-arrow">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <polyline points="6,9 12,15 18,9" stroke="currentColor" stroke-width="2"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div class="selector-group">
+                          <label for="monthSelect" class="selector-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            Mes
+                          </label>
+                          <div class="selector-wrapper">
+                            <select id="monthSelect" 
+                                    [(ngModel)]="selectedMonth" 
+                                    (change)="onMonthChange()"
+                                    class="month-selector">
+                              <option *ngFor="let month of getAvailableMonths(); let i = index" [value]="i">{{ month }}</option>
+                            </select>
+                            <div class="selector-arrow">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <polyline points="6,9 12,15 18,9" stroke="currentColor" stroke-width="2"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="quick-actions">
+                        <button type="button" class="quick-action-btn today-btn" (click)="goToToday()">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                          Ir a Hoy
+                        </button>
+                        
+                        <button type="button" class="quick-action-btn clear-btn" (click)="clearSelectedDate()">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
+                            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
+                          </svg>
+                          Limpiar Selección
+                        </button>
+                      </div>
+                      
+                      <div *ngIf="selectedDate" class="selected-date-info-compact">
+                        <div class="date-info-header">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                          </svg>
+                          <span class="date-info-title">Fecha Seleccionada</span>
+                        </div>
+                        <div class="date-info-content">
+                          <div class="date-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                          </div>
+                          <div class="date-text">
+                            <span class="date-value">{{ formatSelectedDate(selectedDate) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <div class="payment-amount">
-                <span class="amount">{{ payment.amount }}€</span>
-                <span class="status-badge" [class]="paymentFilter">
-                  {{ paymentFilter === 'verified' ? 'Completado' : 'Pendiente' }}
-                </span>
-              </div>
-              
-              <div class="payment-actions">
-                <button class="action-btn primary">Ver detalles</button>
-                <button class="action-btn secondary" *ngIf="paymentFilter === 'unverified'">Verificar</button>
-                <button class="action-btn secondary" *ngIf="paymentFilter === 'verified'">Recibo</button>
               </div>
             </div>
           </div>
           
-          <!-- Estado vacío si no hay pagos en la categoría -->
-          <div *ngIf="getCurrentPayments().length === 0" class="empty-state">
-            <div class="empty-icon">🔍</div>
+          <!-- Filtros de estado -->
+          <div class="modern-filter-tabs">
+            <button 
+              (click)="setPaymentFilter('verified')" 
+              class="modern-filter-tab"
+              [class.active]="paymentFilter === 'verified'">
+              <div class="filter-tab-content">
+                <div class="tab-icon verified">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="tab-info">
+                  <span class="tab-title">Completados</span>
+                  <span class="tab-count">{{ paymentsData.verified.length }}</span>
+                </div>
+              </div>
+            </button>
+            
+            <button 
+              (click)="setPaymentFilter('unverified')" 
+              class="modern-filter-tab"
+              [class.active]="paymentFilter === 'unverified'">
+              <div class="filter-tab-content">
+                <div class="tab-icon pending">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="tab-info">
+                  <span class="tab-title">Pendientes</span>
+                  <span class="tab-count">{{ paymentsData.unverified.length }}</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid moderno de pagos -->
+        <div class="modern-payments-grid">
+          <div *ngFor="let payment of getCurrentPayments()" class="modern-payment-card">
+            <!-- Header de la tarjeta -->
+            <div class="payment-card-header">
+              <div class="payment-profile">
+                <div class="payment-icon-container">
+                  <div class="payment-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                  </div>
+                  <div class="payment-status-indicator" [class]="'status-' + getPaymentStatusFromData(payment)"></div>
+                </div>
+                <div class="payment-basic-info">
+                  <div class="payment-header-info">
+                    <h3 class="payment-id">Pago #{{ payment.id }}</h3>
+                    <span class="payment-badge" [class]="getPaymentStatusFromData(payment)">
+                      {{ getPaymentStatusText(getPaymentStatusFromData(payment)) }}
+                    </span>
+                  </div>
+                  <div class="payment-amount-header">
+                    <span class="amount">{{ payment.amount }}€</span>
+                    <span class="payment-date">{{ formatPaymentDate(payment.date) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contenido de la tarjeta -->
+            <div class="payment-card-content">
+              <div class="payment-details">
+                <div class="detail-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Cliente: {{ payment.clientName }}</span>
+                </div>
+                <div class="detail-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2045 16.7006C21.6935 16.047 20.9877 15.5856 20.194 15.3893" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>Nanny: {{ payment.nannyName }}</span>
+                </div>
+                <div class="detail-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ payment.hours }} horas de servicio</span>
+                </div>
+                <div class="detail-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ payment.date }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer con acciones -->
+            <div class="payment-card-footer">
+              <div class="payment-stats">
+                <div class="stat-item">
+                  <span class="stat-label">Tarifa por hora</span>
+                  <span class="stat-value">{{ getHourlyRate(payment) }}€/h</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Comisión</span>
+                  <span class="stat-value">{{ getCommission(payment) }}€</span>
+                </div>
+              </div>
+              <div class="payment-actions">
+                <button class="action-btn secondary" title="Ver detalles">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Ver Detalles
+                </button>
+                <button 
+                  *ngIf="paymentFilter === 'unverified'" 
+                  class="action-btn primary" 
+                  title="Verificar pago">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Verificar
+                </button>
+                <button 
+                  *ngIf="paymentFilter === 'verified'" 
+                  class="action-btn primary" 
+                  title="Generar recibo">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Recibo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Estado vacío -->
+        <div *ngIf="getCurrentPayments().length === 0" class="modern-empty-state">
+          <div class="empty-content">
+            <div class="empty-icon">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
             <h3>No hay pagos en esta categoría</h3>
-            <p>No se encontraron pagos con los filtros seleccionados.</p>
+            <p>No se encontraron pagos con el filtro seleccionado.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Datos Bancarios -->
+      <div *ngIf="currentView === 'datos-bancarios'">
+        <div class="content-header">
+          <h2>Datos Bancarios</h2>
+          <p>Gestión de información bancaria de las nannys</p>
+          <button class="add-bank-data-btn" (click)="openBankDetailsModal()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
+              <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Agregar Datos Bancarios
+          </button>
+        </div>
+
+        <!-- Lista de datos bancarios -->
+        <div class="bank-data-content">
+          <div class="bank-data-list">
+            <div *ngFor="let datos of datosBancarios" 
+                 class="bank-data-card" 
+                 [class.inactive]="!datos.es_activa">
+              
+              <!-- Información de la nanny -->
+              <div class="bank-nanny-info">
+                <div class="nanny-avatar">
+                  <div class="avatar-placeholder">
+                    {{ datos.nanny_nombre.charAt(0) }}
+                  </div>
+                </div>
+                <div class="nanny-details">
+                  <h4>{{ datos.nanny_nombre }}</h4>
+                  <div class="nanny-email">{{ datos.nanny_email }}</div>
+                  <div class="verification-status">
+                    <span class="status-badge" [class.verified]="datos.nanny_verificada" [class.unverified]="!datos.nanny_verificada">
+                      {{ datos.nanny_verificada ? 'Verificada' : 'Sin verificar' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Información bancaria -->
+              <div class="bank-account-info">
+                <div class="bank-details">
+                  <div class="bank-name">
+                    <strong>{{ datos.banco }}</strong>
+                  </div>
+                  <div class="account-holder">
+                    Titular: {{ datos.nombre_titular }}
+                  </div>
+                  <div class="account-number">
+                    Cuenta: {{ datos.numero_cuenta_oculto }}
+                  </div>
+                  <div class="account-type">
+                    Tipo: {{ datos.tipo_cuenta === 'ahorro' ? 'Cuenta de Ahorro' : 'Cuenta Corriente' }}
+                  </div>
+                  <div class="clabe" *ngIf="datos.clabe">
+                    CLABE: {{ datos.clabe }}
+                  </div>
+                </div>
+                
+                <!-- Estado de la cuenta -->
+                <div class="account-status">
+                  <span class="status-indicator" [class.active]="datos.es_activa" [class.inactive]="!datos.es_activa">
+                    {{ datos.es_activa ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div class="bank-data-actions">
+                <button class="action-btn primary" (click)="openBankDetailsModal(datos)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Editar
+                </button>
+                
+                <button class="action-btn secondary" (click)="toggleBankDataStatus(datos.id)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 11V9a3 3 0 0 1 6 0v2"/>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  </svg>
+                  {{ datos.es_activa ? 'Desactivar' : 'Activar' }}
+                </button>
+
+                <button class="action-btn danger" (click)="deleteBankData(datos.id)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Estado vacío si no hay datos bancarios -->
+          <div *ngIf="datosBancarios.length === 0" class="empty-state">
+            <div class="empty-icon">🏦</div>
+            <h3>No hay datos bancarios registrados</h3>
+            <p>Agrega información bancaria para las nannys para facilitar los pagos.</p>
+            <button class="add-first-bank-data-btn" (click)="openBankDetailsModal()">
+              Agregar primer registro
+            </button>
           </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Modal de datos bancarios -->
+  <div class="bank-modal-overlay" *ngIf="showBankDetailsModal" (click)="closeBankDetailsModal()">
+    <div class="bank-modal-content" (click)="$event.stopPropagation()">
+      <div class="bank-modal-header">
+        <h3>{{ editingBankData ? 'Editar' : 'Agregar' }} Datos Bancarios</h3>
+        <button class="close-modal-btn" (click)="closeBankDetailsModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      </div>
+
+      <form class="bank-modal-form" (ngSubmit)="saveBankDetails()" #bankForm="ngForm">
+        <!-- Selección de nanny (solo al crear) -->
+        <div class="form-group" *ngIf="!editingBankData">
+          <label for="nannySelect">Seleccionar Nanny *</label>
+          <select id="nannySelect" 
+                  [(ngModel)]="selectedBankData.nanny_id" 
+                  name="nanny_id" 
+                  required
+                  class="form-control">
+            <option value="">Seleccione una nanny</option>
+            <option *ngFor="let nanny of getAvailableNannysForBankData()" [value]="nanny.id">
+              {{ nanny.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Información del titular -->
+        <div class="form-group">
+          <label for="nombreTitular">Nombre del Titular *</label>
+          <input type="text" 
+                 id="nombreTitular" 
+                 [(ngModel)]="selectedBankData.nombre_titular" 
+                 name="nombre_titular" 
+                 required
+                 maxlength="150"
+                 class="form-control"
+                 placeholder="Nombre completo del titular de la cuenta">
+        </div>
+
+        <!-- Banco -->
+        <div class="form-group">
+          <label for="banco">Banco *</label>
+          <select id="banco" 
+                  [(ngModel)]="selectedBankData.banco" 
+                  name="banco" 
+                  required
+                  class="form-control">
+            <option value="">Seleccione un banco</option>
+            <option value="BBVA Bancomer">BBVA Bancomer</option>
+            <option value="Santander">Santander</option>
+            <option value="Banorte">Banorte</option>
+            <option value="HSBC">HSBC</option>
+            <option value="Scotiabank">Scotiabank</option>
+            <option value="Inbursa">Inbursa</option>
+            <option value="Azteca">Banco Azteca</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+
+        <!-- Número de cuenta -->
+        <div class="form-group">
+          <label for="numeroCuenta">Número de Cuenta *</label>
+          <input type="text" 
+                 id="numeroCuenta" 
+                 [(ngModel)]="selectedBankData.numero_cuenta_completo" 
+                 name="numero_cuenta_completo" 
+                 required
+                 minlength="8"
+                 maxlength="50"
+                 class="form-control"
+                 placeholder="Número de cuenta bancaria">
+        </div>
+
+        <!-- CLABE -->
+        <div class="form-group">
+          <label for="clabe">CLABE Interbancaria</label>
+          <input type="text" 
+                 id="clabe" 
+                 [(ngModel)]="selectedBankData.clabe" 
+                 name="clabe" 
+                 maxlength="18"
+                 class="form-control"
+                 placeholder="CLABE de 18 dígitos (opcional)">
+        </div>
+
+        <!-- Tipo de cuenta -->
+        <div class="form-group">
+          <label for="tipoCuenta">Tipo de Cuenta *</label>
+          <select id="tipoCuenta" 
+                  [(ngModel)]="selectedBankData.tipo_cuenta" 
+                  name="tipo_cuenta" 
+                  required
+                  class="form-control">
+            <option value="ahorro">Cuenta de Ahorro</option>
+            <option value="corriente">Cuenta Corriente</option>
+          </select>
+        </div>
+
+        <!-- Estado activo -->
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" 
+                   [(ngModel)]="selectedBankData.es_activa" 
+                   name="es_activa">
+            <span class="checkmark"></span>
+            Cuenta activa
+          </label>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" (click)="closeBankDetailsModal()">
+            Cancelar
+          </button>
+          <button type="submit" class="save-btn" [disabled]="!bankForm.form.valid">
+            {{ editingBankData ? 'Actualizar' : 'Guardar' }} Datos
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para agregar nueva nanny -->
+  <div *ngIf="showAddNannyModal" class="modal-overlay" (click)="closeAddNannyModal()">
+    <div class="modal-container add-nanny-modal" (click)="$event.stopPropagation()">
+      <!-- Header del modal -->
+      <div class="modal-header">
+        <div class="modal-title-section">
+          <div class="modal-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="modal-title-content">
+            <h3>Agregar Nueva Nanny</h3>
+            <p>Registra una nueva cuidadora en la plataforma</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="closeAddNannyModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo del modal -->
+      <div class="modal-body">
+        <form #addNannyForm="ngForm" (ngSubmit)="onSubmitAddNanny(addNannyForm)">
+          <!-- Sección de información personal -->
+          <div class="form-section">
+            <div class="section-header">
+              <h4>Información Personal</h4>
+              <div class="section-divider"></div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nannyName">Nombre Completo *</label>
+                <input type="text" 
+                       id="nannyName" 
+                       [(ngModel)]="newNannyData.name" 
+                       name="name" 
+                       required
+                       minlength="3"
+                       class="form-control"
+                       placeholder="Ingrese el nombre completo">
+              </div>
+              
+              <div class="form-group">
+                <label for="nannyEmail">Correo Electrónico *</label>
+                <input type="email" 
+                       id="nannyEmail" 
+                       [(ngModel)]="newNannyData.email" 
+                       name="email" 
+                       required
+                       class="form-control"
+                       placeholder="ejemplo@correo.com">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nannyPhone">Teléfono *</label>
+                <input type="tel" 
+                       id="nannyPhone" 
+                       [(ngModel)]="newNannyData.phone" 
+                       name="phone" 
+                       required
+                       class="form-control"
+                       placeholder="+34 XXX XXX XXX">
+              </div>
+              
+              <div class="form-group">
+                <label for="nannyAge">Edad</label>
+                <input type="number" 
+                       id="nannyAge" 
+                       [(ngModel)]="newNannyData.age" 
+                       name="age" 
+                       min="18"
+                       max="65"
+                       class="form-control"
+                       placeholder="25">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="nannyLocation">Ubicación *</label>
+              <input type="text" 
+                     id="nannyLocation" 
+                     [(ngModel)]="newNannyData.location" 
+                     name="location" 
+                     required
+                     class="form-control"
+                     placeholder="Madrid Centro, Barcelona, Valencia...">
+            </div>
+          </div>
+
+          <!-- Sección de experiencia profesional -->
+          <div class="form-section">
+            <div class="section-header">
+              <h4>Experiencia Profesional</h4>
+              <div class="section-divider"></div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nannyExperience">Años de Experiencia *</label>
+                <select id="nannyExperience" 
+                        [(ngModel)]="newNannyData.experience" 
+                        name="experience" 
+                        required
+                        class="form-control">
+                  <option value="">Seleccione...</option>
+                  <option value="1">1 año</option>
+                  <option value="2">2 años</option>
+                  <option value="3">3 años</option>
+                  <option value="4">4 años</option>
+                  <option value="5">5 años</option>
+                  <option value="6">6-10 años</option>
+                  <option value="7">Más de 10 años</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="nannyRate">Tarifa por Hora *</label>
+                <div class="input-with-suffix">
+                  <input type="number" 
+                         id="nannyRate" 
+                         [(ngModel)]="newNannyData.hourlyRate" 
+                         name="hourlyRate" 
+                         required
+                         min="10"
+                         max="50"
+                         class="form-control"
+                         placeholder="15">
+                  <span class="input-suffix">€/h</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="nannySkills">Habilidades y Certificaciones</label>
+              <div class="skills-selector">
+                <div class="skill-option">
+                  <input type="checkbox" id="skill1" [(ngModel)]="newNannyData.skills.childcare" name="childcare">
+                  <label for="skill1">Cuidado infantil</label>
+                </div>
+                <div class="skill-option">
+                  <input type="checkbox" id="skill2" [(ngModel)]="newNannyData.skills.firstAid" name="firstAid">
+                  <label for="skill2">Primeros auxilios</label>
+                </div>
+                <div class="skill-option">
+                  <input type="checkbox" id="skill3" [(ngModel)]="newNannyData.skills.education" name="education">
+                  <label for="skill3">Educación</label>
+                </div>
+                <div class="skill-option">
+                  <input type="checkbox" id="skill4" [(ngModel)]="newNannyData.skills.cooking" name="cooking">
+                  <label for="skill4">Cocina</label>
+                </div>
+                <div class="skill-option">
+                  <input type="checkbox" id="skill5" [(ngModel)]="newNannyData.skills.languages" name="languages">
+                  <label for="skill5">Idiomas</label>
+                </div>
+                <div class="skill-option">
+                  <input type="checkbox" id="skill6" [(ngModel)]="newNannyData.skills.specialNeeds" name="specialNeeds">
+                  <label for="skill6">Necesidades especiales</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="nannyDescription">Descripción Personal</label>
+              <textarea id="nannyDescription" 
+                        [(ngModel)]="newNannyData.description" 
+                        name="description" 
+                        rows="4"
+                        class="form-control"
+                        placeholder="Cuéntanos sobre tu experiencia, personalidad y lo que te hace especial como cuidadora..."></textarea>
+            </div>
+          </div>
+
+          <!-- Sección de disponibilidad -->
+          <div class="form-section">
+            <div class="section-header">
+              <h4>Disponibilidad</h4>
+              <div class="section-divider"></div>
+            </div>
+            
+            <div class="form-group">
+              <label for="nannyStatus">Estado Inicial</label>
+              <select id="nannyStatus" 
+                      [(ngModel)]="newNannyData.status" 
+                      name="status" 
+                      class="form-control">
+                <option value="active">Activa</option>
+                <option value="inactive">Inactiva</option>
+              </select>
+            </div>
+
+            <div class="availability-grid">
+              <div class="availability-item">
+                <input type="checkbox" id="available-weekdays" [(ngModel)]="newNannyData.availability.weekdays" name="weekdays">
+                <label for="available-weekdays">
+                  <div class="availability-icon">📅</div>
+                  <span>Días laborables</span>
+                </label>
+              </div>
+              <div class="availability-item">
+                <input type="checkbox" id="available-weekends" [(ngModel)]="newNannyData.availability.weekends" name="weekends">
+                <label for="available-weekends">
+                  <div class="availability-icon">🎉</div>
+                  <span>Fines de semana</span>
+                </label>
+              </div>
+              <div class="availability-item">
+                <input type="checkbox" id="available-nights" [(ngModel)]="newNannyData.availability.nights" name="nights">
+                <label for="available-nights">
+                  <div class="availability-icon">🌙</div>
+                  <span>Noches</span>
+                </label>
+              </div>
+              <div class="availability-item">
+                <input type="checkbox" id="available-emergency" [(ngModel)]="newNannyData.availability.emergency" name="emergency">
+                <label for="available-emergency">
+                  <div class="availability-icon">🚨</div>
+                  <span>Emergencias</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeAddNannyModal()">
+          Cancelar
+        </button>
+        <button type="submit" 
+                class="btn-primary" 
+                (click)="onSubmitAddNanny(addNannyForm)"
+                [disabled]="!addNannyForm.form.valid">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Agregar Nanny
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de confirmación para cerrar sesión -->
@@ -437,7 +1601,7 @@
     [isVisible]="showLogoutModal"
     [userName]="currentUser.name"
     [userRole]="currentUser.role"
-    [redirectRoute]="'/user-selection'"
+    [redirectRoute]="'/'"
     (onCancel)="closeLogoutModal()"
     (onConfirm)="confirmLogout()">
   </app-logout-modal>

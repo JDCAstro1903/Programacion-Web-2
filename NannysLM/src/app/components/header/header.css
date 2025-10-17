@@ -56,7 +56,7 @@
 }
 
 .btn-register {
-  background-color: #6366f1; /* Color púrpura que coincide con la imagen */
+  background: linear-gradient(135deg, #ff69b4 0%, #ec4899 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -68,12 +68,13 @@
   font-family: 'Poppins', sans-serif;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
 }
 
 .btn-register:hover {
-  background-color: #4f46e5;
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 105, 180, 0.5);
 }
 
 .btn-register:active {
