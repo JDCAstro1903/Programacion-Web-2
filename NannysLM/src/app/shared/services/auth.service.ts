@@ -9,20 +9,18 @@ export interface User {
   email: string;
   nombre: string;
   apellido: string;
-  tipo_usuario: 'admin' | 'cliente' | 'nanny';
+  tipo_usuario: 'admin' | 'client' | 'nanny';
   es_verificado: boolean;
 }
 
 export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  user: User;
-}
-
-export interface LoginRequest {
-  username: string; // El backend espera 'username' para el email
-  password: string;
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+    expires_in: string;
+  };
 }
 
 @Injectable({
@@ -67,26 +65,21 @@ export class AuthService {
    * Iniciar sesión
    */
   login(email: string, password: string): Observable<LoginResponse> {
-    const loginData: LoginRequest = {
-      username: email, // FastAPI OAuth2PasswordRequestForm espera 'username'
+    const loginData = {
+      email: email,
       password: password
     };
 
-    // Crear FormData para OAuth2PasswordRequestForm
-    const formData = new FormData();
-    formData.append('username', email);
-    formData.append('password', password);
-
-    return this.http.post<LoginResponse>(`${this.API_URL}/login`, formData)
+    return this.http.post<LoginResponse>(`${this.API_URL}/login`, loginData)
       .pipe(
         tap(response => {
           // Guardar token y usuario
-          localStorage.setItem('access_token', response.access_token);
-          localStorage.setItem('current_user', JSON.stringify(response.user));
-          localStorage.setItem('token_expires_at', (Date.now() + (response.expires_in * 1000)).toString());
+          localStorage.setItem('access_token', response.data.token);
+          localStorage.setItem('current_user', JSON.stringify(response.data.user));
+          localStorage.setItem('token_expires_at', (Date.now() + (7 * 24 * 60 * 60 * 1000)).toString()); // 7 días
           
-          this.tokenSubject.next(response.access_token);
-          this.currentUserSubject.next(response.user);
+          this.tokenSubject.next(response.data.token);
+          this.currentUserSubject.next(response.data.user);
         }),
         catchError(this.handleError)
       );
@@ -148,7 +141,7 @@ export class AuthService {
   /**
    * Verificar si el usuario tiene un rol específico
    */
-  hasRole(role: 'admin' | 'cliente' | 'nanny'): boolean {
+  hasRole(role: 'admin' | 'client' | 'nanny'): boolean {
     const user = this.getCurrentUser();
     return user?.tipo_usuario === role;
   }
@@ -165,13 +158,13 @@ export class AuthService {
 
     switch (user.tipo_usuario) {
       case 'admin':
-        this.router.navigate(['/admin-dashboard']);
+        this.router.navigate(['/dashboard/admin']);
         break;
-      case 'cliente':
-        this.router.navigate(['/client-dashboard']);
+      case 'client':
+        this.router.navigate(['/dashboard/client']);
         break;
       case 'nanny':
-        this.router.navigate(['/nanny-dashboard']);
+        this.router.navigate(['/dashboard/nanny']);
         break;
       default:
         this.router.navigate(['/']);

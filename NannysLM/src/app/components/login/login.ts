@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
-import { AuthService, LoginData } from '../../services/auth.service';
+import { AuthService, AuthResponse } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -46,13 +46,12 @@ export class LoginComponent {
     this.isLoading = true;
     this.showLoadingModal = true;
 
-    // Preparar datos para login
-    const loginData: LoginData = {
+    // Iniciar sesión
+    const loginData = {
       email: this.email.toLowerCase().trim(),
       password: this.password
     };
-
-    // Iniciar sesión
+    
     this.authService.login(loginData).subscribe({
       next: (response) => {
         this.isLoading = false;
@@ -80,24 +79,41 @@ export class LoginComponent {
         this.isLoading = false;
         this.showLoadingModal = false;
         console.error('Error en login:', error);
+        console.error('Error status:', error.status);
+        console.error('Error error:', error.error);
+        console.error('Error message:', error.error?.message);
+        console.error('Error errors:', error.error?.errors);
+        
+        // Limpiar errores previos
+        this.errors = {};
         
         if (error.error && error.error.errors) {
-          // Errores de validación del backend
+          // Errores específicos del backend (email no existe, contraseña incorrecta, etc.)
+          console.log('Procesando errores específicos:', error.error.errors);
           this.errors = this.processValidationErrors(error.error.errors);
           this.scrollToFirstError();
         } else if (error.error && error.error.message) {
           // Error general del backend
+          console.log('Error general del backend:', error.error.message);
           this.errors.general = error.error.message;
         } else if (error.status === 401) {
-          // Error de credenciales
-          this.errors.general = 'Email o contraseña incorrectos';
+          // Fallback para errores 401 sin estructura específica
+          this.errors.general = 'Credenciales incorrectas. Verifica tu email y contraseña.';
         } else if (error.status === 403) {
           // Usuario desactivado
-          this.errors.general = 'Tu cuenta ha sido desactivada. Contacta al soporte.';
+          this.errors.general = 'Tu cuenta ha sido desactivada. Contacta al soporte técnico.';
+        } else if (error.status === 0) {
+          // Error de conexión
+          this.errors.general = 'No se puede conectar al servidor. Verifica tu conexión a internet.';
+        } else if (error.status >= 500) {
+          // Error del servidor
+          this.errors.general = 'Error interno del servidor. Inténtalo más tarde.';
         } else {
-          // Error de red u otro
-          this.errors.general = 'Error de conexión. Intenta nuevamente.';
+          // Error genérico
+          this.errors.general = 'Ocurrió un error inesperado. Inténtalo nuevamente.';
         }
+        
+        console.log('Errores finales asignados:', this.errors);
       }
     });
   }
@@ -129,10 +145,13 @@ export class LoginComponent {
   }
 
   processValidationErrors(errors: any[]): any {
+    console.log('🔍 Procesando errores de validación:', errors);
     const processedErrors: any = {};
     errors.forEach(error => {
+      console.log(`🔸 Procesando error - Campo: ${error.field}, Mensaje: ${error.message}`);
       processedErrors[error.field] = error.message;
     });
+    console.log('✅ Errores procesados:', processedErrors);
     return processedErrors;
   }
 

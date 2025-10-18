@@ -82,15 +82,27 @@ class AuthController {
             if (!user) {
                 return res.status(401).json({
                     success: false,
-                    message: 'Credenciales inválidas'
+                    message: 'Usuario no encontrado',
+                    errors: [
+                        {
+                            field: 'email',
+                            message: 'No existe una cuenta asociada a este correo electrónico'
+                        }
+                    ]
                 });
             }
             
             // Verificar si el usuario está activo
             if (!user.is_active) {
-                return res.status(401).json({
+                return res.status(403).json({
                     success: false,
-                    message: 'Cuenta desactivada. Contacta al soporte.'
+                    message: 'Cuenta desactivada',
+                    errors: [
+                        {
+                            field: 'general',
+                            message: 'Tu cuenta ha sido desactivada. Contacta al soporte técnico.'
+                        }
+                    ]
                 });
             }
             
@@ -99,7 +111,13 @@ class AuthController {
             if (!isPasswordValid) {
                 return res.status(401).json({
                     success: false,
-                    message: 'Credenciales inválidas'
+                    message: 'Contraseña incorrecta',
+                    errors: [
+                        {
+                            field: 'password',
+                            message: 'La contraseña ingresada es incorrecta'
+                        }
+                    ]
                 });
             }
             

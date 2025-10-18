@@ -75,6 +75,39 @@ class UserModel {
                 updated_at,
                 last_login
             FROM users 
+            WHERE email = ?
+        `;
+        
+        const result = await executeQuery(query, [email]);
+        
+        if (result.success && result.data.length > 0) {
+            return result.data[0];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Buscar usuario activo por email
+     */
+    static async findActiveUserByEmail(email) {
+        const query = `
+            SELECT 
+                id,
+                email,
+                password_hash,
+                first_name,
+                last_name,
+                phone_number,
+                address,
+                user_type,
+                is_verified,
+                is_active,
+                profile_image,
+                created_at,
+                updated_at,
+                last_login
+            FROM users 
             WHERE email = ? AND is_active = TRUE
         `;
         

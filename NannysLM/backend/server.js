@@ -12,7 +12,7 @@ const { testConnection } = require('./src/config/database');
 
 // Importar rutas
 const authRoutes = require('./src/routes/auth');
-// const userRoutes = require('./src/routes/users');
+const dashboardRoutes = require('./src/routes/dashboard');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -79,17 +79,16 @@ app.get('/api/info', (req, res) => {
         description: 'API REST para la plataforma de gestión de niñeras',
         endpoints: {
             health: '/api/health',
-            auth: '/api/auth',
-            users: '/api/users',
-            services: '/api/services',
-            payments: '/api/payments'
+            info: '/api/info',
+            auth: '/api/v1/auth',
+            dashboard: '/api/v1/dashboard'
         }
     });
 });
 
 // Rutas principales de la API
-app.use('/api/auth', authRoutes);
-// app.use('/api/users', userRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 // ===============================================
 // MANEJO DE ERRORES

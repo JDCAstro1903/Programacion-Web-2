@@ -53,7 +53,7 @@
               </div>
               <div class="metric-content">
                 <h3>Nannys Disponibles</h3>
-                <div class="metric-number">{{ stats.nanniesAvailable }}</div>
+                <div class="metric-number">{{ dashboardStats?.nannys?.active || 0 }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+3 este mes</span>
                 </div>
@@ -76,7 +76,7 @@
               </div>
               <div class="metric-content">
                 <h3>Clientes Verificados</h3>
-                <div class="metric-number">{{ stats.verifiedClients }}</div>
+                <div class="metric-number">{{ dashboardStats?.clients?.verified || 0 }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+5 esta semana</span>
                 </div>
@@ -99,7 +99,7 @@
               </div>
               <div class="metric-content">
                 <h3>Ingresos del Mes</h3>
-                <div class="metric-number">${{ stats.monthlyRevenue.toLocaleString() }}</div>
+                <div class="metric-number">${{ getMonthlyRevenue().toLocaleString() }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+12% vs mes anterior</span>
                 </div>
@@ -156,10 +156,10 @@
                 <h4>Nannys Activas</h4>
               </div>
               <div class="activity-content">
-                <div *ngFor="let nanny of nannysData.active.slice(0, 3)" class="activity-item">
+                <div *ngFor="let nanny of getActiveNannysSlice()" class="activity-item">
                   <div class="activity-info">
                     <span class="activity-name">{{ nanny.name }}</span>
-                    <span class="activity-detail">{{ nanny.rating }}⭐ • ${{ nanny.hourlyRate }}/h</span>
+                    <span class="activity-detail">{{ nanny.rating }}⭐ • --/h</span>
                   </div>
                   <div class="activity-status status-active">Activa</div>
                 </div>
@@ -177,7 +177,7 @@
                 <h4>Pagos Recientes</h4>
               </div>
               <div class="activity-content">
-                <div *ngFor="let payment of paymentsData.verified.slice(0, 3)" class="activity-item">
+                <div *ngFor="let payment of getRecentPayments()" class="activity-item">
                   <div class="activity-info">
                     <span class="activity-name">{{ payment.clientName }}</span>
                     <span class="activity-detail">{{ payment.date }} • {{ payment.hours }}h</span>
@@ -268,15 +268,15 @@
         <!-- Estadísticas rápidas -->
         <div class="nannys-stats">
           <div class="stat-item">
-            <div class="stat-number">{{ nannysData.active.length }}</div>
+            <div class="stat-number">{{ getNannyCount('active') }}</div>
             <div class="stat-label">Activas</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number">{{ nannysData.busy.length }}</div>
-            <div class="stat-label">Ocupadas</div>
+            <div class="stat-number">{{ getNannyCount('suspended') }}</div>
+            <div class="stat-label">Suspendidas</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number">{{ nannysData.inactive.length }}</div>
+            <div class="stat-number">{{ getNannyCount('inactive') }}</div>
             <div class="stat-label">Inactivas</div>
           </div>
           <div class="stat-item">
@@ -299,14 +299,14 @@
                 </svg>
               </div>
               <span class="tab-text">Activas</span>
-              <span class="tab-count">{{ nannysData.active.length }}</span>
+              <span class="tab-count">{{ getNannyCount('active') }}</span>
             </div>
           </button>
           
           <button 
-            (click)="setNannyFilter('busy')" 
-            class="modern-filter-tab busy-tab"
-            [class.active]="nannyFilter === 'busy'">
+            (click)="setNannyFilter('suspended')" 
+            class="modern-filter-tab suspended-tab"
+            [class.active]="nannyFilter === 'suspended'">
             <div class="tab-indicator"></div>
             <div class="tab-content">
               <div class="tab-icon">
@@ -317,8 +317,8 @@
                   <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                 </svg>
               </div>
-              <span class="tab-text">Ocupadas</span>
-              <span class="tab-count">{{ nannysData.busy.length }}</span>
+              <span class="tab-text">Suspendidas</span>
+              <span class="tab-count">{{ getNannyCount('suspended') }}</span>
             </div>
           </button>
           
@@ -336,7 +336,7 @@
                 </svg>
               </div>
               <span class="tab-text">Inactivas</span>
-              <span class="tab-count">{{ nannysData.inactive.length }}</span>
+              <span class="tab-count">{{ getNannyCount('inactive') }}</span>
             </div>
           </button>
         </div>
@@ -369,13 +369,13 @@
                       </svg>
                       <span class="rating-value">{{ nanny.rating }}</span>
                     </div>
-                    <span class="experience-text">{{ nanny.experience }} años</span>
+                    <span class="experience-text">{{ nanny.servicesCompleted }} servicios</span>
                   </div>
                 </div>
               </div>
               <div class="nanny-rate-info">
                 <div class="hourly-rate">
-                  <span class="rate-amount">{{ nanny.hourlyRate }}€</span>
+                  <span class="rate-amount">--€</span>
                   <span class="rate-period">/hora</span>
                 </div>
               </div>
@@ -388,7 +388,7 @@
                   <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 5.02944 7.02944 1 12 1C16.9706 1 21 5.02944 21 10Z" stroke="currentColor" stroke-width="2"/>
                   <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
                 </svg>
-                <span>{{ nanny.location }}</span>
+                <span>{{ nanny.address || 'No especificada' }}</span>
               </div>
               
               <div class="nanny-skills">
@@ -450,7 +450,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ clientsData.verified.length }}</h3>
+              <h3>{{ getClientCount('verified') }}</h3>
               <p>Clientes Verificados</p>
             </div>
           </div>
@@ -463,7 +463,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ clientsData.unverified.length }}</h3>
+              <h3>{{ getClientCount('unverified') }}</h3>
               <p>Pendientes de Verificación</p>
             </div>
           </div>
@@ -478,7 +478,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ clientsData.verified.length + clientsData.unverified.length }}</h3>
+              <h3>{{ clientsData.length }}</h3>
               <p>Total de Clientes</p>
             </div>
           </div>
@@ -503,7 +503,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Verificados</span>
-                  <span class="tab-count">{{ clientsData.verified.length }}</span>
+                  <span class="tab-count">{{ getClientCount('verified') }}</span>
                 </div>
               </div>
             </button>
@@ -521,7 +521,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Pendientes</span>
-                  <span class="tab-count">{{ clientsData.unverified.length }}</span>
+                  <span class="tab-count">{{ getClientCount('unverified') }}</span>
                 </div>
               </div>
             </button>
@@ -565,14 +565,14 @@
                     <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" stroke-width="2"/>
                     <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ client.location }}</span>
+                  <span>{{ client.address || 'No especificada' }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ client.children }} niño{{ client.children !== 1 ? 's' : '' }}</span>
+                  <span>{{ client.numberOfChildren }} niño{{ client.numberOfChildren !== 1 ? 's' : '' }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -581,7 +581,7 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>Desde {{ formatDate(client.memberSince) }}</span>
+                  <span>Desde {{ formatDate(client.createdAt) }}</span>
                 </div>
               </div>
             </div>
@@ -663,7 +663,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ paymentsData.verified.length }}</h3>
+              <h3>{{ getPaymentCount('verified') }}</h3>
               <p>Pagos Completados</p>
             </div>
           </div>
@@ -676,7 +676,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ paymentsData.unverified.length }}</h3>
+              <h3>{{ getPaymentCount('unverified') }}</h3>
               <p>Pagos Pendientes</p>
             </div>
           </div>
@@ -955,7 +955,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Completados</span>
-                  <span class="tab-count">{{ paymentsData.verified.length }}</span>
+                  <span class="tab-count">{{ getPaymentCount('verified') }}</span>
                 </div>
               </div>
             </button>
@@ -973,7 +973,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Pendientes</span>
-                  <span class="tab-count">{{ paymentsData.unverified.length }}</span>
+                  <span class="tab-count">{{ getPaymentCount('unverified') }}</span>
                 </div>
               </div>
             </button>

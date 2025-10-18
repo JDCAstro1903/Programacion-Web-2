@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export interface SidebarItem {
   id: string;
@@ -30,6 +31,8 @@ export class SidebarComponent {
   @Output() onViewChange = new EventEmitter<string>();
   @Output() onLogoutClick = new EventEmitter<void>();
 
+  constructor(private sanitizer: DomSanitizer) {}
+
   setActiveView(viewId: string) {
     this.onViewChange.emit(viewId);
   }
@@ -42,7 +45,7 @@ export class SidebarComponent {
     return this.currentView === itemId;
   }
 
-  getIconSvg(iconName: string): string {
+  getIconSvg(iconName: string): SafeHtml {
     const icons: { [key: string]: string } = {
       'home': `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -119,7 +122,8 @@ export class SidebarComponent {
       </svg>`
     };
     
-    return icons[iconName] || icons['dashboard'];
+    const svgIcon = icons[iconName] || icons['dashboard'];
+    return this.sanitizer.bypassSecurityTrustHtml(svgIcon);
   }
 
   getSidebarThemeClass(): string {
