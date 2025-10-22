@@ -6,8 +6,9 @@ import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
+import { ClientService as ClientApiService, ClientInfo, ClientServiceData, ClientPayment, ClientStats } from '../../services/client.service';
 
-// Interfaz para definir la estructura de un servicio del cliente
+// Interfaz para definir la estructura de un servicio del cliente (legacy)
 interface ClientService {
   id: number;
   date: string;
@@ -17,6 +18,46 @@ interface ClientService {
   status: 'upcoming' | 'completed' | 'cancelled';
   rating?: number;
   cost?: number;
+}
+
+// Interfaz extendida para servicios con propiedades de UI
+interface ExtendedClientService extends ClientServiceData {
+  showRating?: boolean;
+  tempRating?: number;
+  isRated?: boolean;
+  instructions?: string; // Para compatibilidad con template legacy
+  service?: { name: string }; // Para compatibilidad con template legacy
+}
+
+// Interfaces para datos del perfil
+interface UserProfileData {
+  id?: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  address: string;
+  user_type: string;
+  is_verified: boolean;
+  is_active: boolean;
+  profile_image: string;
+  created_at?: string;
+  updated_at?: string;
+  last_login?: string;
+}
+
+interface ClientProfileData {
+  id?: number;
+  user_id?: number;
+  verification_status: 'pending' | 'verified' | 'rejected';
+  verification_date?: string;
+  identification_document?: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  number_of_children: number;
+  special_requirements: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 @Component({
@@ -49,8 +90,57 @@ export class ClientDashboardComponent implements OnInit {
   showServiceDetails: boolean = false;
   createdService: any = null;
 
-  // Lista de servicios contratados
-  contractedServices: any[] = [
+  // Datos dinámicos del cliente
+  clientInfo: ClientInfo | null = null;
+  contractedServices: ExtendedClientService[] = [];
+  clientPayments: ClientPayment[] = [];
+  clientStats: ClientStats | null = null;
+  
+  // Estados de carga
+  isLoadingClientInfo = false;
+  isLoadingServices = false;
+  isLoadingPayments = false;
+  isLoadingStats = false;
+
+  // Datos del perfil
+  profileData: UserProfileData = {
+    email: '',
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    address: '',
+    user_type: 'client',
+    is_verified: false,
+    is_active: true,
+    profile_image: ''
+  };
+
+  clientData: ClientProfileData = {
+    verification_status: 'pending',
+    identification_document: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    number_of_children: 0,
+    special_requirements: ''
+  };
+
+  // Estado de guardado
+  isSavingProfile = false;
+  
+  // Estado de carga del perfil
+  isLoadingProfile = false;
+
+  // ID del usuario actual (en producción vendría del JWT)
+  currentUserId: number = 2; // Default, se actualiza en ngOnInit
+
+  // Archivos seleccionados y nombres
+  selectedProfileImageName: string = '';
+  selectedIdentificationName: string = '';
+  profileImageFile: File | null = null;
+  identificationFile: File | null = null;
+
+  // Lista de servicios contratados (legacy - será reemplazada)
+  contractedServicesLegacy: any[] = [
     {
       id: 1,
       title: 'Sesion 19 de Marzo',
@@ -125,22 +215,8 @@ export class ClientDashboardComponent implements OnInit {
     }
   ];
 
-  // Datos del perfil del usuario
-  userProfile = {
-    firstName: 'Juan',
-    lastName: 'Pérez',
-    email: 'juan.perez@email.com',
-    phone: '+1 234 567 8900',
-    address: 'Calle 123, Ciudad, País',
-    avatar: 'assets/logo.png',
-    isVerified: true
-  };
-
-  // Archivo seleccionado para identificación
-  selectedFileName: string = '';
-
-  // Lista de pagos
-  paymentsList = [
+  // Lista de pagos (legacy - será reemplazada)
+  paymentsListLegacy = [
     {
       id: 1,
       session: 'Sesion #1',
@@ -213,13 +289,6 @@ export class ClientDashboardComponent implements OnInit {
     }
   ];
 
-  // Datos del usuario cliente
-  currentUser = {
-    name: 'Juan Pérez',
-    role: 'Cliente',
-    avatar: '/assets/logo.png'
-  };
-
   // Estado de la cuenta
   accountStatus = {
     isVerified: true,
@@ -286,7 +355,8 @@ export class ClientDashboardComponent implements OnInit {
   constructor(
     private userConfigService: UserConfigService, 
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private clientApiService: ClientApiService
   ) {
     // Configurar sidebar específico para cliente con tema rosa
     this.sidebarConfig = {
@@ -318,15 +388,155 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   ngOnInit() {
+    console.log('🎯 Iniciando ClientDashboardComponent...');
+    
+    // Debug del localStorage
+    console.log('💾 LocalStorage user:', localStorage.getItem('user'));
+    console.log('💾 LocalStorage token:', localStorage.getItem('token'));
+    
+    // Obtener el usuario actual desde el AuthService
+    const currentUser = this.authService.getCurrentUser();
+    console.log('👤 Usuario desde AuthService:', currentUser);
+    
+    if (currentUser && currentUser.id) {
+      this.currentUserId = currentUser.id;
+      console.log('✅ Usuario actual detectado:', currentUser);
+      console.log('🔑 ID del usuario establecido:', this.currentUserId);
+    } else {
+      console.warn('⚠️ No se pudo obtener el usuario actual desde AuthService');
+      console.log('🔄 Intentando cargar desde localStorage directamente...');
+      
+      // Intentar obtener desde localStorage directamente
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          console.log('📋 Usuario desde localStorage:', user);
+          if (user.id) {
+            this.currentUserId = user.id;
+            console.log('🆔 ID obtenido desde localStorage:', this.currentUserId);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error al parsear usuario desde localStorage:', error);
+      }
+    }
+    
+    console.log(`🎪 Cargando datos para usuario ID: ${this.currentUserId}`);
+    
+    // Cargar datos dinámicos del cliente
+    this.loadClientData();
+    // Cargar datos del perfil
+    this.loadProfileData();
     // Actualizar contadores en el sidebar si es necesario
     this.updateSidebarCounts();
   }
 
   private updateSidebarCounts() {
-    // Actualizar contadores para servicios
-    this.userConfigService.updateSidebarItemCount('admin', 'services', 
-      this.services.upcoming.length + this.services.past.length);
+    // Actualizar contadores para servicios (usar datos dinámicos cuando estén disponibles)
+    if (this.clientStats) {
+      this.userConfigService.updateSidebarItemCount('admin', 'services', 
+        this.clientStats.services.total);
+    }
   }
+
+  // ===============================================
+  // MÉTODOS DE CARGA DE DATOS DINÁMICOS
+  // ===============================================
+
+  private loadClientData() {
+    this.loadClientInfo();
+    this.loadClientServices();
+    this.loadClientPayments();
+    this.loadClientStats();
+  }
+
+  private loadClientInfo() {
+    this.isLoadingClientInfo = true;
+    console.log(`📋 Cargando información del cliente para ID: ${this.currentUserId}`);
+    this.clientApiService.getClientInfo(this.currentUserId).subscribe({
+      next: (response: any) => {
+        console.log('✅ Respuesta client info completa:', JSON.stringify(response, null, 2));
+        if (response.success) {
+          this.clientInfo = response.data;
+          console.log('✅ clientInfo actualizado:', JSON.stringify(this.clientInfo, null, 2));
+          if (this.clientInfo && this.clientInfo.profile_image) {
+            console.log('✅ profile_image específico:', this.clientInfo.profile_image);
+          } else {
+            console.log('⚠️ profile_image no disponible');
+          }
+        }
+        this.isLoadingClientInfo = false;
+      },
+      error: (error: any) => {
+        console.error('❌ Error cargando información del cliente:', error);
+        this.isLoadingClientInfo = false;
+      }
+    });
+  }
+
+  private loadClientServices() {
+    this.isLoadingServices = true;
+    console.log(`📋 Cargando servicios del cliente...`);
+    this.clientApiService.getClientServices().subscribe({
+      next: (response: any) => {
+        console.log('✅ Respuesta client services:', response);
+        if (response.success) {
+          this.contractedServices = response.data.map((service: ClientServiceData) => ({
+            ...service,
+            showRating: false,
+            tempRating: 0,
+            isRated: service.rating.given
+          }));
+        }
+        this.isLoadingServices = false;
+      },
+      error: (error: any) => {
+        console.error('❌ Error cargando servicios:', error);
+        this.isLoadingServices = false;
+      }
+    });
+  }
+
+  private loadClientPayments() {
+    this.isLoadingPayments = true;
+    console.log(`📋 Cargando pagos del cliente...`);
+    this.clientApiService.getClientPayments().subscribe({
+      next: (response: any) => {
+        console.log('✅ Respuesta client payments:', response);
+        if (response.success) {
+          this.clientPayments = response.data;
+        }
+        this.isLoadingPayments = false;
+      },
+      error: (error: any) => {
+        console.error('❌ Error cargando pagos:', error);
+        this.isLoadingPayments = false;
+      }
+    });
+  }
+
+  private loadClientStats() {
+    this.isLoadingStats = true;
+    console.log(`📋 Cargando estadísticas del cliente...`);
+    this.clientApiService.getClientStats().subscribe({
+      next: (response: any) => {
+        console.log('✅ Respuesta client stats:', response);
+        if (response.success) {
+          this.clientStats = response.data;
+        }
+        this.isLoadingStats = false;
+      },
+      error: (error: any) => {
+        console.error('❌ Error cargando estadísticas:', error);
+        this.isLoadingStats = false;
+      }
+    });
+  }
+
+  // ===============================================
+  // MÉTODOS DE NAVEGACIÓN
+  // ===============================================
 
   // Métodos de navegación
   setCurrentView(view: string) {
@@ -805,7 +1015,11 @@ export class ClientDashboardComponent implements OnInit {
   setRating(serviceId: number, rating: number) {
     const service = this.contractedServices.find(s => s.id === serviceId);
     if (service) {
-      service.rating = rating;
+      service.rating = {
+        given: true,
+        rating: rating,
+        review: service.rating.review
+      };
       service.isRated = true;
       service.showRating = false;
       service.tempRating = 0;
@@ -865,20 +1079,166 @@ export class ClientDashboardComponent implements OnInit {
     return this.contractedServices.length === 0;
   }
 
-  // Métodos para el perfil
-  triggerFileInput() {
-    const fileInput = document.getElementById('identification') as HTMLInputElement;
-    fileInput?.click();
+  // Métodos helper para datos dinámicos
+  get currentUser() {
+    console.log('🔍 Header - currentUser getter llamado');
+    console.log('🔍 Header - clientInfo:', this.clientInfo);
+    
+    if (this.clientInfo) {
+      // Construir URL completa de la imagen de perfil para el header
+      let avatarUrl = 'assets/logo.png';
+      console.log('🖼️ Header - Profile image desde clientInfo:', this.clientInfo.profile_image);
+      console.log('🖼️ Header - Tipo de profile_image:', typeof this.clientInfo.profile_image);
+      console.log('🖼️ Header - Valor completo de clientInfo:', JSON.stringify(this.clientInfo, null, 2));
+      
+      if (this.clientInfo.profile_image) {
+        if (this.clientInfo.profile_image.startsWith('http')) {
+          avatarUrl = this.clientInfo.profile_image;
+          console.log('🌐 Header - Usando URL completa:', avatarUrl);
+        } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
+          // Si ya incluye /uploads/, solo agregar el host
+          avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
+          console.log('🔗 Header - URL con ruta completa:', avatarUrl);
+        } else {
+          // Si es solo el nombre del archivo
+          avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
+          console.log('🔗 Header - URL construida:', avatarUrl);
+        }
+      } else {
+        console.log('❌ Header - No hay profile_image en clientInfo');
+        console.log('❌ Header - clientInfo.profile_image es:', this.clientInfo.profile_image);
+      }
+      
+      return {
+        name: `${this.clientInfo.first_name} ${this.clientInfo.last_name}`,
+        role: 'Cliente',
+        first_name: this.clientInfo.first_name,
+        last_name: this.clientInfo.last_name,
+        email: this.clientInfo.email,
+        phone: this.clientInfo.phone_number,
+        address: this.clientInfo.address,
+        avatar: avatarUrl,
+        isVerified: this.clientInfo.is_verified
+      };
+    }
+    return {
+      name: 'Usuario',
+      role: 'Cliente',
+      avatar: 'assets/logo.png'
+    };
   }
 
-  onFileSelected(event: Event) {
-    const target = event.target as HTMLInputElement;
-    if (target.files && target.files.length > 0) {
-      const file = target.files[0];
-      this.selectedFileName = file.name;
-      console.log('Archivo seleccionado:', file.name);
+  get userProfile() {
+    // Usar profileData que contiene los datos actualizados desde la base de datos
+    if (this.profileData && this.profileData.first_name) {
+      // Construir URL completa de la imagen de perfil si existe
+      let avatarUrl = 'assets/logo.png';
+      
+      console.log('🖼️ Profile image desde BD:', this.profileData.profile_image);
+      
+      if (this.profileData.profile_image) {
+        // Si la imagen ya es una URL completa, usarla tal como está
+        if (this.profileData.profile_image.startsWith('http')) {
+          avatarUrl = this.profileData.profile_image;
+          console.log('🌐 Usando URL completa:', avatarUrl);
+        } else if (this.profileData.profile_image.startsWith('/uploads/')) {
+          // Si ya incluye /uploads/, solo agregar el host
+          avatarUrl = `http://localhost:8000${this.profileData.profile_image}`;
+          console.log('🔗 URL con ruta completa:', avatarUrl);
+        } else {
+          // Si es solo el nombre del archivo
+          avatarUrl = `http://localhost:8000/uploads/${this.profileData.profile_image}`;
+          console.log('🔗 URL construida:', avatarUrl);
+        }
+      } else {
+        console.log('❌ No hay profile_image en profileData, usando imagen por defecto');
+      }
+
+      return {
+        firstName: this.profileData.first_name,
+        lastName: this.profileData.last_name,
+        email: this.profileData.email,
+        phone: this.profileData.phone_number || '',
+        address: this.profileData.address || '',
+        avatar: avatarUrl,
+        isVerified: this.profileData.is_verified,
+        emergencyContactName: this.clientData.emergency_contact_name || '',
+        emergencyContactPhone: this.clientData.emergency_contact_phone || '',
+        numberOfChildren: this.clientData.number_of_children || 0,
+        specialRequirements: this.clientData.special_requirements || ''
+      };
     }
+    return {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      address: '',
+      avatar: 'assets/logo.png',
+      isVerified: false,
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      numberOfChildren: 0,
+      specialRequirements: ''
+    };
   }
+
+  get paymentsList() {
+    return this.clientPayments.map(payment => ({
+      id: payment.id,
+      session: payment.service_title,
+      amount: payment.amount.toFixed(2),
+      status: payment.payment_status === 'completed' ? 'pagado' : 
+              payment.payment_status === 'pending' ? 'Sin verificar' : 
+              payment.payment_status,
+      date: new Date(payment.service_date),
+      nanny: payment.nanny?.name || 'No asignada',
+      receiptUrl: payment.receipt_url
+    }));
+  }
+
+  // Función para obtener la URL completa de la imagen de perfil
+  getProfileImageUrl(): string {
+    if (!this.profileData.profile_image) {
+      return 'assets/logo.png';
+    }
+    
+    // Si la imagen ya es una URL completa, usarla tal como está
+    if (this.profileData.profile_image.startsWith('http')) {
+      return this.profileData.profile_image;
+    }
+    
+    // Si ya incluye /uploads/, solo agregar el host
+    if (this.profileData.profile_image.startsWith('/uploads/')) {
+      return `http://localhost:8000${this.profileData.profile_image}`;
+    }
+    
+    // Si es solo el nombre del archivo, construir la URL completa
+    return `http://localhost:8000/uploads/${this.profileData.profile_image}`;
+  }
+
+  // Estadísticas del dashboard
+  getTotalServices(): number {
+    return this.clientStats?.services.total || 0;
+  }
+
+  getCompletedServices(): number {
+    return this.clientStats?.services.completed || 0;
+  }
+
+  getPendingServices(): number {
+    return this.clientStats?.services.pending || 0;
+  }
+
+  getTotalSpent(): number {
+    return this.clientStats?.financial.total_spent || 0;
+  }
+
+  getUniqueNannys(): number {
+    return this.clientStats?.nannys.unique_nannys_hired || 0;
+  }
+
+  // Métodos para el perfil (eliminado método duplicado)
 
   editProfile() {
     console.log('Editar perfil');
@@ -1051,5 +1411,223 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       return this.nannyBankData[service.nanny.name] || null;
     }
     return null;
+  }
+
+  // ===============================================
+  // MÉTODOS PARA PERFIL
+  // ===============================================
+
+  // Cargar datos del perfil desde el backend
+  async loadProfileData() {
+    this.isLoadingProfile = true;
+    
+    try {
+      // Obtener datos del perfil desde el backend con el ID del usuario actual
+      console.log(`🔄 Cargando datos del perfil para usuario ID: ${this.currentUserId}`);
+      
+      const response = await fetch(`http://localhost:8000/api/v1/profile/data?userId=${this.currentUserId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Aquí se incluiría el token de autorización cuando esté implementado
+          // 'Authorization': `Bearer ${this.authService.getToken()}`
+        }
+      });
+
+      console.log('📡 Respuesta del servidor:', response.status, response.statusText);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📦 Datos recibidos del servidor:', result);
+        
+        if (result.success) {
+          // Cargar datos del usuario
+          this.profileData = {
+            id: result.data.user_data.id,
+            email: result.data.user_data.email,
+            first_name: result.data.user_data.first_name,
+            last_name: result.data.user_data.last_name,
+            phone_number: result.data.user_data.phone_number || '',
+            address: result.data.user_data.address || '',
+            user_type: result.data.user_data.user_type,
+            is_verified: result.data.user_data.is_verified,
+            is_active: result.data.user_data.is_active,
+            profile_image: result.data.user_data.profile_image || '',
+            created_at: result.data.user_data.created_at,
+            updated_at: result.data.user_data.updated_at
+          };
+
+          console.log('✅ Datos del perfil cargados:', this.profileData);
+          console.log('🖼️ Profile image específica:', this.profileData.profile_image);
+
+          // Cargar datos específicos del cliente
+          this.clientData = {
+            id: result.data.client_data.id,
+            user_id: result.data.client_data.user_id,
+            verification_status: result.data.client_data.verification_status,
+            verification_date: result.data.client_data.verification_date,
+            emergency_contact_name: result.data.client_data.emergency_contact_name || '',
+            emergency_contact_phone: result.data.client_data.emergency_contact_phone || '',
+            number_of_children: result.data.client_data.number_of_children || 0,
+            special_requirements: result.data.client_data.special_requirements || '',
+            created_at: result.data.client_data.created_at,
+            updated_at: result.data.client_data.updated_at
+          };
+
+          console.log('👨‍👩‍👧‍👦 Datos del cliente cargados:', this.clientData);
+
+          console.log('✅ Datos del perfil cargados exitosamente:', { 
+            userData: this.profileData, 
+            clientData: this.clientData 
+          });
+          console.log(`👤 Usuario: ${this.profileData.first_name} ${this.profileData.last_name}`);
+        }
+      } else {
+        console.error('Error al cargar datos del perfil:', response.status);
+        this.loadFallbackData();
+      }
+    } catch (error) {
+      console.error('Error de conexión al cargar perfil:', error);
+      this.loadFallbackData();
+    } finally {
+      this.isLoadingProfile = false;
+    }
+  }
+
+  // Cargar datos de respaldo en caso de error
+  private loadFallbackData() {
+    // Datos básicos del usuario desde la sesión actual como fallback
+    this.profileData = {
+      email: this.currentUser.email || '',
+      first_name: this.currentUser.name.split(' ')[0] || '',
+      last_name: this.currentUser.name.split(' ').slice(1).join(' ') || '',
+      phone_number: '',
+      address: '',
+      user_type: 'client',
+      is_verified: false,
+      is_active: true,
+      profile_image: ''
+    };
+
+    // Datos específicos del cliente vacíos como fallback
+    this.clientData = {
+      verification_status: 'pending',
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
+      number_of_children: 0,
+      special_requirements: ''
+    };
+  }
+
+  // Guardar cambios del perfil usando el servicio Angular
+  saveProfileChanges() {
+    this.isSavingProfile = true;
+    const updateData = {
+      emergency_contact_name: this.clientData.emergency_contact_name,
+      emergency_contact_phone: this.clientData.emergency_contact_phone,
+      number_of_children: this.clientData.number_of_children,
+      special_requirements: this.clientData.special_requirements,
+      verification_status: this.clientData.verification_status
+    };
+    this.clientApiService.updateClientProfile(updateData).subscribe({
+      next: (result) => {
+        if (result.success) {
+          alert('✅ Perfil actualizado exitosamente');
+          // Actualizar datos locales si es necesario
+          Object.assign(this.clientData, updateData);
+        } else {
+          alert('❌ Error al guardar: ' + (result.message || 'Error desconocido'));
+        }
+        this.isSavingProfile = false;
+      },
+      error: (error) => {
+        console.error('❌ Error al guardar perfil:', error);
+        alert('❌ Error de red o del servidor.');
+        this.isSavingProfile = false;
+      }
+    });
+  }
+
+  // Cancelar cambios y recargar datos originales
+  async cancelChanges() {
+    if (confirm('¿Estás seguro de que deseas cancelar los cambios?')) {
+      await this.loadProfileData();
+    }
+  }
+
+
+
+  // Métodos para manejar la subida de imagen de perfil
+  onProfileImageUpload(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (file.type.startsWith('image/')) {
+        this.selectedProfileImageName = file.name;
+        this.profileImageFile = file;
+        
+        // Crear un FileReader para preview
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.profileData.profile_image = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        
+        console.log('✅ Imagen de perfil seleccionada:', file.name);
+      } else {
+        alert('Por favor selecciona un archivo de imagen válido');
+        event.target.value = '';
+      }
+    }
+  }
+
+  // Métodos para manejar la subida de documento de identificación
+  onIdentificationUpload(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      // Validar que sea una imagen
+      if (file.type.startsWith('image/')) {
+        this.selectedIdentificationName = file.name;
+        this.identificationFile = file;
+        
+        // Crear un FileReader para preview
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.clientData.identification_document = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        
+        console.log('✅ Documento de identificación seleccionado:', file.name);
+      } else {
+        alert('Por favor selecciona un archivo de imagen válido');
+        event.target.value = '';
+      }
+    }
+  }
+
+  // Disparar selección de imagen de perfil
+  triggerProfileImageInput() {
+    const fileInput = document.getElementById('profileImage') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  // Disparar selección de documento de identificación
+  triggerIdentificationInput() {
+    const fileInput = document.getElementById('identificationDocument') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  // Obtener texto del estado de verificación
+  getVerificationStatusText(status: string): string {
+    switch (status) {
+      case 'pending': return 'Pendiente';
+      case 'verified': return 'Verificado';
+      case 'rejected': return 'Rechazado';
+      default: return 'Desconocido';
+    }
   }
 }

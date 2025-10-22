@@ -61,6 +61,8 @@ CREATE TABLE nannys (
     id INT PRIMARY KEY AUTO_INCREMENT,                    -- ID único de la niñera en el sistema
     user_id INT UNIQUE NOT NULL,                          -- Referencia al usuario base (relación 1:1)
     description TEXT,                                     -- Descripción personal y enfoque de cuidado
+    experience_years INT DEFAULT 0,                       -- Años de experiencia cuidando niños
+    hourly_rate DECIMAL(8,2) DEFAULT 0.00,               -- Tarifa por hora en pesos mexicanos
     rating_average DECIMAL(3,2) DEFAULT 0.00,            -- Promedio de calificaciones recibidas (1.00 a 5.00)
     total_ratings INT DEFAULT 0,                         -- Total de calificaciones recibidas (para validar promedio)
     services_completed INT DEFAULT 0,                    -- Número de servicios completados exitosamente

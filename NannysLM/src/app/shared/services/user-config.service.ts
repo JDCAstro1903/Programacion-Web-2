@@ -38,7 +38,7 @@ export class UserConfigService {
           {
             id: 'nannys',
             label: 'Nannys',
-            icon: 'baby'
+            icon: 'stroller'
           },
           {
             id: 'clients',

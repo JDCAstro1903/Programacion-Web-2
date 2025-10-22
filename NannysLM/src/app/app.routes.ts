@@ -5,6 +5,7 @@ import { HomeComponent } from './components/home/home';
 import { AdminDashboardComponent } from './pages/admin/admin-dashboard.component';
 import { ClientDashboardComponent } from './pages/client/client-dashboard.component';
 import { NannyDashboardComponent } from './pages/nanny/nanny-dashboard.component';
+import { CompleteClientProfileComponent } from './components/complete-client-profile/complete-client-profile.component';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
 
@@ -38,6 +39,24 @@ export const routes: Routes = [
     component: NannyDashboardComponent,
     canActivate: [AuthGuard, RoleGuard],
     data: { role: 'nanny' }
+  },
+  {
+    path: 'complete-client-profile',
+    component: CompleteClientProfileComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { role: 'client' }
+  },
+  {
+    path: 'client/dashboard',
+    redirectTo: 'dashboard/client'
+  },
+  {
+    path: 'nanny/dashboard',
+    redirectTo: 'dashboard/nanny'
+  },
+  {
+    path: 'admin/dashboard',
+    redirectTo: 'dashboard/admin'
   },
   {
     path: '**',

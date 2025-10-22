@@ -75,6 +75,19 @@ export class SidebarComponent {
         <circle cx="9" cy="9" r="1"></circle>
         <circle cx="15" cy="9" r="1"></circle>
       </svg>`,
+      'stroller': `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <!-- Ruedas -->
+        <circle cx="7" cy="19" r="2.5" fill="currentColor"></circle>
+        <circle cx="17" cy="19" r="2.5" fill="currentColor"></circle>
+        <!-- Asiento -->
+        <path d="M6 10h10c1.1 0 2 .9 2 2v4c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2v-4c0-1.1.9-2 2-2z" fill="currentColor"></path>
+        <!-- Respaldo -->
+        <path d="M16 10V6c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v4" stroke="currentColor" stroke-width="2" fill="none"></path>
+        <!-- Mango -->
+        <path d="M18 12l3-3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
+        <!-- Estructura -->
+        <path d="M7 16.5v2.5M17 16.5v2.5" stroke="currentColor" stroke-width="1.5"></path>
+      </svg>`,
       'users': `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>

@@ -53,7 +53,7 @@
               </div>
               <div class="metric-content">
                 <h3>Nannys Disponibles</h3>
-                <div class="metric-number">{{ dashboardStats?.nannys?.active || 0 }}</div>
+                <div class="metric-number">{{ (dashboardStats && dashboardStats.nannys) ? dashboardStats.nannys.active : 0 }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+3 este mes</span>
                 </div>
@@ -76,7 +76,7 @@
               </div>
               <div class="metric-content">
                 <h3>Clientes Verificados</h3>
-                <div class="metric-number">{{ dashboardStats?.clients?.verified || 0 }}</div>
+                <div class="metric-number">{{ (dashboardStats && dashboardStats.clients) ? dashboardStats.clients.verified : 0 }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+5 esta semana</span>
                 </div>

@@ -1,0 +1,112 @@
+<div class="complete-profile-container">
+  <div class="complete-profile-card">
+    <div class="profile-header">
+      <h1>Completar Perfil de Cliente</h1>
+      <p>Hola {{ user?.first_name }}, necesitamos algunos datos adicionales para ofrecerte el mejor servicio.</p>
+    </div>
+
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="profile-form">
+      
+      <!-- Información del usuario (readonly) -->
+      <div class="user-info-section">
+        <h2>Tu información básica</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Nombre completo:</label>
+            <span>{{ user?.first_name }} {{ user?.last_name }}</span>
+          </div>
+          <div class="info-item">
+            <label>Email:</label>
+            <span>{{ user?.email }}</span>
+          </div>
+          <div class="info-item" *ngIf="user?.phone_number">
+            <label>Teléfono:</label>
+            <span>{{ user?.phone_number }}</span>
+          </div>
+          <div class="info-item" *ngIf="user?.address">
+            <label>Dirección:</label>
+            <span>{{ user?.address }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de información específica -->
+      <div class="client-specific-section">
+        <h2>Información específica de cliente</h2>
+        
+        <!-- Contacto de emergencia -->
+        <div class="form-group">
+          <label for="emergency_contact_name">Nombre del contacto de emergencia *</label>
+          <input
+            type="text"
+            id="emergency_contact_name"
+            formControlName="emergency_contact_name"
+            [class.error]="isFieldInvalid('emergency_contact_name')"
+            placeholder="Ej: María García (hermana)"
+          >
+          <div class="error-message" *ngIf="isFieldInvalid('emergency_contact_name')">
+            {{ getFieldError('emergency_contact_name') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="emergency_contact_phone">Teléfono del contacto de emergencia *</label>
+          <input
+            type="tel"
+            id="emergency_contact_phone"
+            formControlName="emergency_contact_phone"
+            [class.error]="isFieldInvalid('emergency_contact_phone')"
+            placeholder="Ej: 55 1234 5678"
+          >
+          <div class="error-message" *ngIf="isFieldInvalid('emergency_contact_phone')">
+            {{ getFieldError('emergency_contact_phone') }}
+          </div>
+        </div>
+
+        <!-- Número de hijos -->
+        <div class="form-group">
+          <label for="number_of_children">Número de hijos que necesitan cuidado</label>
+          <select id="number_of_children" formControlName="number_of_children">
+            <option value="1">1 hijo</option>
+            <option value="2">2 hijos</option>
+            <option value="3">3 hijos</option>
+            <option value="4">4 hijos</option>
+            <option value="5">5 hijos</option>
+            <option value="6">6 o más hijos</option>
+          </select>
+        </div>
+
+        <!-- Requerimientos especiales -->
+        <div class="form-group">
+          <label for="special_requirements">Requerimientos especiales (opcional)</label>
+          <textarea
+            id="special_requirements"
+            formControlName="special_requirements"
+            rows="4"
+            placeholder="Alergias, necesidades especiales, instrucciones específicas, etc."
+          ></textarea>
+          <small class="help-text">
+            Ejemplo: "Mi hijo es alérgico a los frutos secos", "Necesita medicamento a las 3pm", etc.
+          </small>
+        </div>
+      </div>
+
+      <!-- Error general -->
+      <div class="error-message general-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Botones -->
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="btn-primary"
+          [disabled]="!profileForm.valid || isSubmitting"
+        >
+          <span *ngIf="!isSubmitting">Completar Perfil</span>
+          <span *ngIf="isSubmitting">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

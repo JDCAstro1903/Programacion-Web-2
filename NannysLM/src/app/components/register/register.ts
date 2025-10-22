@@ -37,15 +37,19 @@ export class RegisterComponent {
   ) {}
 
   onSubmit() {
+    console.log('🚀 Iniciando proceso de registro...');
+    
     // Limpiar errores previos
     this.errors = {};
 
     // Validaciones básicas
     if (!this.validateForm()) {
+      console.log('❌ Validación de formulario falló');
       this.scrollToFirstError();
       return;
     }
 
+    console.log('✅ Validación de formulario exitosa');
     this.isLoading = true;
 
     // Preparar datos para enviar
@@ -59,28 +63,49 @@ export class RegisterComponent {
       user_type: this.userType
     };
 
+    console.log('📋 Datos de registro preparados:', {
+      first_name: registerData.first_name,
+      last_name: registerData.last_name,
+      email: registerData.email,
+      phone_number: registerData.phone_number,
+      address: registerData.address,
+      user_type: registerData.user_type,
+      password: '***hidden***'
+    });
+
     // Registrar usuario
+    console.log('📤 Enviando solicitud de registro al servidor...');
     this.authService.register(registerData).subscribe({
       next: (response) => {
+        console.log('✅ Respuesta exitosa del servidor:', response);
         this.isLoading = false;
         if (response.success) {
           // Mostrar modal de éxito
           this.showSuccessModal = true;
+        } else {
+          console.log('⚠️ Respuesta del servidor indica fallo:', response);
+          this.errors.general = response.message || 'Error en el registro';
         }
       },
       error: (error) => {
+        console.log('❌ Error completo:', error);
+        console.log('❌ Status:', error.status);
+        console.log('❌ Error object:', error.error);
+        
         this.isLoading = false;
-        console.error('Error en registro:', error);
         
         if (error.error && error.error.errors) {
           // Errores de validación del backend
+          console.log('📝 Procesando errores de validación:', error.error.errors);
           this.errors = this.processValidationErrors(error.error.errors);
           this.scrollToFirstError();
         } else if (error.error && error.error.message) {
           // Error general del backend
+          console.log('📝 Error general del backend:', error.error.message);
           this.errors.general = error.error.message;
         } else {
           // Error de red u otro
+          console.log('📝 Error de conexión o desconocido');
           this.errors.general = 'Error de conexión. Intenta nuevamente.';
         }
       }
@@ -180,7 +205,8 @@ export class RegisterComponent {
     if (this.email && this.isValidEmail(this.email)) {
       this.authService.checkEmailAvailability(this.email).subscribe({
         next: (response) => {
-          if (!response.data.available) {
+          console.log('✅ Respuesta verificación email:', response);
+          if (response.success && !response.data.available) {
             this.errors.email = 'Este email ya está registrado';
             this.scrollToError('email');
           } else if (this.errors.email === 'Este email ya está registrado') {
@@ -188,7 +214,8 @@ export class RegisterComponent {
           }
         },
         error: (error) => {
-          console.error('Error checking email:', error);
+          console.error('❌ Error checking email:', error);
+          // No mostrar error al usuario por este proceso
         }
       });
     }

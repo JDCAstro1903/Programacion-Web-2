@@ -1,0 +1,37 @@
+tabla usuarios
+- aqui se guardan los datos de registro y login
+- en admin se daran los perfiles 
+- se linkean con las tablas de clients y nannys
+
+// Nannys y Admin no ocupan la verificacion, mas si la activacion
+// hacer que para activar una cuenta sea mediante un correo 
+
+tabla clients
+- se asignan con el id hacia el usuario de tipo cliente
+- aqui se guarda la identificacion para verificar la identidad
+
+tabla nannys
+- se asigna con el id del usuario tipo nanny
+
+
+tabla services
+- se asigan los id de cliente y nanny
+- se va a manejar el tiempo especificando cuantas horas, y se podran agregar mas, mas no se podran restar 
+
+tabla ratings
+- se junta con el id de la nanny que nos dio el servicio para puntuar
+
+tabla payments
+- solo se registrara la informacion de la tarjeta donde se deposita el dinero
+
+-- tabla bank-details me parece innecesaria
+
+tabla notificaciones
+-- no se como implementarla, si mediante correos o mediante la misma aplicacion una tipo campanita
+
+tabla Client_favorites
+- con esta tabla voy a manejar todo lo que viene siendo lo de elegir una nanny
+
+EN RESUMEN
+ACTIVIDADES A REALIZAR
+-- aun no las elijo xd

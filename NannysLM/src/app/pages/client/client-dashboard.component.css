@@ -4649,3 +4649,312 @@
     justify-content: center;
   }
 }
+
+/* ===============================================
+   ESTILOS PARA FORMULARIO DE PERFIL MEJORADO
+   =============================================== */
+
+.file-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.file-input-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-weight: 500;
+}
+
+.file-input-button:hover {
+  border-color: #E31B7E;
+  background: #fdf2f8;
+  color: #E31B7E;
+}
+
+.file-input-button.has-file {
+  border-color: #10b981;
+  background: #f0fdf4;
+  color: #065f46;
+  border-style: solid;
+}
+
+.file-input-button.has-file:hover {
+  border-color: #059669;
+  background: #ecfdf5;
+}
+
+/* Preview de imagen */
+.image-preview {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.preview-image {
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  object-fit: cover;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.image-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.form-input.textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.form-input.modern[readonly] {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+  border-color: #e5e7eb;
+}
+
+.verification-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.verification-status-badge.pending {
+  background: #FFF3CD;
+  color: #856404;
+  border: 1px solid #FFEAA7;
+}
+
+.verification-status-badge.verified {
+  background: #D4EDDA;
+  color: #155724;
+  border: 1px solid #C3E6CB;
+}
+
+.verification-status-badge.rejected {
+  background: #F8D7DA;
+  color: #721C24;
+  border: 1px solid #F5C6CB;
+}
+
+/* Botón de guardar perfil */
+.save-profile-btn {
+  background: linear-gradient(135deg, #E31B7E, #C41E3A);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.save-profile-btn:hover {
+  background: linear-gradient(135deg, #C41E3A, #E31B7E);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.3);
+}
+
+.save-profile-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ===============================================
+   ESTILOS PARA BOTONES DE ACCIÓN DEL PERFIL
+   =============================================== */
+
+.profile-actions-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 24px 0;
+  margin-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.profile-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.save-changes-btn {
+  background: linear-gradient(135deg, #E31B7E, #C41E3A);
+  color: white;
+  box-shadow: 0 2px 4px rgba(227, 27, 126, 0.2);
+}
+
+.save-changes-btn:hover {
+  background: linear-gradient(135deg, #C41E3A, #E31B7E);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(227, 27, 126, 0.3);
+}
+
+.save-changes-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(227, 27, 126, 0.2);
+}
+
+.cancel-changes-btn {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.cancel-changes-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cancel-changes-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Responsive para botones */
+@media (max-width: 640px) {
+  .profile-actions-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  
+  .profile-action-btn {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+/* ========== LOADING STATES ========== */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #E31B7E;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.loading-state p {
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Estados de botones deshabilitados */
+.profile-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.profile-action-btn:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ========== FILE INPUT STYLES ========== */
+.file-input-container {
+  margin-top: 8px;
+}
+
+.file-input-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+}
+
+.file-input-button:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.file-input-button.has-file {
+  background: #ecfdf5;
+  border-color: #10b981;
+  border-style: solid;
+}
+
+.file-input-button.has-file:hover {
+  background: #d1fae5;
+}
+
+.image-preview {
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.preview-image {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  border-radius: 8px;
+}
