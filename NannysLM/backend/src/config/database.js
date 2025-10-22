@@ -15,10 +15,7 @@ const dbConfig = {
     connectionLimit: 10,
     queueLimit: 0,
     // Configuraciones válidas para MySQL2
-    charset: 'utf8mb4',
-    acquireTimeout: 60000,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0
+    charset: 'utf8mb4'
 };
 
 // Crear el pool de conexiones

@@ -1,22 +1,21 @@
-
 const express = require('express');
 const router = express.Router();
 const ClientController = require('../controllers/ClientController');
-const { authenticateToken } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 /**
  * @route   PUT /api/v1/client/profile
  * @desc    Actualizar información de perfil del cliente
  * @access  Private (solo clientes)
  */
-router.put('/profile', authenticateToken, ClientController.updateClientProfile);
+router.put('/profile', verifyToken, ClientController.updateClientProfile);
 
 /**
  * @route   GET /api/v1/client/info
  * @desc    Obtener información completa del cliente
  * @access  Private (solo clientes)
  */
-router.get('/info', authenticateToken, ClientController.getClientInfo);
+router.get('/info', verifyToken, ClientController.getClientInfo);
 
 /**
  * @route   GET /api/v1/client/services
@@ -25,7 +24,7 @@ router.get('/info', authenticateToken, ClientController.getClientInfo);
  * @query   status (optional) - all, pending, confirmed, completed, cancelled
  * @query   limit (optional) - número máximo de resultados (default: 50)
  */
-router.get('/services', authenticateToken, ClientController.getClientServices);
+router.get('/services', verifyToken, ClientController.getClientServices);
 
 /**
  * @route   GET /api/v1/client/payments
@@ -34,13 +33,13 @@ router.get('/services', authenticateToken, ClientController.getClientServices);
  * @query   status (optional) - all, pending, completed, failed, refunded
  * @query   limit (optional) - número máximo de resultados (default: 50)
  */
-router.get('/payments', authenticateToken, ClientController.getClientPayments);
+router.get('/payments', verifyToken, ClientController.getClientPayments);
 
 /**
  * @route   GET /api/v1/client/stats
  * @desc    Obtener estadísticas del cliente
  * @access  Private (solo clientes)
  */
-router.get('/stats', authenticateToken, ClientController.getClientStats);
+router.get('/stats', verifyToken, ClientController.getClientStats);
 
 module.exports = router;
