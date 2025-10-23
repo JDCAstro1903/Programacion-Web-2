@@ -34,4 +34,6 @@ tabla Client_favorites
 
 EN RESUMEN
 ACTIVIDADES A REALIZAR
--- aun no las elijo xd
+-- Modificar los header de las paginas, ya se que este apartado es de backend, pero igual se comenta
+-- mover boton de cerrar sesion, perfil de usuario y notificaciones al header
+-- perfil de usuario es distinto a perfil de cliente. ya que van en distintas tablas de la bd 
