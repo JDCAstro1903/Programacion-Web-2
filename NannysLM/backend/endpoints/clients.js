@@ -21,7 +21,8 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
     const q = `SELECT * FROM ${TABLE} LIMIT ?`;
     const result = await executeQuery(q, [limit]);
-    return res.json({ success: true, data: result.data });
+    const rows = result?.data ?? result?.rows ?? result ?? [];
+    return res.json({ success: true, data: rows });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
@@ -31,7 +32,8 @@ router.get('/:id', async (req, res) => {
   try {
     const q = `SELECT * FROM ${TABLE} WHERE id = ?`;
     const result = await executeQuery(q, [req.params.id]);
-    if (result.success && result.data.length) return res.json({ success: true, data: result.data[0] });
+    const rows = result?.data ?? result?.rows ?? result ?? [];
+    if (Array.isArray(rows) && rows.length) return res.json({ success: true, data: rows[0] });
     return res.status(404).json({ success: false, message: 'Not found' });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -44,7 +46,8 @@ router.post('/', async (req, res) => {
     if (Object.keys(data).length === 0) return res.status(400).json({ success: false, message: 'No data provided' });
     const { sql, params } = buildInsert(TABLE, data);
     const result = await executeQuery(sql, params);
-    return res.status(201).json({ success: true, insertId: result.data.insertId || null });
+    const insertId = result?.data?.insertId ?? result?.insertId ?? null;
+    return res.status(201).json({ success: true, insertId });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
@@ -57,7 +60,8 @@ router.put('/:id', async (req, res) => {
     const { sql, params } = buildUpdate(TABLE, data, 'id');
     params.push(req.params.id);
     const result = await executeQuery(sql, params);
-    return res.json({ success: true, affectedRows: result.data.affectedRows || 0 });
+    const affectedRows = result?.data?.affectedRows ?? result?.affectedRows ?? 0;
+    return res.json({ success: true, affectedRows });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
@@ -67,7 +71,8 @@ router.delete('/:id', async (req, res) => {
   try {
     const q = `DELETE FROM ${TABLE} WHERE id = ?`;
     const result = await executeQuery(q, [req.params.id]);
-    return res.json({ success: true, affectedRows: result.data.affectedRows || 0 });
+    const affectedRows = result?.data?.affectedRows ?? result?.affectedRows ?? 0;
+    return res.json({ success: true, affectedRows });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }

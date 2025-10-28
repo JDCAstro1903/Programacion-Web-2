@@ -1,0 +1,183 @@
+JSon para User
+
+PUT
+
+{
+"email": "cliente@example.com",
+"password_hash": "hashed_password_aqui",
+"first_name": "Daniel",
+"last_name": "Castro",
+"phone_number": "6681053257",
+"address": "Calle Real 1992",
+"user_type": "client",
+"is_verified": false,
+"is_active": true,
+"profile_image": "https://example.com/perfil.jpg"
+}
+
+{
+  "email": "nanny@example.com",
+  "password_hash": "hashed_password_aqui",
+  "first_name": "María",
+  "last_name": "López",
+  "phone_number": "6691234567",
+  "address": "Calle Secundaria 45",
+  "user_type": "nanny",
+  "is_verified": true,
+  "is_active": true
+}
+
+post
+
+{
+  "email": "Daniel@21Pilots.com",
+  "password_hash": "GraciasTwentyOnePilotsPorTiLeHechoGanasALaVida<3",
+  "first_name": "Daniel",
+  "last_name": "Castro",
+  "phone_number": "6681053257",
+  "address": "Calle Real 1992",
+  "user_type": "client",
+  "is_verified": false,
+  "is_active": true
+}
+
+delete
+http://localhost:3000/users/5
+
+Json cliente
+
+{
+  "user_id": 4,
+  "identification_document": "uploads/id_2.pdf",
+  "verification_status": "pending",
+  "verification_date": null,
+  "emergency_contact_name": "Ana Gómez",
+  "emergency_contact_phone": "6681234567",
+  "number_of_children": 2,
+  "special_requirements": "Alergia a nueces"
+}
+
+{
+  "users": [
+    {"id":1,"email":"client1@example.com","password_hash":"hash1","first_name":"Ana","last_name":"Gonzalez","phone_number":"6690000001","address":"Calle 1","user_type":"client","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-01T00:00:00Z"},
+    {"id":2,"email":"client2@example.com","password_hash":"hash2","first_name":"Luis","last_name":"Martinez","phone_number":"6690000002","address":"Calle 2","user_type":"client","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-02T00:00:00Z"},
+    {"id":3,"email":"client3@example.com","password_hash":"hash3","first_name":"María","last_name":"Pérez","phone_number":"6690000003","address":"Calle 3","user_type":"client","is_verified":false,"is_active":true,"profile_image":null,"created_at":"2025-01-03T00:00:00Z"},
+    {"id":4,"email":"client4@example.com","password_hash":"hash4","first_name":"Carlos","last_name":"Ruiz","phone_number":"6690000004","address":"Calle 4","user_type":"client","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-04T00:00:00Z"},
+    {"id":5,"email":"client5@example.com","password_hash":"hash5","first_name":"Sofía","last_name":"Ramirez","phone_number":"6690000005","address":"Calle 5","user_type":"client","is_verified":false,"is_active":true,"profile_image":null,"created_at":"2025-01-05T00:00:00Z"},
+    {"id":6,"email":"client6@example.com","password_hash":"hash6","first_name":"Diego","last_name":"Flores","phone_number":"6690000006","address":"Calle 6","user_type":"client","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-06T00:00:00Z"},
+    {"id":7,"email":"client7@example.com","password_hash":"hash7","first_name":"Lucía","last_name":"Santos","phone_number":"6690000007","address":"Calle 7","user_type":"client","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-07T00:00:00Z"},
+    {"id":8,"email":"client8@example.com","password_hash":"hash8","first_name":"Miguel","last_name":"Ortega","phone_number":"6690000008","address":"Calle 8","user_type":"client","is_verified":false,"is_active":true,"profile_image":null,"created_at":"2025-01-08T00:00:00Z"},
+    {"id":9,"email":"client9@example.com","password_hash":"hash9","first_name":"Paula","last_name":"Vega","phone_number":"6690000009","address":"Calle 9","user_type":"client","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-09T00:00:00Z"},
+    {"id":10,"email":"client10@example.com","password_hash":"hash10","first_name":"Jorge","last_name":"Molina","phone_number":"6690000010","address":"Calle 10","user_type":"client","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-10T00:00:00Z"},
+    {"id":11,"email":"nanny1@example.com","password_hash":"hash11","first_name":"María","last_name":"López","phone_number":"6690000011","address":"Calle N1","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-11T00:00:00Z"},
+    {"id":12,"email":"nanny2@example.com","password_hash":"hash12","first_name":"Carmen","last_name":"Hernández","phone_number":"6690000012","address":"Calle N2","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-12T00:00:00Z"},
+    {"id":13,"email":"nanny3@example.com","password_hash":"hash13","first_name":"Verónica","last_name":"Sánchez","phone_number":"6690000013","address":"Calle N3","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-13T00:00:00Z"},
+    {"id":14,"email":"nanny4@example.com","password_hash":"hash14","first_name":"Patricia","last_name":"Gómez","phone_number":"6690000014","address":"Calle N4","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-14T00:00:00Z"},
+    {"id":15,"email":"nanny5@example.com","password_hash":"hash15","first_name":"Elena","last_name":"Ramos","phone_number":"6690000015","address":"Calle N5","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-15T00:00:00Z"},
+    {"id":16,"email":"nanny6@example.com","password_hash":"hash16","first_name":"Isabel","last_name":"Castro","phone_number":"6690000016","address":"Calle N6","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-16T00:00:00Z"},
+    {"id":17,"email":"nanny7@example.com","password_hash":"hash17","first_name":"Andrea","last_name":"Navarro","phone_number":"6690000017","address":"Calle N7","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-17T00:00:00Z"},
+    {"id":18,"email":"nanny8@example.com","password_hash":"hash18","first_name":"Claudia","last_name":"Herrera","phone_number":"6690000018","address":"Calle N8","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-18T00:00:00Z"},
+    {"id":19,"email":"nanny9@example.com","password_hash":"hash19","first_name":"Rosa","last_name":"Mendez","phone_number":"6690000019","address":"Calle N9","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-19T00:00:00Z"},
+    {"id":20,"email":"nanny10@example.com","password_hash":"hash20","first_name":"Anaí","last_name":"Diaz","phone_number":"6690000020","address":"Calle N10","user_type":"nanny","is_verified":true,"is_active":true,"profile_image":null,"created_at":"2025-01-20T00:00:00Z"}
+  ],
+  "clients": [
+    {"id":1,"user_id":1,"identification_document":"uploads/id_1.pdf","verification_status":"verified","verification_date":"2025-01-10T10:00:00Z","emergency_contact_name":"Marta Ruiz","emergency_contact_phone":"6691110001","number_of_children":1,"special_requirements":"Ninguna","created_at":"2025-01-10T10:00:00Z"},
+    {"id":2,"user_id":2,"identification_document":"uploads/id_2.pdf","verification_status":"pending","verification_date":null,"emergency_contact_name":"Raúl Pérez","emergency_contact_phone":"6691110002","number_of_children":2,"special_requirements":"Alergia a nueces","created_at":"2025-01-11T10:00:00Z"},
+    {"id":3,"user_id":3,"identification_document":"uploads/id_3.pdf","verification_status":"verified","verification_date":"2025-02-15T14:30:00Z","emergency_contact_name":"Ana Torres","emergency_contact_phone":"6691110003","number_of_children":1,"special_requirements":null,"created_at":"2025-02-15T14:30:00Z"},
+    {"id":4,"user_id":4,"identification_document":"uploads/id_4.pdf","verification_status":"rejected","verification_date":null,"emergency_contact_name":"Luis Moreno","emergency_contact_phone":"6691110004","number_of_children":3,"special_requirements":"Necesita silla alta","created_at":"2025-03-01T09:00:00Z"},
+    {"id":5,"user_id":5,"identification_document":"uploads/id_5.pdf","verification_status":"verified","verification_date":"2025-03-20T09:00:00Z","emergency_contact_name":"Clara Ruiz","emergency_contact_phone":"6691110005","number_of_children":2,"special_requirements":null,"created_at":"2025-03-20T09:00:00Z"},
+    {"id":6,"user_id":6,"identification_document":"uploads/id_6.pdf","verification_status":"pending","verification_date":null,"emergency_contact_name":"Pedro Salas","emergency_contact_phone":"6691110006","number_of_children":1,"special_requirements":"Alergia a lactosa","created_at":"2025-04-01T11:00:00Z"},
+    {"id":7,"user_id":7,"identification_document":"uploads/id_7.pdf","verification_status":"verified","verification_date":"2025-04-05T11:15:00Z","emergency_contact_name":"Ana Gómez","emergency_contact_phone":"6691110007","number_of_children":2,"special_requirements":null,"created_at":"2025-04-05T11:15:00Z"},
+    {"id":8,"user_id":8,"identification_document":"uploads/id_8.pdf","verification_status":"verified","verification_date":"2025-05-12T16:00:00Z","emergency_contact_name":"Rosa Blanco","emergency_contact_phone":"6691110008","number_of_children":4,"special_requirements":null,"created_at":"2025-05-12T16:00:00Z"},
+    {"id":9,"user_id":9,"identification_document":"uploads/id_9.pdf","verification_status":"pending","verification_date":null,"emergency_contact_name":"Sergio Ruiz","emergency_contact_phone":"6691110009","number_of_children":1,"special_requirements":null,"created_at":"2025-05-20T10:00:00Z"},
+    {"id":10,"user_id":10,"identification_document":"uploads/id_10.pdf","verification_status":"verified","verification_date":"2025-06-01T08:45:00Z","emergency_contact_name":"Laura Peña","emergency_contact_phone":"6691110010","number_of_children":3,"special_requirements":"Necesita medicación puntual","created_at":"2025-06-01T08:45:00Z"}
+  ],
+  "nannys": [
+    {"id":1,"user_id":11,"description":"Especialista en bebés y primeros auxilios","experience_years":5,"hourly_rate":120.00,"rating_average":4.8,"total_ratings":24,"services_completed":150,"status":"active","created_at":"2025-01-11T00:00:00Z"},
+    {"id":2,"user_id":12,"description":"Niñera con enfoque educativo","experience_years":3,"hourly_rate":100.00,"rating_average":4.6,"total_ratings":18,"services_completed":80,"status":"active","created_at":"2025-01-12T00:00:00Z"},
+    {"id":3,"user_id":13,"description":"Experiencia con niños con necesidades especiales","experience_years":7,"hourly_rate":150.00,"rating_average":4.9,"total_ratings":40,"services_completed":220,"status":"active","created_at":"2025-01-13T00:00:00Z"},
+    {"id":4,"user_id":14,"description":"Disponible fines de semana","experience_years":4,"hourly_rate":110.00,"rating_average":4.4,"total_ratings":12,"services_completed":60,"status":"active","created_at":"2025-01-14T00:00:00Z"},
+    {"id":5,"user_id":15,"description":"Cuidado nocturno y viajes","experience_years":6,"hourly_rate":180.00,"rating_average":4.7,"total_ratings":30,"services_completed":140,"status":"active","created_at":"2025-01-15T00:00:00Z"},
+    {"id":6,"user_id":16,"description":"Tutora y cuidado escolar","experience_years":2,"hourly_rate":90.00,"rating_average":4.2,"total_ratings":8,"services_completed":30,"status":"active","created_at":"2025-01-16T00:00:00Z"},
+    {"id":7,"user_id":17,"description":"Niñera bilingüe (es/en)","experience_years":8,"hourly_rate":160.00,"rating_average":4.85,"total_ratings":50,"services_completed":300,"status":"active","created_at":"2025-01-17T00:00:00Z"},
+    {"id":8,"user_id":18,"description":"Pediatra certificada (asistente)","experience_years":10,"hourly_rate":200.00,"rating_average":5.00,"total_ratings":75,"services_completed":500,"status":"active","created_at":"2025-01-18T00:00:00Z"},
+    {"id":9,"user_id":19,"description":"Experiencia en actividades al aire libre","experience_years":3,"hourly_rate":95.00,"rating_average":4.1,"total_ratings":6,"services_completed":25,"status":"active","created_at":"2025-01-19T00:00:00Z"},
+    {"id":10,"user_id":20,"description":"Cuidadora flexible por horas","experience_years":1,"hourly_rate":80.00,"rating_average":3.9,"total_ratings":3,"services_completed":10,"status":"active","created_at":"2025-01-20T00:00:00Z"}
+  ],
+  "services": [
+    {"id":1,"client_id":1,"nanny_id":1,"title":"Tarde entre semana","service_type":"hourly","description":"Cuidado de 2 niños después de la escuela","start_date":"2025-11-05","end_date":null,"start_time":"15:00:00","end_time":"19:00:00","total_hours":4.00,"total_amount":480.00,"number_of_children":2,"special_instructions":"Dar merienda","address":"Calle 1 #10","status":"completed","created_at":"2025-11-05T15:00:00Z"},
+    {"id":2,"client_id":2,"nanny_id":2,"title":"Cuidado por la mañana","service_type":"hourly","description":"Media jornada por la mañana","start_date":"2025-11-06","end_date":null,"start_time":"08:00:00","end_time":"12:00:00","total_hours":4.00,"total_amount":400.00,"number_of_children":1,"special_instructions":null,"address":"Calle 2 #22","status":"completed","created_at":"2025-11-06T08:00:00Z"},
+    {"id":3,"client_id":3,"nanny_id":3,"title":"Noche especial","service_type":"overnight","description":"Cuidado nocturno","start_date":"2025-11-15","end_date":"2025-11-16","start_time":"22:00:00","end_time":"08:00:00","total_hours":10.00,"total_amount":1500.00,"number_of_children":1,"special_instructions":null,"address":"Av. Secundaria 45","status":"confirmed","created_at":"2025-11-15T22:00:00Z"},
+    {"id":4,"client_id":4,"nanny_id":4,"title":"Cumpleaños (evento)","service_type":"event","description":"Cuidado durante fiesta infantil","start_date":"2025-12-01","end_date":null,"start_time":"10:00:00","end_time":"14:00:00","total_hours":4.00,"total_amount":440.00,"number_of_children":3,"special_instructions":"Supervisar juegos","address":"Calle 4 #5","status":"completed","created_at":"2025-12-01T10:00:00Z"},
+    {"id":5,"client_id":5,"nanny_id":5,"title":"Semana intensiva","service_type":"daily","description":"Cuidado diario por 5 días","start_date":"2025-11-10","end_date":"2025-11-14","start_time":"09:00:00","end_time":"17:00:00","total_hours":40.00,"total_amount":7200.00,"number_of_children":2,"special_instructions":null,"address":"Calle 5 #100","status":"in_progress","created_at":"2025-11-10T09:00:00Z"},
+    {"id":6,"client_id":6,"nanny_id":6,"title":"Clases y cuidado","service_type":"hourly","description":"Apoyo con tareas y cuidado","start_date":"2025-11-07","end_date":null,"start_time":"15:00:00","end_time":"18:00:00","total_hours":3.00,"total_amount":270.00,"number_of_children":1,"special_instructions":null,"address":"Calle 6 #6","status":"pending","created_at":"2025-11-07T15:00:00Z"},
+    {"id":7,"client_id":7,"nanny_id":7,"title":"Viaje familiar","service_type":"travel","description":"Cuidado durante viaje de fin de semana","start_date":"2025-12-20","end_date":"2025-12-22","start_time":"08:00:00","end_time":"20:00:00","total_hours":36.00,"total_amount":5760.00,"number_of_children":2,"special_instructions":null,"address":"Ruta 7 km 12","status":"pending","created_at":"2025-12-20T08:00:00Z"},
+    {"id":8,"client_id":8,"nanny_id":8,"title":"Cuidado por horas","service_type":"hourly","description":"Servicio por horas según necesidad","start_date":"2025-11-09","end_date":null,"start_time":"13:00:00","end_time":"17:00:00","total_hours":4.00,"total_amount":800.00,"number_of_children":2,"special_instructions":null,"address":"Calle 8 #8","status":"confirmed","created_at":"2025-11-09T13:00:00Z"},
+    {"id":9,"client_id":9,"nanny_id":9,"title":"Clases de apoyo","service_type":"hourly","description":"Apoyo escolar y tareas","start_date":"2025-11-11","end_date":null,"start_time":"16:00:00","end_time":"19:00:00","total_hours":3.00,"total_amount":285.00,"number_of_children":1,"special_instructions":null,"address":"Calle 9 #9","status":"completed","created_at":"2025-11-11T16:00:00Z"},
+    {"id":10,"client_id":10,"nanny_id":10,"title":"Tarde puntual","service_type":"hourly","description":"Cuidado puntual por emergencia","start_date":"2025-11-12","end_date":null,"start_time":"18:00:00","end_time":"21:00:00","total_hours":3.00,"total_amount":240.00,"number_of_children":1,"special_instructions":null,"address":"Calle 10 #10","status":"completed","created_at":"2025-11-12T18:00:00Z"}
+  ],
+  "ratings": [
+    {"id":1,"service_id":1,"client_id":1,"nanny_id":1,"rating":4.5,"review":"Muy profesional y cariñosa","punctuality_rating":5,"communication_rating":5,"care_quality_rating":4,"would_recommend":true,"created_at":"2025-11-05T19:10:00Z"},
+    {"id":2,"service_id":2,"client_id":2,"nanny_id":2,"rating":4.0,"review":"Cuidó muy bien al niño","punctuality_rating":4,"communication_rating":4,"care_quality_rating":4,"would_recommend":true,"created_at":"2025-11-06T12:10:00Z"},
+    {"id":3,"service_id":3,"client_id":3,"nanny_id":3,"rating":5.0,"review":"Excelente atención nocturna","punctuality_rating":5,"communication_rating":5,"care_quality_rating":5,"would_recommend":true,"created_at":"2025-11-16T08:10:00Z"},
+    {"id":4,"service_id":4,"client_id":4,"nanny_id":4,"rating":4.2,"review":"Buen manejo en evento","punctuality_rating":4,"communication_rating":4,"care_quality_rating":4,"would_recommend":true,"created_at":"2025-12-01T14:40:00Z"},
+    {"id":5,"service_id":5,"client_id":5,"nanny_id":5,"rating":4.7,"review":"Cumplió con todo lo solicitado","punctuality_rating":5,"communication_rating":5,"care_quality_rating":4,"would_recommend":true,"created_at":"2025-11-14T17:10:00Z"},
+    {"id":6,"service_id":6,"client_id":6,"nanny_id":6,"rating":3.8,"review":"Necesita mejorar comunicación","punctuality_rating":3,"communication_rating":3,"care_quality_rating":4,"would_recommend":false,"created_at":"2025-11-07T18:35:00Z"},
+    {"id":7,"service_id":7,"client_id":7,"nanny_id":7,"rating":4.9,"review":"Muy puntual y didáctica","punctuality_rating":5,"communication_rating":5,"care_quality_rating":5,"would_recommend":true,"created_at":"2025-12-22T20:10:00Z"},
+    {"id":8,"service_id":8,"client_id":8,"nanny_id":8,"rating":5.0,"review":"Excelente profesional","punctuality_rating":5,"communication_rating":5,"care_quality_rating":5,"would_recommend":true,"created_at":"2025-11-09T17:05:00Z"},
+    {"id":9,"service_id":9,"client_id":9,"nanny_id":9,"rating":4.1,"review":"Buen apoyo escolar","punctuality_rating":4,"communication_rating":4,"care_quality_rating":4,"would_recommend":true,"created_at":"2025-11-11T19:15:00Z"},
+    {"id":10,"service_id":10,"client_id":10,"nanny_id":10,"rating":3.9,"review":"Atención aceptable","punctuality_rating":4,"communication_rating":3,"care_quality_rating":4,"would_recommend":true,"created_at":"2025-11-12T21:10:00Z"}
+  ],
+  "payments": [
+    {"id":1,"service_id":1,"client_id":1,"nanny_id":1,"amount":480.00,"payment_status":"completed","transaction_id":"TXN001","platform_fee":48.00,"nanny_amount":432.00,"payment_date":"2025-11-05T19:05:00Z","receipt_url":"/receipts/txn001.pdf","created_at":"2025-11-05T19:05:00Z"},
+    {"id":2,"service_id":2,"client_id":2,"nanny_id":2,"amount":400.00,"payment_status":"completed","transaction_id":"TXN002","platform_fee":40.00,"nanny_amount":360.00,"payment_date":"2025-11-06T12:05:00Z","receipt_url":"/receipts/txn002.pdf","created_at":"2025-11-06T12:05:00Z"},
+    {"id":3,"service_id":3,"client_id":3,"nanny_id":3,"amount":1500.00,"payment_status":"processing","transaction_id":"TXN003","platform_fee":150.00,"nanny_amount":1350.00,"payment_date":null,"receipt_url":null,"created_at":"2025-11-15T22:10:00Z"},
+    {"id":4,"service_id":4,"client_id":4,"nanny_id":4,"amount":440.00,"payment_status":"completed","transaction_id":"TXN004","platform_fee":44.00,"nanny_amount":396.00,"payment_date":"2025-12-01T14:30:00Z","receipt_url":"/receipts/txn004.pdf","created_at":"2025-12-01T14:30:00Z"},
+    {"id":5,"service_id":5,"client_id":5,"nanny_id":5,"amount":7200.00,"payment_status":"pending","transaction_id":"TXN005","platform_fee":720.00,"nanny_amount":6480.00,"payment_date":null,"receipt_url":null,"created_at":"2025-11-14T17:20:00Z"},
+    {"id":6,"service_id":6,"client_id":6,"nanny_id":6,"amount":270.00,"payment_status":"completed","transaction_id":"TXN006","platform_fee":27.00,"nanny_amount":243.00,"payment_date":"2025-11-07T18:30:00Z","receipt_url":"/receipts/txn006.pdf","created_at":"2025-11-07T18:30:00Z"},
+    {"id":7,"service_id":7,"client_id":7,"nanny_id":7,"amount":5760.00,"payment_status":"pending","transaction_id":"TXN007","platform_fee":576.00,"nanny_amount":5184.00,"payment_date":null,"receipt_url":null,"created_at":"2025-12-22T20:20:00Z"},
+    {"id":8,"service_id":8,"client_id":8,"nanny_id":8,"amount":800.00,"payment_status":"completed","transaction_id":"TXN008","platform_fee":80.00,"nanny_amount":720.00,"payment_date":"2025-11-09T17:00:00Z","receipt_url":"/receipts/txn008.pdf","created_at":"2025-11-09T17:00:00Z"},
+    {"id":9,"service_id":9,"client_id":9,"nanny_id":9,"amount":285.00,"payment_status":"completed","transaction_id":"TXN009","platform_fee":28.50,"nanny_amount":256.50,"payment_date":"2025-11-11T19:10:00Z","receipt_url":"/receipts/txn009.pdf","created_at":"2025-11-11T19:10:00Z"},
+    {"id":10,"service_id":10,"client_id":10,"nanny_id":10,"amount":240.00,"payment_status":"completed","transaction_id":"TXN010","platform_fee":24.00,"nanny_amount":216.00,"payment_date":"2025-11-12T21:05:00Z","receipt_url":"/receipts/txn010.pdf","created_at":"2025-11-12T21:05:00Z"}
+  ],
+  "bank_details": [
+    {"id":1,"nanny_id":1,"account_holder_name":"María López","bank_name":"BBVA","account_number":"0123456789","clabe":"012345678901234567","account_type":"checking","is_primary":true,"is_active":true,"created_at":"2025-01-11T00:00:00Z"}
+  ],
+  "notifications": [
+    {"id":1,"user_id":1,"title":"Servicio completado","message":"Tu servicio \"Tarde entre semana\" fue completado","type":"success","is_read":false,"action_url":"/services/1","related_id":1,"related_type":"service","created_at":"2025-11-05T19:12:00Z"},
+    {"id":2,"user_id":2,"title":"Nueva confirmación","message":"Tu servicio fue confirmado por la niñera","type":"info","is_read":false,"action_url":"/services/2","related_id":2,"related_type":"service","created_at":"2025-11-06T12:12:00Z"},
+    {"id":3,"user_id":11,"title":"Nueva solicitud","message":"Tienes una nueva solicitud de servicio","type":"service","is_read":false,"action_url":"/services/3","related_id":3,"related_type":"service","created_at":"2025-11-15T22:15:00Z"},
+    {"id":4,"user_id":5,"title":"Verificación requerida","message":"Sube tu identificación para verificar tu cuenta","type":"warning","is_read":false,"action_url":"/profile/documents","related_id":null,"related_type":null,"created_at":"2025-03-20T09:05:00Z"},
+    {"id":5,"user_id":8,"title":"Pago recibido","message":"Tu pago ha sido procesado correctamente","type":"payment","is_read":false,"action_url":"/payments/1","related_id":1,"related_type":"payment","created_at":"2025-11-05T19:07:00Z"},
+    {"id":6,"user_id":12,"title":"Mensaje nuevo","message":"Has recibido un mensaje de un cliente","type":"info","is_read":false,"action_url":"/messages","related_id":null,"related_type":null,"created_at":"2025-11-06T13:00:00Z"},
+    {"id":7,"user_id":3,"title":"Recordatorio","message":"Recordatorio: servicio mañana a las 15:00","type":"info","is_read":false,"action_url":"/services/6","related_id":6,"related_type":"service","created_at":"2025-11-06T10:00:00Z"},
+    {"id":8,"user_id":15,"title":"Cuenta verificada","message":"Tu cuenta ha sido verificada con éxito","type":"success","is_read":false,"action_url":"/profile","related_id":null,"related_type":null,"created_at":"2025-01-15T09:00:00Z"},
+    {"id":9,"user_id":9,"title":"Encuesta","message":"Por favor califica el servicio reciente","type":"info","is_read":false,"action_url":"/ratings/1","related_id":1,"related_type":"service","created_at":"2025-11-05T20:00:00Z"},
+    {"id":10,"user_id":20,"title":"Sistema","message":"Mantenimiento programado el domingo","type":"warning","is_read":false,"action_url":null,"related_id":null,"related_type":null,"created_at":"2025-10-28T00:00:00Z"}
+  ],
+  "client_favorites": [
+    {"id":1,"client_id":1,"nanny_id":1,"created_at":"2025-01-20T00:00:00Z"},
+    {"id":2,"client_id":2,"nanny_id":2,"created_at":"2025-01-21T00:00:00Z"},
+    {"id":3,"client_id":3,"nanny_id":3,"created_at":"2025-01-22T00:00:00Z"},
+    {"id":4,"client_id":4,"nanny_id":4,"created_at":"2025-01-23T00:00:00Z"},
+    {"id":5,"client_id":5,"nanny_id":5,"created_at":"2025-01-24T00:00:00Z"},
+    {"id":6,"client_id":6,"nanny_id":6,"created_at":"2025-01-25T00:00:00Z"},
+    {"id":7,"client_id":7,"nanny_id":7,"created_at":"2025-01-26T00:00:00Z"},
+    {"id":8,"client_id":8,"nanny_id":8,"created_at":"2025-01-27T00:00:00Z"},
+    {"id":9,"client_id":9,"nanny_id":9,"created_at":"2025-01-28T00:00:00Z"},
+    {"id":10,"client_id":10,"nanny_id":10,"created_at":"2025-01-29T00:00:00Z"}
+  ],
+  "nanny_availability": [
+    {"id":1,"nanny_id":1,"date":"2025-11-06","start_time":"09:00:00","end_time":"17:00:00","is_available":true,"reason":null,"created_at":"2025-11-06T09:00:00Z"},
+    {"id":2,"nanny_id":2,"date":"2025-11-06","start_time":"08:00:00","end_time":"12:00:00","is_available":true,"reason":null,"created_at":"2025-11-06T08:00:00Z"},
+    {"id":3,"nanny_id":3,"date":"2025-11-15","start_time":"22:00:00","end_time":"08:00:00","is_available":true,"reason":null,"created_at":"2025-11-15T22:00:00Z"},
+    {"id":4,"nanny_id":4,"date":"2025-12-01","start_time":"10:00:00","end_time":"14:00:00","is_available":true,"reason":null,"created_at":"2025-12-01T10:00:00Z"},
+    {"id":5,"nanny_id":5,"date":"2025-11-10","start_time":"09:00:00","end_time":"17:00:00","is_available":false,"reason":"Vacaciones","created_at":"2025-11-01T09:00:00Z"},
+    {"id":6,"nanny_id":6,"date":"2025-11-07","start_time":"15:00:00","end_time":"18:00:00","is_available":true,"reason":null,"created_at":"2025-11-07T15:00:00Z"},
+    {"id":7,"nanny_id":7,"date":"2025-12-20","start_time":"08:00:00","end_time":"20:00:00","is_available":false,"reason":"Viaje","created_at":"2025-12-10T08:00:00Z"},
+    {"id":8,"nanny_id":8,"date":"2025-11-09","start_time":"13:00:00","end_time":"17:00:00","is_available":true,"reason":null,"created_at":"2025-11-09T13:00:00Z"},
+    {"id":9,"nanny_id":9,"date":"2025-11-11","start_time":"16:00:00","end_time":"19:00:00","is_available":true,"reason":null,"created_at":"2025-11-11T16:00:00Z"},
+    {"id":10,"nanny_id":10,"date":"2025-11-12","start_time":"18:00:00","end_time":"21:00:00","is_available":true,"reason":null,"created_at":"2025-11-12T18:00:00Z"}
+  ]
+}
+
