@@ -550,16 +550,23 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           // Actualizar headerConfig con la información del cliente
           if (this.clientInfo) {
             const userName = `${this.clientInfo.first_name} ${this.clientInfo.last_name}`.trim();
-            let avatarUrl = 'assets/logo.png';
+            let avatarUrl = '/assets/logo.png';
+            
+            console.log('🔍 Header - profile_image value:', this.clientInfo.profile_image);
             
             if (this.clientInfo.profile_image) {
               if (this.clientInfo.profile_image.startsWith('http')) {
                 avatarUrl = this.clientInfo.profile_image;
+                console.log('🌐 Header - URL completa:', avatarUrl);
               } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
                 avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
+                console.log('📁 Header - Ruta /uploads/:', avatarUrl);
               } else {
                 avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
+                console.log('📦 Header - URL construida:', avatarUrl);
               }
+            } else {
+              console.log('⚠️ Header - No hay profile_image, usando logo por defecto');
             }
             
             this.headerConfig = {
@@ -570,6 +577,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               showProfileOption: true,
               showLogoutOption: true
             };
+            
+            console.log('✅ Header config actualizado:', this.headerConfig);
           }
         }
         this.isLoadingClientInfo = false;
@@ -1903,5 +1912,47 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       case 'rejected': return 'Rechazado';
       default: return 'Desconocido';
     }
+  }
+
+  // Obtener URL completa del documento de identificación
+  getIdentificationDocumentUrl(): string {
+    if (!this.clientData?.identification_document) {
+      return '';
+    }
+
+    const document = this.clientData.identification_document;
+
+    // Si ya es una URL completa
+    if (document.startsWith('http')) {
+      return document;
+    }
+
+    // Si empieza con /uploads/
+    if (document.startsWith('/uploads/')) {
+      return `http://localhost:8000${document}`;
+    }
+
+    // Si es solo el nombre del archivo
+    return `http://localhost:8000/uploads/${document}`;
+  }
+
+  // Verificar si el documento de identificación es una imagen
+  isIdentificationImage(): boolean {
+    if (!this.clientData?.identification_document) {
+      return false;
+    }
+
+    const doc = this.clientData.identification_document.toLowerCase();
+    return doc.endsWith('.jpg') || doc.endsWith('.jpeg') || 
+           doc.endsWith('.png') || doc.endsWith('.gif');
+  }
+
+  // Verificar si el documento de identificación es un PDF
+  isIdentificationPDF(): boolean {
+    if (!this.clientData?.identification_document) {
+      return false;
+    }
+
+    return this.clientData.identification_document.toLowerCase().endsWith('.pdf');
   }
 }

@@ -370,33 +370,43 @@ export class ProfileViewComponent implements OnInit {
   getProfileImageUrl(): string {
     // Si hay un preview (imagen nueva seleccionada), mostrar ese
     if (this.profileImagePreview) {
+      console.log('🖼️ Usando preview de imagen');
       return this.profileImagePreview;
     }
     
     // Si no hay imagen de perfil, usar logo por defecto
     if (!this.profileData?.profile_image) {
-      return 'assets/logo.png';
+      console.log('⚠️ No hay profile_image, usando logo por defecto');
+      return '/assets/logo.png';
     }
     
+    const imageValue = this.profileData.profile_image;
+    console.log('🔍 Valor de profile_image:', imageValue);
+    
     // Si la imagen ya es una URL completa
-    if (this.profileData.profile_image.startsWith('http')) {
-      // Agregar timestamp para evitar caché
-      return `${this.profileData.profile_image}?t=${this.imageTimestamp}`;
+    if (imageValue.startsWith('http')) {
+      const url = `${imageValue}?t=${this.imageTimestamp}`;
+      console.log('🌐 URL completa:', url);
+      return url;
     }
     
     // Si la imagen es data:image (base64), usarla directamente
-    if (this.profileData.profile_image.startsWith('data:image')) {
-      return this.profileData.profile_image;
+    if (imageValue.startsWith('data:image')) {
+      console.log('📷 Imagen base64');
+      return imageValue;
     }
     
     // Si la imagen empieza con /uploads/
-    if (this.profileData.profile_image.startsWith('/uploads/')) {
-      // Agregar timestamp para evitar caché
-      return `http://localhost:8000${this.profileData.profile_image}?t=${this.imageTimestamp}`;
+    if (imageValue.startsWith('/uploads/')) {
+      const url = `http://localhost:8000${imageValue}?t=${this.imageTimestamp}`;
+      console.log('📁 Ruta /uploads/:', url);
+      return url;
     }
     
     // Caso por defecto: agregar el prefijo completo con timestamp
-    return `http://localhost:8000/uploads/${this.profileData.profile_image}?t=${this.imageTimestamp}`;
+    const url = `http://localhost:8000/uploads/${imageValue}?t=${this.imageTimestamp}`;
+    console.log('📦 URL construida:', url);
+    return url;
   }
 
   getUserTypeLabel(): string {

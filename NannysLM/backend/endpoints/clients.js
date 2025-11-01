@@ -32,7 +32,7 @@ router.get('/info', async (req, res) => {
         u.first_name,
         u.last_name,
         u.email,
-        u.phone,
+        u.phone_number,
         u.profile_image
       FROM ${TABLE} c
       INNER JOIN users u ON c.user_id = u.id

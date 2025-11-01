@@ -24,11 +24,13 @@ const PORT = process.env.PORT || 3000;
 // ===============================================
 // CONFIGURACIÓN DE MULTER PARA SUBIDA DE ARCHIVOS
 // ===============================================
-// Crear directorio uploads si no existe
-const uploadsDir = path.join(__dirname, '../uploads');
+// Crear directorio uploads si no existe (dentro de backend)
+const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log('📁 Directorio uploads creado');
+    console.log('📁 Directorio uploads creado en:', uploadsDir);
+} else {
+    console.log('📁 Directorio uploads existe en:', uploadsDir);
 }
 
 // Configuración de almacenamiento de multer
@@ -119,7 +121,7 @@ app.use('/uploads', (req, res, next) => {
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     next();
-}, express.static(path.join(__dirname, '../uploads')));
+}, express.static(path.join(__dirname, 'uploads')));
 
 // ===============================================
 // RUTAS DE LA API

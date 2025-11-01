@@ -1663,6 +1663,12 @@
                 <h3 class="section-title">Documento de Identificación</h3>
                 <div class="file-upload-area">
                   <div class="file-upload-preview" *ngIf="clientData.identification_document">
+                    <!-- Vista previa si es una imagen -->
+                    <div class="document-image-preview" *ngIf="isIdentificationImage()">
+                      <img [src]="getIdentificationDocumentUrl()" alt="Documento de identificación" class="preview-image">
+                    </div>
+                    
+                    <!-- Información del archivo -->
                     <div class="file-info">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
@@ -1670,9 +1676,11 @@
                       </svg>
                       <span class="file-name">{{ clientData.identification_document }}</span>
                     </div>
-                    <a [href]="'http://localhost:8000/uploads/' + clientData.identification_document" 
+                    <a [href]="getIdentificationDocumentUrl()" 
                        target="_blank" 
-                       class="view-file-btn">Ver documento</a>
+                       class="view-file-btn">
+                      {{ isIdentificationPDF() ? 'Ver PDF' : 'Ver imagen' }}
+                    </a>
                   </div>
                   
                   <div class="file-upload-input">
