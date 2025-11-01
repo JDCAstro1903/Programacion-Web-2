@@ -889,12 +889,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     } else {
       this.currentMonth--;
     }
-    this.selectedDate = null;
-    this.selectedEndDate = null;
-    this.selectedTime = '';
-    this.selectedServiceType = '';
-    this.selectedChildren = 1;
-    this.selectedNannys = 1;
+    // No reseteamos las selecciones al cambiar de mes
   }
 
   nextMonth() {
@@ -904,12 +899,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     } else {
       this.currentMonth++;
     }
-    this.selectedDate = null;
-    this.selectedEndDate = null;
-    this.selectedTime = '';
-    this.selectedServiceType = '';
-    this.selectedChildren = 1;
-    this.selectedNannys = 1;
+    // No reseteamos las selecciones al cambiar de mes
   }
 
   isSelectedDate(day: number): boolean {

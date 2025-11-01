@@ -1,2 +1,1 @@
-El programa truena si intentamos volver a poner otra imagen de perfil, es decir
-No esta actualizando, esta volviendo a escribir la informacion en donde ya existe
+No deja cambiar de contraseña
