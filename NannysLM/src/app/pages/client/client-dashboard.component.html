@@ -1,27 +1,11 @@
 
 <div class="client-layout">
-  <!-- Header -->
-  <header class="client-header">
-    <div class="header-left">
-      <div class="logo-section">
-        <img src="/assets/logo.png" alt="NannysLM" class="logo">
-        <div class="brand-info">
-          <h1>NannysLM</h1>
-          <p>Panel de cliente</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="header-right">
-      <div class="user-info">
-        <span class="user-name">{{ currentUser.name }}</span>
-        <span class="user-role">{{ currentUser.role }}</span>
-        <div class="user-avatar">
-          <img [src]="currentUser.avatar" alt="Avatar">
-        </div>
-      </div>
-    </div>
-  </header>
+  <!-- Header Genérico -->
+  <app-header 
+    [config]="headerConfig"
+    (onLogout)="onHeaderLogout()"
+    (onProfileClick)="onHeaderProfileClick()">
+  </app-header>
 
   <!-- Layout principal -->
   <div class="main-layout">
@@ -29,8 +13,7 @@
     <app-sidebar 
       [config]="sidebarConfig" 
       [currentView]="currentView"
-      (onViewChange)="onViewChange($event)"
-      (onLogoutClick)="onSidebarLogout()">
+      (onViewChange)="onViewChange($event)">
     </app-sidebar>
 
     <!-- Contenido principal -->
@@ -1563,6 +1546,198 @@
           </div>
         </div>
       </div>
+      <!-- Vista Información del Cliente -->
+      <div *ngIf="currentView === 'client-info'" class="client-info-view">
+        <div class="content-header">
+          <h2>Información del Cliente</h2>
+          <p>Gestiona tu información personal y documentos de verificación</p>
+        </div>
+
+        <!-- Indicador de carga -->
+        <div *ngIf="isLoadingClientData" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Cargando información del cliente...</p>
+        </div>
+
+        <div class="client-info-container" *ngIf="!isLoadingClientData">
+          <!-- Estado de verificación -->
+          <div class="verification-status-card" *ngIf="clientData">
+            <div class="status-header">
+              <h3>Estado de Verificación</h3>
+              <div class="status-badge" [ngClass]="{
+                'verified': clientData.verification_status === 'verified',
+                'pending': clientData.verification_status === 'pending',
+                'rejected': clientData.verification_status === 'rejected'
+              }">
+                <span class="status-dot"></span>
+                <span class="status-text">
+                  {{ clientData.verification_status === 'verified' ? 'Verificado' : 
+                     clientData.verification_status === 'pending' ? 'En Revisión' : 
+                     clientData.verification_status === 'rejected' ? 'Rechazado' : 'Sin Verificar' }}
+                </span>
+              </div>
+            </div>
+            <p class="status-description" *ngIf="clientData.verification_date">
+              Verificado el {{ clientData.verification_date | date: 'dd/MM/yyyy' }}
+            </p>
+          </div>
+
+          <!-- Formulario de información del cliente -->
+          <div class="client-info-form-card">
+            <form #clientInfoForm="ngForm" (ngSubmit)="saveClientInfoData()">
+              
+              <!-- Sección: Contacto de Emergencia -->
+              <div class="form-section">
+                <h3 class="section-title">Contacto de Emergencia</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="emergency-contact-name">Nombre Completo *</label>
+                    <input 
+                      type="text" 
+                      id="emergency-contact-name"
+                      name="emergency_contact_name"
+                      [(ngModel)]="clientData.emergency_contact_name"
+                      required
+                      minlength="2"
+                      maxlength="100"
+                      pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$"
+                      placeholder="Nombre del contacto de emergencia"
+                      class="form-input">
+                    <span class="form-hint">Solo letras y espacios (2-100 caracteres)</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="emergency-contact-phone">Teléfono *</label>
+                    <input 
+                      type="tel" 
+                      id="emergency-contact-phone"
+                      name="emergency_contact_phone"
+                      [(ngModel)]="clientData.emergency_contact_phone"
+                      required
+                      minlength="10"
+                      maxlength="15"
+                      pattern="^\d{10,15}$"
+                      placeholder="1234567890"
+                      class="form-input">
+                    <span class="form-hint">Solo números (10-15 dígitos)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección: Información Familiar -->
+              <div class="form-section">
+                <h3 class="section-title">Información Familiar</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="number-of-children">Número de Niños *</label>
+                    <input 
+                      type="number" 
+                      id="number-of-children"
+                      name="number_of_children"
+                      [(ngModel)]="clientData.number_of_children"
+                      required
+                      min="0"
+                      max="20"
+                      placeholder="0"
+                      class="form-input">
+                    <span class="form-hint">Cantidad de niños que requieren cuidado (0-20)</span>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group full-width">
+                    <label for="special-requirements">Requisitos Especiales</label>
+                    <textarea 
+                      id="special-requirements"
+                      name="special_requirements"
+                      [(ngModel)]="clientData.special_requirements"
+                      maxlength="500"
+                      rows="4"
+                      placeholder="Alergias, necesidades especiales, instrucciones médicas, etc."
+                      class="form-textarea"></textarea>
+                    <span class="form-hint">Describe cualquier necesidad especial o consideración importante (máx. 500 caracteres)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección: Documento de Identificación -->
+              <div class="form-section">
+                <h3 class="section-title">Documento de Identificación</h3>
+                <div class="file-upload-area">
+                  <div class="file-upload-preview" *ngIf="clientData.identification_document">
+                    <div class="file-info">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      <span class="file-name">{{ clientData.identification_document }}</span>
+                    </div>
+                    <a [href]="'http://localhost:8000/uploads/' + clientData.identification_document" 
+                       target="_blank" 
+                       class="view-file-btn">Ver documento</a>
+                  </div>
+                  
+                  <div class="file-upload-input">
+                    <input 
+                      type="file" 
+                      id="identification-document"
+                      (change)="onIdentificationUpload($event)"
+                      accept=".pdf,.jpg,.jpeg,.png,.gif"
+                      class="file-input-hidden">
+                    <label for="identification-document" class="file-input-label">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="17,8 12,3 7,8" stroke="currentColor" stroke-width="2"/>
+                        <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      <span>{{ clientData.identification_document ? 'Cambiar documento' : 'Subir documento' }}</span>
+                    </label>
+                    <span class="form-hint">PDF o imagen (JPG, PNG) - Máximo 10MB</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mensajes de error -->
+              <div class="error-messages" *ngIf="clientInfoErrorMessage">
+                <div class="error-alert">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ clientInfoErrorMessage }}</span>
+                </div>
+              </div>
+
+              <!-- Mensajes de éxito -->
+              <div class="success-messages" *ngIf="clientInfoSuccessMessage">
+                <div class="success-alert">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ clientInfoSuccessMessage }}</span>
+                </div>
+              </div>
+
+              <!-- Botones de acción -->
+              <div class="form-actions">
+                <button 
+                  type="submit" 
+                  class="btn-primary"
+                  [disabled]="isSavingClientData || !clientInfoForm.valid">
+                  <span *ngIf="!isSavingClientData">Guardar Información</span>
+                  <span *ngIf="isSavingClientData">
+                    <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                    Guardando...
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 

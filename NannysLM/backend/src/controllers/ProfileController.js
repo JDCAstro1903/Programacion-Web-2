@@ -227,6 +227,202 @@ class ProfileController {
             });
         }
     }
+
+    /**
+     * Actualizar información básica del usuario
+     */
+    static async updateUserProfile(req, res) {
+        try {
+            console.log('📝 ProfileController - updateUserProfile iniciado');
+            console.log('📝 User ID:', req.user.id);
+            console.log('📝 Body:', req.body);
+            console.log('📝 File:', req.file);
+            const userId = req.user.id;
+            const {
+                first_name,
+                last_name,
+                phone_number,
+                address
+            } = req.body;
+
+            console.log('📝 Actualizando perfil del usuario:', userId);
+            console.log('📝 Datos recibidos:', req.body);
+            console.log('📝 Archivo recibido:', req.file);
+
+            // Manejar la imagen de perfil si se subió una
+            let profile_image = null;
+            if (req.file) {
+                profile_image = `/uploads/${req.file.filename}`;
+                console.log('📝 Imagen de perfil guardada:', profile_image);
+            }
+
+            // Construir la consulta de actualización
+            let updateQuery, queryParams;
+            
+            if (profile_image) {
+                updateQuery = `
+                    UPDATE users 
+                    SET 
+                        first_name = ?,
+                        last_name = ?,
+                        phone_number = ?,
+                        address = ?,
+                        profile_image = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                `;
+                queryParams = [
+                    first_name,
+                    last_name,
+                    phone_number || null,
+                    address || null,
+                    profile_image,
+                    userId
+                ];
+            } else {
+                updateQuery = `
+                    UPDATE users 
+                    SET 
+                        first_name = ?,
+                        last_name = ?,
+                        phone_number = ?,
+                        address = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                `;
+                queryParams = [
+                    first_name,
+                    last_name,
+                    phone_number || null,
+                    address || null,
+                    userId
+                ];
+            }
+
+            const result = await executeQuery(updateQuery, queryParams);
+
+            if (result.success) {
+                console.log('✅ Update query ejecutado exitosamente');
+                
+                // Obtener el usuario actualizado
+                const user = await UserModel.findById(userId);
+                console.log('📋 Usuario obtenido después del update:', {
+                    id: user?.id,
+                    profile_image: user?.profile_image,
+                    first_name: user?.first_name,
+                    last_name: user?.last_name
+                });
+                
+                res.status(200).json({
+                    success: true,
+                    message: 'Perfil actualizado exitosamente',
+                    data: {
+                        id: user.id,
+                        email: user.email,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        phone_number: user.phone_number,
+                        address: user.address,
+                        user_type: user.user_type,
+                        is_verified: user.is_verified,
+                        is_active: user.is_active,
+                        profile_image: user.profile_image,
+                        created_at: user.created_at,
+                        updated_at: user.updated_at,
+                        last_login: user.last_login
+                    }
+                });
+            } else {
+                throw new Error('Error al actualizar perfil');
+            }
+
+        } catch (error) {
+            console.error('Error al actualizar perfil:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+
+    /**
+     * Cambiar contraseña del usuario
+     */
+    static async changePassword(req, res) {
+        try {
+            const userId = req.user.id;
+            const { current_password, new_password } = req.body;
+
+            console.log('🔐 Cambiando contraseña del usuario:', userId);
+
+            // Validar que se enviaron ambas contraseñas
+            if (!current_password || !new_password) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Se requieren la contraseña actual y la nueva contraseña'
+                });
+            }
+
+            // Validar longitud de la nueva contraseña
+            if (new_password.length < 6) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La nueva contraseña debe tener al menos 6 caracteres'
+                });
+            }
+
+            // Obtener el usuario para verificar la contraseña actual
+            const user = await UserModel.findById(userId);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Usuario no encontrado'
+                });
+            }
+
+            // Verificar la contraseña actual
+            const bcrypt = require('bcrypt');
+            const isValidPassword = await bcrypt.compare(current_password, user.password_hash);
+            
+            if (!isValidPassword) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'La contraseña actual es incorrecta'
+                });
+            }
+
+            // Hashear la nueva contraseña
+            const newPasswordHash = await bcrypt.hash(new_password, 10);
+
+            // Actualizar la contraseña
+            const updateQuery = `
+                UPDATE users 
+                SET password_hash = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            `;
+
+            const result = await executeQuery(updateQuery, [newPasswordHash, userId]);
+
+            if (result.success) {
+                res.status(200).json({
+                    success: true,
+                    message: 'Contraseña actualizada exitosamente'
+                });
+            } else {
+                throw new Error('Error al actualizar contraseña');
+            }
+
+        } catch (error) {
+            console.error('Error al cambiar contraseña:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
 }
 
 module.exports = ProfileController;

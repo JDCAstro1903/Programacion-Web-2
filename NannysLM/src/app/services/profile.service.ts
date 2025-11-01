@@ -17,6 +17,9 @@ export interface ProfileStatusResponse {
       address?: string;
       is_verified: boolean;
       profile_image?: string;
+      created_at?: string;
+      updated_at?: string;
+      last_login?: string;
     };
     specific_profile?: any;
   };
@@ -74,5 +77,22 @@ export class ProfileService {
    */
   completeNannyProfile(profileData: NannyProfileData): Observable<ProfileResponse> {
     return this.http.post<ProfileResponse>(`${this.apiUrl}/complete-nanny`, profileData);
+  }
+
+  /**
+   * Actualizar perfil del usuario con FormData (para subir imagen)
+   */
+  updateUserProfile(formData: FormData): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/update`, formData);
+  }
+
+  /**
+   * Cambiar contraseña del usuario
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/change-password`, {
+      current_password: currentPassword,
+      new_password: newPassword
+    });
   }
 }

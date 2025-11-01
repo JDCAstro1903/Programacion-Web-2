@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
+import { HeaderComponent, HeaderConfig } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
@@ -11,7 +12,7 @@ import { DashboardService, DashboardStats, Nanny, Client } from '../../services/
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, LogoutModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -21,6 +22,9 @@ export class AdminDashboardComponent implements OnInit {
   
   // Configuración del sidebar
   sidebarConfig: SidebarConfig;
+
+  // Configuración del header
+  headerConfig: HeaderConfig;
 
   // Datos dinámicos desde la base de datos
   dashboardStats: DashboardStats = {
@@ -47,6 +51,19 @@ export class AdminDashboardComponent implements OnInit {
     private dashboardService: DashboardService
   ) {
     this.sidebarConfig = this.userConfigService.getSidebarConfig('admin');
+    
+    // Configurar header genérico
+    const currentUser = this.authService.getCurrentUser();
+    const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Administrador';
+    
+    this.headerConfig = {
+      userType: 'admin',
+      userName: userName || 'Administrador',
+      userRole: 'Administrador',
+      userAvatar: 'assets/logo.png',
+      showProfileOption: true,
+      showLogoutOption: true
+    };
   }
 
   ngOnInit() {
@@ -200,6 +217,15 @@ export class AdminDashboardComponent implements OnInit {
 
   onSidebarLogout() {
     this.openLogoutModal();
+  }
+
+  // Métodos para manejar eventos del header
+  onHeaderLogout() {
+    this.openLogoutModal();
+  }
+
+  onHeaderProfileClick() {
+    console.log('Navegando a perfil...');
   }
 
   setNannyFilter(filter: string) {

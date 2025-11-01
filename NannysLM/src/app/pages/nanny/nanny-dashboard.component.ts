@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
+import { HeaderComponent, HeaderConfig } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
@@ -22,7 +23,7 @@ interface Service {
 @Component({
   selector: 'app-nanny-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent, LogoutModalComponent],
+  imports: [CommonModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
   templateUrl: './nanny-dashboard.component.html',
   styleUrl: './nanny-dashboard.component.css'
 })
@@ -35,6 +36,9 @@ export class NannyDashboardComponent implements OnInit {
   
   // Configuración del sidebar
   sidebarConfig: SidebarConfig;
+  
+  // Configuración del header
+  headerConfig: HeaderConfig;
   
   // Estado del modal de logout
   showLogoutModal: boolean = false;
@@ -114,7 +118,6 @@ export class NannyDashboardComponent implements OnInit {
     // Configurar sidebar específico para nanny con tema rosa como el admin
     this.sidebarConfig = {
       userType: 'admin', // Usar tema admin (rosa) para nanny también
-      showLogout: true,
       items: [
         {
           id: 'dashboard',
@@ -127,6 +130,19 @@ export class NannyDashboardComponent implements OnInit {
           icon: 'calendar'
         }
       ]
+    };
+
+    // Configurar header genérico
+    const currentUser = this.authService.getCurrentUser();
+    const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Niñera';
+    
+    this.headerConfig = {
+      userType: 'nanny',
+      userName: userName || 'Niñera',
+      userRole: 'Niñera',
+      userAvatar: 'assets/logo.png',
+      showProfileOption: true,
+      showLogoutOption: true
     };
   }
 
@@ -152,6 +168,15 @@ export class NannyDashboardComponent implements OnInit {
 
   onSidebarLogout() {
     this.openLogoutModal();
+  }
+
+  // Métodos para manejar eventos del header
+  onHeaderLogout() {
+    this.openLogoutModal();
+  }
+
+  onHeaderProfileClick() {
+    console.log('Navegando a perfil...');
   }
 
   // Métodos para el modal de logout

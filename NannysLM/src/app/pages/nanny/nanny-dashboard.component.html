@@ -1,26 +1,10 @@
 <div class="nanny-layout">
-  <!-- Header -->
-  <header class="nanny-header">
-    <div class="header-left">
-      <div class="logo-section">
-        <img src="/assets/logo.png" alt="NannysLM" class="logo">
-        <div class="brand-info">
-          <h1>NannysLM</h1>
-          <p>Panel de nanny</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="header-right">
-      <div class="user-info">
-        <span class="user-name">{{ currentUser.name }}</span>
-        <span class="user-role">{{ currentUser.role }}</span>
-        <div class="user-avatar">
-          <img [src]="currentUser.avatar" alt="Avatar">
-        </div>
-      </div>
-    </div>
-  </header>
+  <!-- Header Genérico -->
+  <app-header 
+    [config]="headerConfig"
+    (onLogout)="onHeaderLogout()"
+    (onProfileClick)="onHeaderProfileClick()">
+  </app-header>
 
   <!-- Layout principal -->
   <div class="main-layout">
@@ -28,8 +12,7 @@
     <app-sidebar 
       [config]="sidebarConfig" 
       [currentView]="currentView"
-      (onViewChange)="onViewChange($event)"
-      (onLogoutClick)="onSidebarLogout()">
+      (onViewChange)="onViewChange($event)">
     </app-sidebar>
 
     <!-- Contenido principal -->

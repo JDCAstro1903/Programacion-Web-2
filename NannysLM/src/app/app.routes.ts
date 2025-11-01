@@ -5,6 +5,7 @@ import { HomeComponent } from './components/home/home';
 import { AdminDashboardComponent } from './pages/admin/admin-dashboard.component';
 import { ClientDashboardComponent } from './pages/client/client-dashboard.component';
 import { NannyDashboardComponent } from './pages/nanny/nanny-dashboard.component';
+import { ProfileViewComponent } from './pages/profile-view/profile-view.component';
 import { CompleteClientProfileComponent } from './components/complete-client-profile/complete-client-profile.component';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
@@ -45,6 +46,11 @@ export const routes: Routes = [
     component: CompleteClientProfileComponent,
     canActivate: [AuthGuard, RoleGuard],
     data: { role: 'client' }
+  },
+  {
+    path: 'profile',
+    component: ProfileViewComponent,
+    canActivate: [AuthGuard]
   },
   {
     path: 'client/dashboard',

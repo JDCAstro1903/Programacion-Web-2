@@ -13,7 +13,6 @@ export interface SidebarItem {
 
 export interface SidebarConfig {
   items: SidebarItem[];
-  showLogout?: boolean;
   userType?: 'admin' | 'client' | 'nanny';
 }
 
@@ -29,16 +28,11 @@ export class SidebarComponent {
   @Input() currentView: string = '';
   
   @Output() onViewChange = new EventEmitter<string>();
-  @Output() onLogoutClick = new EventEmitter<void>();
 
   constructor(private sanitizer: DomSanitizer) {}
 
   setActiveView(viewId: string) {
     this.onViewChange.emit(viewId);
-  }
-
-  logout() {
-    this.onLogoutClick.emit();
   }
 
   isItemActive(itemId: string): boolean {

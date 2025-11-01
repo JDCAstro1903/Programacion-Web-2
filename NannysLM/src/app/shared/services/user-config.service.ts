@@ -28,7 +28,6 @@ export class UserConfigService {
       permissions: ['manage_nannys', 'manage_clients', 'manage_payments', 'view_dashboard'],
       sidebarConfig: {
         userType: 'admin',
-        showLogout: true,
         items: [
           {
             id: 'dashboard',
@@ -69,7 +68,6 @@ export class UserConfigService {
       permissions: ['view_nannys', 'book_services', 'manage_profile', 'view_history'],
       sidebarConfig: {
         userType: 'client',
-        showLogout: true,
         items: [
           {
             id: 'dashboard',
@@ -115,7 +113,6 @@ export class UserConfigService {
       permissions: ['manage_availability', 'view_bookings', 'manage_profile', 'view_earnings'],
       sidebarConfig: {
         userType: 'nanny',
-        showLogout: true,
         items: [
           {
             id: 'dashboard',

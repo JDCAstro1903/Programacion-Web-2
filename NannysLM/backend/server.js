@@ -12,10 +12,10 @@ require('dotenv').config();
 // Importar configuración de base de datos
 const { testConnection, executeQuery } = require('./src/config/database');
 
-// Importar rutas (temporalmente comentadas para debuggear)
-// const authRoutes = require('./src/routes/auth');
-// const dashboardRoutes = require('./src/routes/dashboard');
-// const profileRoutes = require('./src/routes/profile');
+// Importar rutas
+const authRoutes = require('./src/routes/auth');
+const dashboardRoutes = require('./src/routes/dashboard');
+const profileRoutes = require('./src/routes/profile');
 const clientRoutes = require('./src/routes/client');
 
 const app = express();
@@ -94,9 +94,14 @@ app.use('/api/', limiter);
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:4200',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 86400 // 24 horas
 }));
+
+// Manejar preflight requests
+app.options('*', cors());
 
 // Parsing de JSON y URL-encoded
 app.use(express.json({ limit: '10mb' }));
@@ -107,18 +112,14 @@ if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
 
-// Servir archivos estáticos (uploads) con headers CORS y Cross-Origin-Resource-Policy
+// Servir archivos estáticos (uploads) con headers CORS correctos
 app.use('/uploads', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:4200');
+    res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     next();
-});
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use('/uploads', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:4200');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-});
+}, express.static(path.join(__dirname, '../uploads')));
 
 // ===============================================
 // RUTAS DE LA API
@@ -150,11 +151,15 @@ app.get('/api/info', (req, res) => {
     });
 });
 
-// Rutas principales de la API (temporalmente reemplazadas por rutas básicas)
-// app.use('/api/v1/auth', authRoutes);
-// app.use('/api/v1/dashboard', dashboardRoutes);
-// app.use('/api/v1/profile', profileRoutes);
+// Rutas principales de la API
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/client', clientRoutes);
+
+// Importar y usar rutas para datos específicos del cliente
+const clientDataRoutes = require('./src/routes/clientData');
+app.use('/api/v1/client', clientDataRoutes);
 
 // ===============================================
 // RUTAS BÁSICAS TEMPORALES

@@ -16,6 +16,43 @@ function buildUpdate(table, data, idField = 'id') {
   return { sql: `UPDATE ${table} SET ${set} WHERE ${idField} = ?`, params: keys.map(k => data[k]) };
 }
 
+// Endpoint para obtener información completa del cliente por userId
+router.get('/info', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'userId es requerido' });
+    }
+
+    // Query para obtener datos del cliente junto con información del usuario
+    const q = `
+      SELECT 
+        c.*,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.phone,
+        u.profile_image
+      FROM ${TABLE} c
+      INNER JOIN users u ON c.user_id = u.id
+      WHERE c.user_id = ?
+    `;
+    
+    const result = await executeQuery(q, [userId]);
+    const rows = result?.data ?? result?.rows ?? result ?? [];
+    
+    if (Array.isArray(rows) && rows.length > 0) {
+      return res.json({ success: true, data: rows[0] });
+    }
+    
+    return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+  } catch (error) {
+    console.error('Error en /info:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;

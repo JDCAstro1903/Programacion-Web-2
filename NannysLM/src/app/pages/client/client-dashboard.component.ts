@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
+import { HeaderComponent, HeaderConfig } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
@@ -63,11 +64,11 @@ interface ClientProfileData {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, LogoutModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.css'
 })
-export class ClientDashboardComponent implements OnInit {
+export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Vista actual del dashboard
   currentView: string = 'dashboard';
   
@@ -76,6 +77,9 @@ export class ClientDashboardComponent implements OnInit {
   
   // Configuración del sidebar
   sidebarConfig: SidebarConfig;
+  
+  // Configuración del header
+  headerConfig: HeaderConfig;
   
   // Estado del modal de logout
   showLogoutModal: boolean = false;
@@ -126,9 +130,18 @@ export class ClientDashboardComponent implements OnInit {
 
   // Estado de guardado
   isSavingProfile = false;
+  isSavingClientData = false;
   
   // Estado de carga del perfil
   isLoadingProfile = false;
+  isLoadingClientData = false;
+
+  // Mensajes para client-info view
+  clientInfoErrorMessage: string = '';
+  clientInfoSuccessMessage: string = '';
+
+  // Archivo de identificación
+  identificationDocumentFile: File | null = null;
 
   // ID del usuario actual (en producción vendría del JWT)
   currentUserId: number = 2; // Default, se actualiza en ngOnInit
@@ -361,7 +374,6 @@ export class ClientDashboardComponent implements OnInit {
     // Configurar sidebar específico para cliente con tema rosa
     this.sidebarConfig = {
       userType: 'admin', // Usar tema admin (rosa) para consistencia
-      showLogout: true,
       items: [
         {
           id: 'dashboard',
@@ -374,16 +386,26 @@ export class ClientDashboardComponent implements OnInit {
           icon: 'calendar'
         },
         {
-          id: 'profile',
-          label: 'Perfil',
-          icon: 'user'
-        },
-        {
           id: 'payments',
           label: 'Pagos',
           icon: 'dollar-sign'
+        },
+        {
+          id: 'client-info',
+          label: 'Información del Cliente',
+          icon: 'user-check'
         }
       ]
+    };
+
+    // Configurar header genérico
+    this.headerConfig = {
+      userType: 'client',
+      userName: 'Usuario',
+      userRole: 'Cliente',
+      userAvatar: 'assets/logo.png',
+      showProfileOption: true,
+      showLogoutOption: true
     };
   }
 
@@ -424,12 +446,71 @@ export class ClientDashboardComponent implements OnInit {
     
     console.log(`🎪 Cargando datos para usuario ID: ${this.currentUserId}`);
     
+    // Actualizar headerConfig con datos del usuario
+    this.updateHeaderConfigFromUser(currentUser);
+    
     // Cargar datos dinámicos del cliente
     this.loadClientData();
+    // Cargar datos específicos del cliente (emergency contacts, etc.)
+    this.loadClientInfoData();
     // Cargar datos del perfil
     this.loadProfileData();
     // Actualizar contadores en el sidebar si es necesario
     this.updateSidebarCounts();
+    
+    // Escuchar eventos de storage para detectar cambios en localStorage
+    window.addEventListener('storage', this.handleStorageChange.bind(this));
+    
+    // Escuchar el evento de visibilidad de la página
+    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+  }
+
+  ngOnDestroy() {
+    // Limpiar listeners
+    window.removeEventListener('storage', this.handleStorageChange.bind(this));
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+  }
+
+  private handleStorageChange(event: StorageEvent) {
+    if (event.key === 'currentUser') {
+      console.log('🔄 Detectado cambio en currentUser, actualizando header...');
+      this.loadClientInfo();
+    }
+  }
+
+  private handleVisibilityChange() {
+    if (!document.hidden) {
+      console.log('👁️ Página visible de nuevo, actualizando datos...');
+      // Recargar la información del cliente cuando la página vuelva a ser visible
+      this.loadClientInfo();
+    }
+  }
+
+  private updateHeaderConfigFromUser(currentUser: any) {
+    if (currentUser) {
+      const userName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'Usuario';
+      let avatarUrl = 'assets/logo.png';
+      
+      // Intentar obtener la imagen de perfil actualizada
+      if (currentUser.profile_image) {
+        if (currentUser.profile_image.startsWith('http')) {
+          avatarUrl = currentUser.profile_image;
+        } else if (currentUser.profile_image.startsWith('/uploads/')) {
+          avatarUrl = `http://localhost:8000${currentUser.profile_image}`;
+        } else {
+          avatarUrl = `http://localhost:8000/uploads/${currentUser.profile_image}`;
+        }
+      }
+      
+      this.headerConfig = {
+        userType: 'client',
+        userName: userName,
+        userRole: 'Cliente',
+        userAvatar: avatarUrl,
+        showProfileOption: true,
+        showLogoutOption: true
+      };
+    }
   }
 
   private updateSidebarCounts() {
@@ -464,6 +545,31 @@ export class ClientDashboardComponent implements OnInit {
             console.log('✅ profile_image específico:', this.clientInfo.profile_image);
           } else {
             console.log('⚠️ profile_image no disponible');
+          }
+          
+          // Actualizar headerConfig con la información del cliente
+          if (this.clientInfo) {
+            const userName = `${this.clientInfo.first_name} ${this.clientInfo.last_name}`.trim();
+            let avatarUrl = 'assets/logo.png';
+            
+            if (this.clientInfo.profile_image) {
+              if (this.clientInfo.profile_image.startsWith('http')) {
+                avatarUrl = this.clientInfo.profile_image;
+              } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
+                avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
+              } else {
+                avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
+              }
+            }
+            
+            this.headerConfig = {
+              userType: 'client',
+              userName: userName,
+              userRole: 'Cliente',
+              userAvatar: avatarUrl,
+              showProfileOption: true,
+              showLogoutOption: true
+            };
           }
         }
         this.isLoadingClientInfo = false;
@@ -571,8 +677,20 @@ export class ClientDashboardComponent implements OnInit {
     this.openLogoutModal();
   }
 
+  // Métodos para manejar eventos del header
+  onHeaderLogout() {
+    console.log('onHeaderLogout called - Opening logout modal');
+    this.openLogoutModal();
+  }
+
+  onHeaderProfileClick() {
+    // Este método ya no es necesario porque el header navega directamente a /profile
+    console.log('onHeaderProfileClick called - Navegando a perfil...');
+  }
+
   // Métodos para el modal de logout
   openLogoutModal() {
+    console.log('openLogoutModal called - Setting showLogoutModal to true');
     this.showLogoutModal = true;
   }
 
@@ -1585,23 +1703,179 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
   onIdentificationUpload(event: any) {
     const file = event.target.files[0];
     if (file) {
-      // Validar que sea una imagen
-      if (file.type.startsWith('image/')) {
-        this.selectedIdentificationName = file.name;
-        this.identificationFile = file;
-        
-        // Crear un FileReader para preview
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          this.clientData.identification_document = e.target.result;
-        };
-        reader.readAsDataURL(file);
-        
-        console.log('✅ Documento de identificación seleccionado:', file.name);
+      // Validar que sea PDF o imagen
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+      if (validTypes.includes(file.type)) {
+        // Validar tamaño (10MB max)
+        if (file.size <= 10 * 1024 * 1024) {
+          this.identificationDocumentFile = file;
+          console.log('✅ Documento de identificación seleccionado:', file.name);
+        } else {
+          this.clientInfoErrorMessage = 'El archivo no debe superar los 10MB';
+          setTimeout(() => this.clientInfoErrorMessage = '', 5000);
+          event.target.value = '';
+        }
       } else {
-        alert('Por favor selecciona un archivo de imagen válido');
+        this.clientInfoErrorMessage = 'Por favor selecciona un archivo PDF o imagen válido (JPG, PNG, GIF)';
+        setTimeout(() => this.clientInfoErrorMessage = '', 5000);
         event.target.value = '';
       }
+    }
+  }
+
+  // Cargar datos específicos del cliente (emergency contacts, etc.)
+  async loadClientInfoData() {
+    this.isLoadingClientData = true;
+    this.clientInfoErrorMessage = '';
+
+    try {
+      const token = this.authService.getToken();
+      
+      if (!token) {
+        console.error('❌ No hay token disponible');
+        this.clientInfoErrorMessage = 'Sesión no válida. Por favor inicia sesión nuevamente.';
+        this.isLoadingClientData = false;
+        return;
+      }
+
+      console.log('🔐 Token disponible, realizando petición a /api/v1/client/data');
+      
+      const response = await fetch('http://localhost:8000/api/v1/client/data', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('📡 Respuesta recibida:', response.status, response.statusText);
+
+      if (response.status === 404) {
+        // Cliente no tiene datos todavía, inicializar con valores vacíos
+        console.log('ℹ️ Cliente sin datos previos (404), inicializando formulario vacío');
+        this.clientData = {
+          verification_status: 'pending',
+          identification_document: '',
+          emergency_contact_name: '',
+          emergency_contact_phone: '',
+          number_of_children: 0,
+          special_requirements: ''
+        };
+        // Limpiar el mensaje de error porque 404 es esperado para clientes nuevos
+        this.clientInfoErrorMessage = '';
+      } else if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Datos específicos del cliente cargados:', data);
+        
+        if (data.success && data.data) {
+          this.clientData = {
+            ...this.clientData,
+            ...data.data
+          };
+        }
+        // Limpiar el mensaje de error en caso de éxito
+        this.clientInfoErrorMessage = '';
+      } else if (response.status === 401) {
+        console.error('❌ Sesión expirada (401) al cargar datos del cliente');
+        this.authService.forceLogout();
+        this.router.navigate(['/login']);
+      } else {
+        // Intentar leer el mensaje de error del servidor
+        try {
+          const errorData = await response.json();
+          console.error('❌ Error del servidor:', errorData);
+          this.clientInfoErrorMessage = errorData.message || `Error del servidor: ${response.status}`;
+        } catch (e) {
+          console.error('❌ Error al cargar datos del cliente (status:', response.status, ')');
+          this.clientInfoErrorMessage = `Error del servidor (${response.status}). Por favor intenta nuevamente.`;
+        }
+      }
+    } catch (error: any) {
+      console.error('❌ Error de red o excepción al cargar datos del cliente:', error);
+      this.clientInfoErrorMessage = error.message || 'Error de conexión al cargar la información del cliente';
+    } finally {
+      this.isLoadingClientData = false;
+    }
+  }
+
+  // Guardar datos específicos del cliente (emergency contacts, etc.)
+  async saveClientInfoData() {
+    this.isSavingClientData = true;
+    this.clientInfoErrorMessage = '';
+    this.clientInfoSuccessMessage = '';
+
+    // Validación frontend
+    if (!this.clientData.emergency_contact_name || this.clientData.emergency_contact_name.length < 2) {
+      this.clientInfoErrorMessage = 'El nombre del contacto de emergencia debe tener al menos 2 caracteres';
+      this.isSavingClientData = false;
+      return;
+    }
+
+    if (!this.clientData.emergency_contact_name.match(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/)) {
+      this.clientInfoErrorMessage = 'El nombre del contacto de emergencia solo puede contener letras y espacios';
+      this.isSavingClientData = false;
+      return;
+    }
+
+    if (!this.clientData.emergency_contact_phone || !this.clientData.emergency_contact_phone.match(/^\d{10,15}$/)) {
+      this.clientInfoErrorMessage = 'El teléfono del contacto de emergencia debe contener entre 10 y 15 dígitos';
+      this.isSavingClientData = false;
+      return;
+    }
+
+    if (this.clientData.number_of_children < 0 || this.clientData.number_of_children > 20) {
+      this.clientInfoErrorMessage = 'El número de niños debe estar entre 0 y 20';
+      this.isSavingClientData = false;
+      return;
+    }
+
+    try {
+      const token = this.authService.getToken();
+      const formData = new FormData();
+      
+      formData.append('emergency_contact_name', this.clientData.emergency_contact_name);
+      formData.append('emergency_contact_phone', this.clientData.emergency_contact_phone);
+      formData.append('number_of_children', this.clientData.number_of_children.toString());
+      formData.append('special_requirements', this.clientData.special_requirements || '');
+      
+      if (this.identificationDocumentFile) {
+        formData.append('identification_document', this.identificationDocumentFile);
+      }
+
+      const response = await fetch('http://localhost:8000/api/v1/client/data', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log('✅ Datos del cliente guardados:', data);
+        this.clientInfoSuccessMessage = data.message || 'Información guardada correctamente';
+        this.identificationDocumentFile = null;
+        
+        // Recargar datos del cliente
+        await this.loadClientInfoData();
+        
+        setTimeout(() => this.clientInfoSuccessMessage = '', 5000);
+      } else if (response.status === 401) {
+        console.error('❌ Sesión expirada al guardar datos del cliente');
+        this.authService.forceLogout();
+        this.router.navigate(['/login']);
+      } else if (response.status === 400 && data.errors) {
+        // Errores de validación del backend
+        this.clientInfoErrorMessage = data.errors.map((err: any) => err.msg).join(', ');
+      } else {
+        this.clientInfoErrorMessage = data.message || 'Error al guardar la información';
+      }
+    } catch (error) {
+      console.error('❌ Error al guardar datos del cliente:', error);
+      this.clientInfoErrorMessage = 'Error de conexión al guardar la información';
+    } finally {
+      this.isSavingClientData = false;
     }
   }
 
