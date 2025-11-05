@@ -17,7 +17,9 @@ class UserModel {
             phone_number,
             address,
             user_type,
-            profile_image
+            profile_image,
+            is_verified = false,
+            is_active = false
         } = userData;
         
         const query = `
@@ -29,8 +31,10 @@ class UserModel {
                 phone_number, 
                 address, 
                 user_type, 
-                profile_image
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                profile_image,
+                is_verified,
+                is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         
         const params = [
@@ -41,7 +45,9 @@ class UserModel {
             phone_number || null,
             address || null,
             user_type,
-            profile_image || null
+            profile_image || null,
+            is_verified ? 1 : 0,
+            is_active ? 1 : 0
         ];
         
         const result = await executeQuery(query, params);
@@ -141,7 +147,7 @@ class UserModel {
                 updated_at,
                 last_login
             FROM users 
-            WHERE id = ? AND is_active = TRUE
+            WHERE id = ?
         `;
         
         const result = await executeQuery(query, [id]);
@@ -174,7 +180,8 @@ class UserModel {
             'address',
             'profile_image',
             'is_verified',
-            'is_active'
+            'is_active',
+            'password_hash'
         ];
         
         const fields = [];

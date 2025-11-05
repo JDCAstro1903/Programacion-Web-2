@@ -122,8 +122,13 @@ export class ClientService {
   /**
    * Obtener servicios contratados
    */
-  getClientServices(status: string = 'all', limit: number = 50): Observable<ApiResponse<ClientServiceData[]>> {
+  getClientServices(userId?: number, status: string = 'all', limit: number = 50): Observable<ApiResponse<ClientServiceData[]>> {
     const params: any = { limit: limit.toString() };
+    
+    if (userId) {
+      params.userId = userId.toString();
+    }
+    
     if (status !== 'all') {
       params.status = status;
     }
@@ -134,8 +139,13 @@ export class ClientService {
   /**
    * Obtener historial de pagos
    */
-  getClientPayments(status: string = 'all', limit: number = 50): Observable<ApiResponse<ClientPayment[]>> {
+  getClientPayments(userId?: number, status: string = 'all', limit: number = 50): Observable<ApiResponse<ClientPayment[]>> {
     const params: any = { limit: limit.toString() };
+    
+    if (userId) {
+      params.userId = userId.toString();
+    }
+    
     if (status !== 'all') {
       params.status = status;
     }
@@ -146,8 +156,14 @@ export class ClientService {
   /**
    * Obtener estadísticas del cliente
    */
-  getClientStats(): Observable<ApiResponse<ClientStats>> {
-    return this.http.get<ApiResponse<ClientStats>>(`${this.apiUrl}/stats`);
+  getClientStats(userId?: number): Observable<ApiResponse<ClientStats>> {
+    const params: any = {};
+    
+    if (userId) {
+      params.userId = userId.toString();
+    }
+    
+    return this.http.get<ApiResponse<ClientStats>>(`${this.apiUrl}/stats`, { params });
   }
 
   /**

@@ -8,6 +8,7 @@ import { LogoutModalComponent } from '../../shared/components/logout-modal/logou
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
 import { DashboardService, DashboardStats, Nanny, Client } from '../../services/dashboard.service';
+import { BankDetailsService } from '../../services/bank-details.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -43,12 +44,15 @@ export class AdminDashboardComponent implements OnInit {
   isLoadingStats = false;
   isLoadingNannys = false;
   isLoadingClients = false;
+  isLoadingPayments = false;
+  isLoadingBankDetails = false;
 
     constructor(
     private router: Router,
     private userConfigService: UserConfigService,
     private authService: AuthService,
-    private dashboardService: DashboardService
+    private dashboardService: DashboardService,
+    private bankDetailsService: BankDetailsService
   ) {
     this.sidebarConfig = this.userConfigService.getSidebarConfig('admin');
     
@@ -56,14 +60,53 @@ export class AdminDashboardComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser();
     const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Administrador';
     
+    console.log('🔍 Constructor - currentUser completo:', currentUser);
+    console.log('🔍 Constructor - currentUser.profile_image:', currentUser?.profile_image);
+    
+    // Obtener la imagen de perfil con prioridad:
+    // 1. Del localStorage (más reciente)
+    // 2. Del objeto currentUser en memoria
+    // 3. Logo por defecto
+    let userAvatar = '/assets/logo.png';
+    
+    // Verificar localStorage primero
+    const storedUser = localStorage.getItem('currentUser');
+    console.log('🔍 Constructor - storedUser en localStorage:', storedUser ? 'existe' : 'no existe');
+    
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        console.log('🔍 Constructor - parsedUser:', parsedUser);
+        console.log('🔍 Constructor - parsedUser.profile_image:', parsedUser.profile_image);
+        
+        if (parsedUser.profile_image) {
+          userAvatar = parsedUser.profile_image;
+          console.log('🖼️ Avatar desde localStorage:', userAvatar);
+        }
+      } catch (e) {
+        console.error('Error parseando usuario de localStorage:', e);
+      }
+    }
+    
+    // Si no hay en localStorage, usar del currentUser
+    if (userAvatar === '/assets/logo.png' && currentUser?.profile_image) {
+      userAvatar = currentUser.profile_image;
+      console.log('🖼️ Avatar desde currentUser:', userAvatar);
+    }
+    
+    console.log('👤 Usuario actual completo:', currentUser);
+    console.log('📸 Avatar final seleccionado:', userAvatar);
+    
     this.headerConfig = {
       userType: 'admin',
       userName: userName || 'Administrador',
       userRole: 'Administrador',
-      userAvatar: 'assets/logo.png',
+      userAvatar: userAvatar,
       showProfileOption: true,
       showLogoutOption: true
     };
+    
+    console.log('✅ headerConfig final:', this.headerConfig);
   }
 
   ngOnInit() {
@@ -74,6 +117,8 @@ export class AdminDashboardComponent implements OnInit {
     this.loadStats();
     this.loadNannys();
     this.loadClients();
+    this.loadPayments();
+    this.loadBankDetails();
   }
 
   private loadStats() {
@@ -113,14 +158,54 @@ export class AdminDashboardComponent implements OnInit {
     this.isLoadingClients = true;
     this.dashboardService.getClients().subscribe({
       next: (response) => {
+        console.log('📊 Respuesta del backend (clientes):', response);
         if (response.success) {
           this.clientsData = response.data;
+          console.log('✅ Clientes cargados:', this.clientsData.length);
+          console.log('👥 Datos de clientes:', this.clientsData);
         }
         this.isLoadingClients = false;
       },
       error: (error) => {
-        console.error('Error cargando clientes:', error);
+        console.error('❌ Error cargando clientes:', error);
         this.isLoadingClients = false;
+      }
+    });
+  }
+
+  private loadPayments() {
+    this.isLoadingPayments = true;
+    this.dashboardService.getPayments().subscribe({
+      next: (response) => {
+        console.log('📊 Respuesta del backend (pagos):', response);
+        if (response.success) {
+          this.paymentsData = response.data;
+          console.log('✅ Pagos cargados:', this.paymentsData.length);
+        }
+        this.isLoadingPayments = false;
+      },
+      error: (error) => {
+        console.error('❌ Error cargando pagos:', error);
+        this.isLoadingPayments = false;
+      }
+    });
+  }
+
+  private loadBankDetails() {
+    this.isLoadingBankDetails = true;
+    this.bankDetailsService.getBankDetails().subscribe({
+      next: (response) => {
+        console.log('📊 Respuesta del backend (datos bancarios):', response);
+        if (response.success) {
+          this.datosBancarios = response.data;
+          console.log('✅ Datos bancarios cargados:', this.datosBancarios.length);
+          this.updateSidebarCounts();
+        }
+        this.isLoadingBankDetails = false;
+      },
+      error: (error) => {
+        console.error('❌ Error cargando datos bancarios:', error);
+        this.isLoadingBankDetails = false;
       }
     });
   }
@@ -129,12 +214,12 @@ export class AdminDashboardComponent implements OnInit {
     this.userConfigService.updateSidebarItemCount('admin', 'nannys', this.dashboardStats.nannys.total);
     this.userConfigService.updateSidebarItemCount('admin', 'clients', this.dashboardStats.clients.total);
     this.userConfigService.updateSidebarItemCount('admin', 'payments', 0); // TODO: Implementar pagos
-    this.userConfigService.updateSidebarItemCount('admin', 'datos-bancarios', 0); // TODO: Implementar datos bancarios
+    this.userConfigService.updateSidebarItemCount('admin', 'datos-bancarios', this.datosBancarios.length);
   }
 
   // Estados de filtro para las nannys
   nannyFilter: string = 'active';
-  clientFilter: string = 'verified';
+  clientFilter: string = 'all'; // Cambiado de 'verified' a 'all' para mostrar todos los clientes por defecto
   paymentFilter: string = 'verified';
   paymentDateFilter: string = 'all';
   
@@ -265,23 +350,46 @@ export class AdminDashboardComponent implements OnInit {
 
   // Obtener clientes según el filtro actual
   getCurrentClients() {
+    console.log('🔍 Filtro actual:', this.clientFilter);
+    console.log('📋 Total de clientes:', this.clientsData.length);
+    
+    let filtered;
     switch(this.clientFilter) {
-      case 'verified': return this.clientsData.filter(client => client.isVerified === true);
-      case 'unverified': return this.clientsData.filter(client => client.isVerified === false);
-      default: return this.clientsData.filter(client => client.isVerified === true);
+      case 'verified': 
+        filtered = this.clientsData.filter(client => {
+          console.log(`Cliente ${client.name}: isVerified=${client.isVerified}`);
+          return client.isVerified === true;
+        });
+        console.log('✅ Clientes verificados:', filtered.length);
+        break;
+      case 'unverified': 
+        filtered = this.clientsData.filter(client => {
+          console.log(`Cliente ${client.name}: isVerified=${client.isVerified}`);
+          return client.isVerified === false;
+        });
+        console.log('⏳ Clientes no verificados:', filtered.length);
+        break;
+      case 'all':
+        filtered = this.clientsData;
+        console.log('👥 Todos los clientes:', filtered.length);
+        break;
+      default: 
+        filtered = this.clientsData;
+        console.log('📊 Clientes (default):', filtered.length);
     }
+    
+    return filtered;
   }
 
   // Obtener pagos según el filtro actual
   getCurrentPayments() {
-    // Por ahora devolvemos un array vacío hasta que implementemos el endpoint de pagos
     let payments = this.paymentsData || [];
     
-    // Filtrar por estado de verificación si tenemos la propiedad
+    // Filtrar por estado de verificación
     if (this.paymentFilter === 'verified') {
-      payments = payments.filter((payment: any) => payment.type === 'completed');
+      payments = payments.filter((payment: any) => payment.paymentStatus === 'completed');
     } else if (this.paymentFilter === 'unverified') {
-      payments = payments.filter((payment: any) => payment.type === 'pending');
+      payments = payments.filter((payment: any) => payment.paymentStatus === 'pending');
     }
     
     // Aplicar filtro de fecha
@@ -290,7 +398,8 @@ export class AdminDashboardComponent implements OnInit {
       const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
       payments = payments.filter((payment: any) => {
-        const paymentDate = new Date(payment.date);
+        if (!payment.paymentDate && !payment.createdAt) return false;
+        const paymentDate = new Date(payment.paymentDate || payment.createdAt);
         
         switch(this.paymentDateFilter) {
           case 'today':
@@ -337,6 +446,10 @@ export class AdminDashboardComponent implements OnInit {
     return this.paymentsData.filter((payment: any) => payment.type === 'completed').slice(0, 3);
   }
 
+  getUnverifiedClientsSlice() {
+    return this.clientsData.filter(client => !client.isVerified).slice(0, 3);
+  }
+
   // Obtener contadores para los filtros
   getNannyCount(type: string): number {
     switch(type) {
@@ -349,17 +462,30 @@ export class AdminDashboardComponent implements OnInit {
 
   getClientCount(type: string): number {
     switch(type) {
-      case 'verified': return this.clientsData.filter(client => client.isVerified === true).length;
-      case 'unverified': return this.clientsData.filter(client => client.isVerified === false).length;
+      case 'all':
+        return this.clientsData.length;
+      case 'verified': 
+        return this.clientsData.filter(client => {
+          // Soportar tanto snake_case como camelCase
+          return (client as any).is_verified === true || client.isVerified === true;
+        }).length;
+      case 'unverified': 
+        return this.clientsData.filter(client => {
+          // Soportar tanto snake_case como camelCase
+          return (client as any).is_verified === false || client.isVerified === false;
+        }).length;
       default: return this.clientsData.length;
     }
   }
 
   getPaymentCount(type: string): number {
     switch(type) {
-      case 'verified': return this.paymentsData.filter((payment: any) => payment.type === 'completed').length;
-      case 'unverified': return this.paymentsData.filter((payment: any) => payment.type === 'pending').length;
-      default: return this.paymentsData.length;
+      case 'verified': 
+        return this.paymentsData.filter((payment: any) => payment.paymentStatus === 'completed').length;
+      case 'unverified': 
+        return this.paymentsData.filter((payment: any) => payment.paymentStatus === 'pending').length;
+      default: 
+        return this.paymentsData.length;
     }
   }
 
@@ -374,7 +500,8 @@ export class AdminDashboardComponent implements OnInit {
     const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
     return allPayments.filter((payment: any) => {
-      const paymentDate = new Date(payment.date);
+      if (!payment.paymentDate && !payment.createdAt) return false;
+      const paymentDate = new Date(payment.paymentDate || payment.createdAt);
       
       switch (dateFilter) {
         case 'today':
@@ -409,6 +536,23 @@ export class AdminDashboardComponent implements OnInit {
     }).length;
   }
 
+  // Métodos auxiliares para estadísticas de datos bancarios
+  getActiveBankAccountsCount(): number {
+    return this.datosBancarios.filter(datos => datos.isActive).length;
+  }
+
+  getVerifiedNannysWithBankCount(): number {
+    return this.datosBancarios.filter(datos => datos.nanny.status === 'active').length;
+  }
+
+  // Método para ocultar número de cuenta (mostrar solo últimos 4 dígitos)
+  maskAccountNumber(accountNumber: string): string {
+    if (!accountNumber) return '';
+    const length = accountNumber.length;
+    if (length <= 4) return accountNumber;
+    return '**** **** ' + accountNumber.slice(-4);
+  }
+
   // Métodos para manejar datos bancarios
   openBankDetailsModal(bankData?: any) {
     if (bankData) {
@@ -439,61 +583,80 @@ export class AdminDashboardComponent implements OnInit {
   saveBankDetails() {
     if (this.editingBankData) {
       // Actualizar datos existentes
-      const index = this.datosBancarios.findIndex(d => d.id === this.selectedBankData.id);
-      if (index !== -1) {
-        // Mantener información de la nanny
-        const nannyInfo = {
-          nanny_nombre: this.datosBancarios[index].nanny_nombre,
-          nanny_email: this.datosBancarios[index].nanny_email,
-          nanny_verificada: this.datosBancarios[index].nanny_verificada
-        };
-        
-        this.datosBancarios[index] = {
-          ...this.selectedBankData,
-          ...nannyInfo,
-          numero_cuenta_oculto: `****${this.selectedBankData.numero_cuenta_completo.slice(-4)}`,
-          fecha_actualizacion: new Date().toISOString().split('T')[0]
-        };
-      }
+      this.bankDetailsService.updateBankDetails(this.selectedBankData.id, {
+        accountHolderName: this.selectedBankData.account_holder_name,
+        bankName: this.selectedBankData.bank_name,
+        accountNumber: this.selectedBankData.account_number,
+        clabe: this.selectedBankData.clabe,
+        accountType: this.selectedBankData.account_type,
+        isPrimary: this.selectedBankData.is_primary,
+        isActive: this.selectedBankData.is_active
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log('✅ Datos bancarios actualizados');
+            this.loadBankDetails();
+            this.closeBankDetailsModal();
+          }
+        },
+        error: (error) => {
+          console.error('❌ Error actualizando datos bancarios:', error);
+        }
+      });
     } else {
       // Crear nuevos datos
-      const newId = Math.max(...this.datosBancarios.map(d => d.id)) + 1;
-      
-      // Buscar información de la nanny seleccionada
-      const nannyData = this.nannysData.find((n: Nanny) => n.id === this.selectedBankData.nanny_id);
-      
-      this.datosBancarios.push({
-        ...this.selectedBankData,
-        id: newId,
-        numero_cuenta_oculto: `****${this.selectedBankData.numero_cuenta_completo.slice(-4)}`,
-        fecha_creacion: new Date().toISOString().split('T')[0],
-        nanny_nombre: nannyData ? nannyData.name : 'Nanny no encontrada',
-        nanny_email: nannyData ? `${nannyData.name.toLowerCase().replace(' ', '.')}@nannyslm.com` : '',
-        nanny_verificada: nannyData ? true : false
+      this.bankDetailsService.createBankDetails({
+        nannyId: this.selectedBankData.nanny_id,
+        accountHolderName: this.selectedBankData.account_holder_name,
+        bankName: this.selectedBankData.bank_name,
+        accountNumber: this.selectedBankData.account_number,
+        clabe: this.selectedBankData.clabe,
+        accountType: this.selectedBankData.account_type,
+        isPrimary: this.selectedBankData.is_primary,
+        isActive: this.selectedBankData.is_active
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log('✅ Datos bancarios creados');
+            this.loadBankDetails();
+            this.closeBankDetailsModal();
+          }
+        },
+        error: (error) => {
+          console.error('❌ Error creando datos bancarios:', error);
+        }
       });
     }
-    
-    this.closeBankDetailsModal();
-    this.updateSidebarCounts();
   }
 
   deleteBankData(id: number) {
     if (confirm('¿Estás seguro de que quieres eliminar estos datos bancarios?')) {
-      const index = this.datosBancarios.findIndex(d => d.id === id);
-      if (index !== -1) {
-        // Soft delete - marcar como inactiva
-        this.datosBancarios[index].es_activa = false;
-        this.updateSidebarCounts();
-      }
+      this.bankDetailsService.deleteBankDetails(id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log('✅ Datos bancarios eliminados');
+            this.loadBankDetails();
+          }
+        },
+        error: (error) => {
+          console.error('❌ Error eliminando datos bancarios:', error);
+        }
+      });
     }
   }
 
   toggleBankDataStatus(id: number) {
-    const index = this.datosBancarios.findIndex(d => d.id === id);
-    if (index !== -1) {
-      this.datosBancarios[index].es_activa = !this.datosBancarios[index].es_activa;
-      this.updateSidebarCounts();
-    }
+    this.bankDetailsService.toggleActiveStatus(id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('✅ Estado actualizado');
+          this.loadBankDetails();
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error actualizando estado:', error);
+      }
+    });
   }
 
   // Obtener nannys disponibles para agregar datos bancarios
@@ -602,8 +765,9 @@ export class AdminDashboardComponent implements OnInit {
 
   // Métodos para clientes
   getClientStatusFromData(client: any): string {
-    // Usar el estado directamente de la base de datos
-    return client.isVerified ? 'verified' : 'unverified';
+    // Soportar tanto snake_case como camelCase del backend
+    const isVerified = client.is_verified !== undefined ? client.is_verified : client.isVerified;
+    return isVerified ? 'verified' : 'unverified';
   }
 
   getClientStatusText(status: string): string {
@@ -656,13 +820,15 @@ export class AdminDashboardComponent implements OnInit {
 
   // Métodos para pagos
   getPaymentStatusFromData(payment: any): string {
-    // Determinar el estado basado en el tipo del pago
-    if (payment.type === 'completed') {
+    // Determinar el estado basado en paymentStatus
+    if (payment.paymentStatus === 'completed') {
       return 'verified';
-    } else if (payment.type === 'pending') {
+    } else if (payment.paymentStatus === 'pending' || payment.paymentStatus === 'processing') {
       return 'unverified';
+    } else if (payment.paymentStatus === 'failed' || payment.paymentStatus === 'refunded') {
+      return 'cancelled';
     }
-    return 'verified'; // default
+    return 'unverified'; // default
   }
 
   getPaymentStatusText(status: string): string {
@@ -684,21 +850,23 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   getTotalRevenue(): number {
-    const allPayments = this.paymentsData || [];
-    return allPayments.reduce((total: number, payment: any) => total + (payment.amount || 0), 0);
+    const completedPayments = this.paymentsData.filter((payment: any) => payment.paymentStatus === 'completed');
+    return completedPayments.reduce((total: number, payment: any) => total + (payment.amount || 0), 0);
   }
 
   getMonthlyRevenue(): number {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    const allPayments = this.paymentsData || [];
     
-    return allPayments
-      .filter((payment: any) => {
-        const paymentDate = new Date(payment.date);
-        return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
-      })
-      .reduce((total: number, payment: any) => total + (payment.amount || 0), 0);
+    const monthlyPayments = this.paymentsData.filter((payment: any) => {
+      if (payment.paymentStatus !== 'completed' || !payment.paymentDate) return false;
+      
+      const paymentDate = new Date(payment.paymentDate);
+      return paymentDate.getMonth() === currentMonth && 
+             paymentDate.getFullYear() === currentYear;
+    });
+    
+    return monthlyPayments.reduce((total: number, payment: any) => total + (payment.amount || 0), 0);
   }
 
   getHourlyRate(payment: any): number {

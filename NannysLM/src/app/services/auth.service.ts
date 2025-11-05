@@ -59,17 +59,26 @@ export class AuthService {
   }
 
   /**
+   * Solicitar restablecimiento de contraseña (envía email con enlace)
+   */
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  /**
+   * Restablecer contraseña usando token recibido por email
+   */
+  resetPassword(token: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password`, { token, password });
+  }
+
+  /**
    * Registrar nuevo usuario
    */
   register(userData: RegisterData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData)
-      .pipe(
-        tap(response => {
-          if (response.success) {
-            this.setAuthData(response.data.user, response.data.token);
-          }
-        })
-      );
+    // Registration should not automatically log the user in (activation via email required).
+    // The backend returns a simple success message after creating the user and sending the activation link.
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData);
   }
 
   /**
@@ -193,6 +202,9 @@ export class AuthService {
           this.currentUserSubject.next(currentUser);
           this.tokenSubject.next(currentUser.token);
           console.log('✅ AuthService - Usuario cargado desde currentUser');
+          
+          // Actualizar perfil desde el backend para obtener datos frescos (incluyendo profile_image)
+          this.refreshUserProfile();
           return;
         }
       }
@@ -225,6 +237,29 @@ export class AuthService {
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
+    });
+  }
+
+  /**
+   * Refrescar perfil del usuario desde el backend
+   */
+  private refreshUserProfile(): void {
+    this.getProfile().subscribe({
+      next: (response) => {
+        if (response.success && response.data.user_data) {
+          const updatedUser = response.data.user_data;
+          const currentToken = this.getToken();
+          
+          // Actualizar en memoria y localStorage
+          if (currentToken) {
+            this.setAuthData(updatedUser, currentToken);
+            console.log('✅ AuthService - Perfil actualizado con profile_image:', updatedUser.profile_image);
+          }
+        }
+      },
+      error: (error) => {
+        console.error('❌ AuthService - Error refrescando perfil:', error);
+      }
     });
   }
 }

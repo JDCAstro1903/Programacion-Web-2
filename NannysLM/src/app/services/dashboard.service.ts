@@ -56,6 +56,38 @@ export interface Client {
   lastLogin?: string;
 }
 
+export interface Payment {
+  id: number;
+  serviceId: number;
+  amount: number;
+  paymentStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
+  transactionId?: string;
+  platformFee: number;
+  nannyAmount: number;
+  paymentDate?: string;
+  receiptUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  client: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  nanny: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  service: {
+    startDate: string;
+    endDate?: string;
+    startTime: string;
+    endTime: string;
+    totalHours: number;
+    status: string;
+  };
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -89,6 +121,13 @@ export class DashboardService {
    */
   getClients(): Observable<ApiResponse<Client[]>> {
     return this.http.get<ApiResponse<Client[]>>(`${this.apiUrl}/clients`);
+  }
+
+  /**
+   * Obtener todos los pagos
+   */
+  getPayments(): Observable<ApiResponse<Payment[]>> {
+    return this.http.get<ApiResponse<Payment[]>>('http://localhost:8000/api/v1/payments');
   }
 
   /**

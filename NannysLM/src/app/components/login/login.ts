@@ -100,8 +100,8 @@ export class LoginComponent {
           // Fallback para errores 401 sin estructura específica
           this.errors.general = 'Credenciales incorrectas. Verifica tu email y contraseña.';
         } else if (error.status === 403) {
-          // Usuario desactivado
-          this.errors.general = 'Tu cuenta ha sido desactivada. Contacta al soporte técnico.';
+          // Usuario inactivo / no activado por email
+          this.errors.general = 'Tu cuenta no está activa. Hemos enviado un correo con un enlace de activación. Revisa tu correo (y la carpeta de spam). Si no recibiste el correo, solicita reenvío o contacta al soporte.';
         } else if (error.status === 0) {
           // Error de conexión
           this.errors.general = 'No se puede conectar al servidor. Verifica tu conexión a internet.';
@@ -153,12 +153,6 @@ export class LoginComponent {
     });
     console.log('✅ Errores procesados:', processedErrors);
     return processedErrors;
-  }
-
-  onForgotPassword() {
-    console.log('Forgot password clicked');
-    // Implementar lógica para recuperar contraseña
-    alert('Funcionalidad de recuperación de contraseña aún no implementada');
   }
 
   onRegister() {

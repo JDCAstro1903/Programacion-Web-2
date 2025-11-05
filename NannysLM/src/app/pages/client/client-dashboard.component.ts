@@ -3,11 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
-import { HeaderComponent, HeaderConfig } from '../../shared/components/header/header.component';
+import { HeaderComponent, HeaderConfig, Notification } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
 import { ClientService as ClientApiService, ClientInfo, ClientServiceData, ClientPayment, ClientStats } from '../../services/client.service';
+import { NotificationService } from '../../services/notification.service';
+import { ServiceService, ServiceData } from '../../services/service.service';
+import { BankDetailsService, BankDetail } from '../../services/bank-details.service';
 
 // Interfaz para definir la estructura de un servicio del cliente (legacy)
 interface ClientService {
@@ -99,12 +102,20 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   contractedServices: ExtendedClientService[] = [];
   clientPayments: ClientPayment[] = [];
   clientStats: ClientStats | null = null;
+  notifications: Notification[] = [];
+  
+  // Estado para ver detalles de servicio
+  selectedService: any = null;
+  serviceInstructions: string = '';
+  isEditingInstructions: boolean = false;
+  originalInstructions: string = '';
   
   // Estados de carga
   isLoadingClientInfo = false;
   isLoadingServices = false;
   isLoadingPayments = false;
   isLoadingStats = false;
+  isLoadingBankData = false;
 
   // Datos del perfil
   profileData: UserProfileData = {
@@ -128,12 +139,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     special_requirements: ''
   };
 
-  // Estado de guardado
-  isSavingProfile = false;
+  // Estado de guardado para client-info view
   isSavingClientData = false;
   
-  // Estado de carga del perfil
-  isLoadingProfile = false;
+  // Estado de carga para client-info view
   isLoadingClientData = false;
 
   // Mensajes para client-info view
@@ -146,10 +155,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // ID del usuario actual (en producción vendría del JWT)
   currentUserId: number = 2; // Default, se actualiza en ngOnInit
 
-  // Archivos seleccionados y nombres
-  selectedProfileImageName: string = '';
+  // Archivos seleccionados
   selectedIdentificationName: string = '';
-  profileImageFile: File | null = null;
   identificationFile: File | null = null;
 
   // Lista de servicios contratados (legacy - será reemplazada)
@@ -256,7 +263,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Estado para la vista de servicios
   selectedDate: Date | null = null;
   selectedEndDate: Date | null = null;
-  selectedTime: string = '';
+  selectedTime: string = ''; // Mantener por compatibilidad
+  selectedStartTime: string = '';
+  selectedEndTime: string = '';
   selectedServiceType: string = '';
   selectedChildren: number = 1;
   selectedNannys: number = 1;
@@ -307,6 +316,16 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     isVerified: true,
     verificationIcon: '✓'
   };
+  
+  // Control del overlay/aviso de verificación
+  verificationBlockerVisible: boolean = true;
+  
+  // Permite cerrar el overlay solo si el usuario está en la vista 'client-info'
+  closeVerificationOverlay() {
+    if (this.currentView === 'client-info') {
+      this.verificationBlockerVisible = false;
+    }
+  }
 
   // Lista de servicios del cliente
   services: {
@@ -369,7 +388,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     private userConfigService: UserConfigService, 
     private router: Router,
     private authService: AuthService,
-    private clientApiService: ClientApiService
+    private clientApiService: ClientApiService,
+    private notificationService: NotificationService,
+    private serviceService: ServiceService,
+    private bankDetailsService: BankDetailsService
   ) {
     // Configurar sidebar específico para cliente con tema rosa
     this.sidebarConfig = {
@@ -455,6 +477,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.loadClientInfoData();
     // Cargar datos del perfil
     this.loadProfileData();
+    // Cargar notificaciones
+    this.loadNotifications();
     // Actualizar contadores en el sidebar si es necesario
     this.updateSidebarCounts();
     
@@ -592,8 +616,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientServices() {
     this.isLoadingServices = true;
-    console.log(`📋 Cargando servicios del cliente...`);
-    this.clientApiService.getClientServices().subscribe({
+    console.log(`📋 Cargando servicios del cliente para userId: ${this.currentUserId}`);
+    this.clientApiService.getClientServices(this.currentUserId).subscribe({
       next: (response: any) => {
         console.log('✅ Respuesta client services:', response);
         if (response.success) {
@@ -615,8 +639,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientPayments() {
     this.isLoadingPayments = true;
-    console.log(`📋 Cargando pagos del cliente...`);
-    this.clientApiService.getClientPayments().subscribe({
+    console.log(`📋 Cargando pagos del cliente para userId: ${this.currentUserId}`);
+    this.clientApiService.getClientPayments(this.currentUserId).subscribe({
       next: (response: any) => {
         console.log('✅ Respuesta client payments:', response);
         if (response.success) {
@@ -633,8 +657,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientStats() {
     this.isLoadingStats = true;
-    console.log(`📋 Cargando estadísticas del cliente...`);
-    this.clientApiService.getClientStats().subscribe({
+    console.log(`📋 Cargando estadísticas del cliente para userId: ${this.currentUserId}`);
+    this.clientApiService.getClientStats(this.currentUserId).subscribe({
       next: (response: any) => {
         console.log('✅ Respuesta client stats:', response);
         if (response.success) {
@@ -655,6 +679,20 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Métodos de navegación
   setCurrentView(view: string) {
+    // Si la cuenta NO está verificada, impedir cambiar la vista a otra distinta
+    // de 'client-info'. En ese caso redirigimos al formulario de información
+    // del cliente y mostramos el overlay.
+    if (!this.profileData?.is_verified) {
+      this.verificationBlockerVisible = true;
+      if (view !== 'client-info') {
+        // Forzar vista de información del cliente y no permitir navegación
+        this.currentView = 'client-info';
+        // También asegúrate de que el usuario vea la sección de cliente
+        return;
+      }
+    }
+
+    // Si está verificada (o la vista solicitada es 'client-info'), proceder normalmente
     this.currentView = view;
     // Si estamos cambiando a servicios, mostrar historial por defecto
     if (view === 'services') {
@@ -680,6 +718,152 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.selectedServiceType = '';
     this.selectedChildren = 1;
     this.selectedNannys = 1;
+  }
+
+  // Transformar datos del servicio para la vista
+  private transformServiceData(serviceData: any): any {
+    return {
+      ...serviceData,
+      nanny: serviceData.nanny_id ? {
+        id: serviceData.nanny_id,
+        name: `${serviceData.nanny_first_name || ''} ${serviceData.nanny_last_name || ''}`.trim(),
+        first_name: serviceData.nanny_first_name,
+        last_name: serviceData.nanny_last_name,
+        profile_image: serviceData.nanny_profile_image || null,
+        rating: parseFloat(serviceData.nanny_rating) || 0
+      } : null
+    };
+  }
+
+  // Ver detalles de un servicio existente
+  viewServiceDetails(serviceId: number) {
+    console.log('Cargando detalles del servicio:', serviceId);
+    
+    // Hacer llamada al API para obtener los detalles completos del servicio
+    this.serviceService.getServiceById(serviceId).subscribe({
+      next: (response: any) => {
+        if (response.success && response.data) {
+          // Transformar datos para que coincidan con el formato esperado por el HTML
+          this.selectedService = this.transformServiceData(response.data);
+          this.serviceInstructions = response.data.special_instructions || '';
+          this.currentView = 'service-details';
+          console.log('✅ Servicio cargado y transformado:', this.selectedService);
+        } else {
+          console.error('No se encontró el servicio');
+        }
+      },
+      error: (error: any) => {
+        console.error('Error cargando detalles del servicio:', error);
+      }
+    });
+  }
+
+  // Volver a la lista de servicios
+  backToServices() {
+    this.currentView = 'services';
+    this.servicesView = 'services-history';
+    this.selectedService = null;
+    this.isEditingInstructions = false;
+  }
+
+  // Iniciar edición de indicaciones
+  startEditingInstructions() {
+    this.isEditingInstructions = true;
+    this.originalInstructions = this.serviceInstructions;
+  }
+
+  // Guardar indicaciones
+  saveInstructions() {
+    if (!this.selectedService) return;
+
+    console.log('Guardando indicaciones:', this.serviceInstructions);
+    
+    // Actualizar en el backend
+    this.serviceService.updateService(this.selectedService.id, {
+      special_instructions: this.serviceInstructions
+    }).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.selectedService.special_instructions = this.serviceInstructions;
+          this.isEditingInstructions = false;
+          console.log('✅ Indicaciones guardadas correctamente');
+          alert('Indicaciones actualizadas correctamente');
+          
+          // Recargar servicios para reflejar los cambios
+          this.loadClientServices();
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error guardando indicaciones:', error);
+        alert('Error al guardar las indicaciones. Por favor intenta nuevamente.');
+      }
+    });
+  }
+
+  // Cancelar edición de indicaciones
+  cancelEditingInstructions() {
+    this.serviceInstructions = this.originalInstructions;
+    this.isEditingInstructions = false;
+  }
+
+  // Abrir modal para cambiar fecha/hora
+  openChangeDateTime() {
+    // TODO: Implementar modal de cambio de fecha/hora
+    console.log('Abrir modal de cambio de fecha/hora');
+    alert('Función de cambio de fecha/hora próximamente disponible');
+  }
+
+  // Abrir modal de calificación
+  openRatingModal() {
+    if (!this.selectedService) return;
+    // Usar la funcionalidad existente de calificación
+    this.rateService(this.selectedService.id);
+  }
+
+  // Abrir modal de cancelación
+  openCancelModal() {
+    if (!this.selectedService) return;
+    
+    const confirmCancel = confirm(
+      `¿Estás seguro de que deseas cancelar el servicio "${this.selectedService.title}"?\n\n` +
+      `Esta acción no se puede deshacer.`
+    );
+
+    if (confirmCancel) {
+      this.cancelServiceById(this.selectedService.id);
+    }
+  }
+
+  // Cancelar servicio por ID
+  cancelServiceById(serviceId: number) {
+    this.serviceService.deleteService(serviceId).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          console.log('✅ Servicio cancelado correctamente');
+          alert('El servicio ha sido cancelado correctamente');
+          
+          // Volver a la lista y recargar servicios
+          this.backToServices();
+          this.loadClientServices();
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error cancelando servicio:', error);
+        alert('Error al cancelar el servicio. Por favor intenta nuevamente.');
+      }
+    });
+  }
+
+  // Ver perfil de la niñera
+  viewNannyProfile(nannyId?: number) {
+    console.log('Ver perfil de niñera:', nannyId);
+    // TODO: Implementar navegación al perfil de la niñera
+    alert('Visualización de perfil de niñera próximamente disponible');
+  }
+
+  // Actualizar indicaciones del servicio (método legacy - mantener por compatibilidad)
+  updateServiceInstructions() {
+    this.saveInstructions();
   }
 
   onSidebarLogout() {
@@ -756,6 +940,73 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.selectedTime = time;
   }
 
+  selectStartTime(time: string) {
+    this.selectedStartTime = time;
+    this.selectedTime = time; // Mantener compatibilidad
+    // No limpiar selectedEndTime para permitir cambiar la hora de llegada
+  }
+
+  selectEndTime(time: string) {
+    if (this.isValidEndTime(time)) {
+      this.selectedEndTime = time;
+    }
+  }
+
+  getAvailableEndTimes(): string[] {
+    return this.getAvailableTimesForService();
+  }
+
+  isValidEndTime(endTime: string): boolean {
+    if (!this.selectedStartTime) return false;
+    
+    const [startHour, startMin] = this.selectedStartTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    // Convertir a minutos desde medianoche
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    // Si es servicio nocturno, permitir que la hora de fin sea "menor" (cruza medianoche)
+    if (this.isNightService()) {
+      // Para servicio nocturno, la hora de salida puede ser al día siguiente
+      return endMinutes !== startMinutes;
+    }
+    
+    // Para servicios normales, la hora de salida debe ser después de la hora de llegada
+    // Si endMinutes es menor, significa que cruza medianoche (solo permitido para nocturno)
+    if (endMinutes < startMinutes) {
+      return this.isNightService(); // Solo permitir si es servicio nocturno
+    }
+    
+    return endMinutes > startMinutes;
+  }
+
+  calculateDuration(): string {
+    if (!this.selectedStartTime || !this.selectedEndTime) return '';
+    
+    const [startHour, startMin] = this.selectedStartTime.split(':').map(Number);
+    const [endHour, endMin] = this.selectedEndTime.split(':').map(Number);
+    
+    let hours = endHour - startHour;
+    let minutes = endMin - startMin;
+    
+    // Si la hora de fin es menor, significa que cruza medianoche
+    if (hours < 0) {
+      hours += 24;
+    }
+    
+    if (minutes < 0) {
+      hours -= 1;
+      minutes += 60;
+    }
+    
+    if (minutes === 0) {
+      return `${hours} hora${hours !== 1 ? 's' : ''}`;
+    }
+    
+    return `${hours}h ${minutes}min`;
+  }
+
   selectServiceType(serviceType: string) {
     this.selectedServiceType = serviceType;
     // Limpiar horario seleccionado cuando cambie el tipo de servicio
@@ -800,13 +1051,16 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     return `${startDate} - ${endDate} (${daysDiff} días)`;
   }
 
-  formatDate(date: Date): string {
-    const day = date.getDate();
+  formatDate(date: Date | string): string {
+    // Convertir string a Date si es necesario
+    const dateObj = typeof date === 'string' ? new Date(date + 'T00:00:00') : date;
+    
+    const day = dateObj.getDate();
     const monthNames = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
-    const month = monthNames[date.getMonth()];
+    const month = monthNames[dateObj.getMonth()];
     return `${day} de ${month}`;
   }
 
@@ -974,44 +1228,169 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   }
 
   confirmReservation() {
-    if (this.selectedDate && this.selectedTime && this.selectedServiceType && this.selectedChildren && this.selectedNannys) {
-      // Crear el servicio con los datos seleccionados
-      const endDate = this.selectedEndDate || this.selectedDate;
-      
-      this.createdService = {
-        id: Date.now(),
-        title: `Sesion ${this.selectedDate.getDate()} de ${this.getMonthName()}`,
-        status: 'Activa',
-        startTime: this.selectedTime,
-        endTime: this.selectedServiceType === 'night-care' ? '05:00' : '20:00',
-        date: this.selectedDate,
-        endDate: endDate,
-        instructions: '',
-        children: this.selectedChildren,
-        nannys: this.selectedNannys,
-        service: this.serviceTypes.find(s => s.id === this.selectedServiceType),
-        nanny: {
-          name: 'Leslie RuiZ',
-          photo: 'assets/logo.png'
-        }
-      };
-
-      // Mostrar vista de detalles del servicio
-      this.showServiceDetails = true;
-      this.currentView = 'service-details';
-      
-      // Simular que después de unos segundos el servicio pasa a "contratados"
-      // En un caso real, esto se haría desde el backend cuando el servicio se complete
-      setTimeout(() => {
-        this.addToContractedServices(this.createdService);
-      }, 10000); // 10 segundos para demo
-      
-      // Limpiar la selección del formulario
-      this.selectedDate = null;
-      this.selectedEndDate = null;
-      this.selectedTime = '';
-      this.selectedServiceType = '';
+    if (!this.selectedDate || !this.selectedStartTime || !this.selectedEndTime || !this.selectedServiceType || !this.selectedChildren || !this.selectedNannys) {
+      alert('Por favor completa todos los campos requeridos');
+      return;
     }
+
+    // Obtener el client_id del cliente logueado
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      alert('Error: No se encontró información del usuario');
+      return;
+    }
+
+    let clientId: number;
+    try {
+      const userData = JSON.parse(userStr);
+      clientId = this.clientInfo?.id || userData.client_id;
+      
+      if (!clientId) {
+        alert('Error: No se pudo obtener el ID del cliente');
+        return;
+      }
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      alert('Error al procesar los datos del usuario');
+      return;
+    }
+
+    // Obtener el nombre del servicio desde serviceTypes
+    const selectedService = this.serviceTypes.find(s => s.id === this.selectedServiceType);
+    const serviceTitle = selectedService ? selectedService.name : 'Servicio de cuidado';
+
+    // Preparar datos del servicio - usar los tiempos seleccionados por el usuario
+    const serviceData: ServiceData = {
+      client_id: clientId,
+      title: `${serviceTitle} - ${this.selectedDate.getDate()} de ${this.getMonthName()}`,
+      service_type: this.getServiceTypeEnum(this.selectedServiceType),
+      description: `Servicio de ${serviceTitle} para ${this.selectedChildren} niño(s)`,
+      start_date: this.serviceService.formatDate(this.selectedDate),
+      end_date: this.selectedEndDate ? this.serviceService.formatDate(this.selectedEndDate) : undefined,
+      start_time: this.selectedStartTime,
+      end_time: this.selectedEndTime,
+      number_of_children: this.selectedChildren,
+      special_instructions: '',
+      address: this.clientInfo?.address || ''
+    };
+
+    console.log('📤 Enviando servicio al backend:', serviceData);
+
+    // Llamar al servicio para crear el servicio
+    this.serviceService.createService(serviceData).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          console.log('✅ Servicio creado exitosamente:', response.data);
+          
+          // Mostrar mensaje de éxito
+          alert(`¡Servicio creado exitosamente!\n\nNanny asignada: ${response.data.nannyAssigned.name}\nCalificación: ${response.data.nannyAssigned.rating}⭐\nHoras totales: ${response.data.totalHours}h\nCosto total: $${response.data.totalAmount}`);
+
+          // Obtener detalles completos del servicio y mostrarlo
+          this.serviceService.getServiceById(response.data.serviceId).subscribe({
+            next: (detailResponse) => {
+              if (detailResponse.success && detailResponse.data) {
+                // Transformar datos para que coincidan con el formato esperado
+                this.selectedService = this.transformServiceData(detailResponse.data);
+                this.serviceInstructions = detailResponse.data.special_instructions || '';
+                this.currentView = 'service-details';
+                
+                console.log('✅ Detalles del servicio cargados:', this.selectedService);
+
+                // Recargar la lista de servicios en background
+                this.loadClientServices();
+              }
+            },
+            error: (error) => {
+              console.error('Error cargando detalles del servicio:', error);
+              // Aunque haya error cargando detalles, el servicio se creó exitosamente
+              // Llevar al usuario a la lista de servicios
+              this.currentView = 'services';
+              this.servicesView = 'services-history';
+              this.loadClientServices();
+            }
+          });
+
+          // Limpiar la selección del formulario
+          this.selectedDate = null;
+          this.selectedEndDate = null;
+          this.selectedTime = '';
+          this.selectedServiceType = '';
+          this.selectedChildren = 1;
+          this.selectedNannys = 1;
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error creando servicio:', error);
+        
+        let errorMessage = 'Error al crear el servicio. Por favor intenta de nuevo.';
+        
+        if (error.error && error.error.message) {
+          errorMessage = error.error.message;
+        } else if (error.status === 400) {
+          errorMessage = 'No hay nannys disponibles para las fechas y horarios solicitados. Por favor, intenta con otro horario o fecha.';
+        } else if (error.status === 500) {
+          errorMessage = 'Error del servidor. Por favor contacta al administrador.';
+        }
+        
+        alert(`Error al crear el servicio:\n\n${errorMessage}\n\nDetalles técnicos:\nFecha: ${this.selectedDate ? this.serviceService.formatDate(this.selectedDate) : 'Sin fecha'}\nHora inicio: ${this.selectedStartTime}\nHora fin: ${this.selectedEndTime}\nNiños: ${this.selectedChildren}`);
+      }
+    });
+  }
+
+  /**
+   * Convierte el ID del tipo de servicio a su valor enum en la BD
+   */
+  private getServiceTypeEnum(serviceId: string): 'hourly' | 'daily' | 'weekly' | 'overnight' | 'event' | 'travel' {
+    const mapping: { [key: string]: 'hourly' | 'daily' | 'weekly' | 'overnight' | 'event' | 'travel' } = {
+      'home-care': 'hourly',
+      'night-care': 'overnight',
+      'weekly-care': 'weekly',
+      'event-care': 'event',
+      'travel-care': 'travel'
+    };
+    return mapping[serviceId] || 'hourly';
+  }
+
+  /**
+   * Convierte el status de la BD a texto en español
+   */
+  getStatusText(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'pending': 'Pendiente',
+      'confirmed': 'Confirmado',
+      'in_progress': 'En progreso',
+      'completed': 'Finalizado',
+      'cancelled': 'Cancelado',
+      'pagado': 'Confirmado',
+      'Sin verificar': 'En Verificación'
+    };
+    return statusMap[status] || status;
+  }
+
+  /**
+   * Cargar servicios desde el backend
+   */
+  loadServices() {
+    if (!this.clientInfo?.id) {
+      console.warn('No se puede cargar servicios: clientInfo.id no disponible');
+      return;
+    }
+
+    this.isLoadingServices = true;
+
+    this.serviceService.getServices(this.clientInfo.id).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          console.log('✅ Servicios cargados desde API:', response.data);
+          // Aquí podrías mapear los servicios a tu formato local si es necesario
+          this.isLoadingServices = false;
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error cargando servicios:', error);
+        this.isLoadingServices = false;
+      }
+    });
   }
 
   // Agregar servicio a la lista de contratados
@@ -1048,12 +1427,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       this.selectedServiceType = this.createdService.service.id;
     }
     this.createdService = null;
-  }
-
-  // Ver perfil de la nanny
-  viewNannyProfile() {
-    console.log('Ver perfil de la nanny');
-    // Aquí se implementaría la navegación al perfil
   }
 
   // Formatear fecha del servicio
@@ -1109,7 +1482,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   }
 
   hasValidReservation(): boolean {
-    return !!(this.selectedDate && this.selectedTime && this.selectedServiceType && this.selectedChildren && this.selectedNannys);
+    return !!(
+      this.selectedDate && 
+      this.selectedStartTime && 
+      this.selectedEndTime && 
+      this.selectedServiceType && 
+      this.selectedChildren && 
+      this.selectedNannys
+    );
   }
 
   viewContractedServices() {
@@ -1355,13 +1735,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     return this.clientStats?.nannys.unique_nannys_hired || 0;
   }
 
-  // Métodos para el perfil (eliminado método duplicado)
-
-  editProfile() {
-    console.log('Editar perfil');
-    // Aquí se implementaría la lógica para editar el perfil
-  }
-
   // Métodos para pagos
   triggerReceiptUpload() {
     const fileInput = document.getElementById('receiptUpload') as HTMLInputElement;
@@ -1391,6 +1764,15 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     return this.paymentsList.filter(payment => payment.status !== 'pagado').length;
   }
 
+  // Nuevos métodos que usan clientPayments (datos reales del API)
+  getCompletedPaymentsCount(): number {
+    return this.clientPayments?.filter(payment => payment.payment_status === 'completed').length || 0;
+  }
+
+  getPendingPaymentsCountFromArray(): number {
+    return this.clientPayments?.filter(payment => payment.payment_status !== 'completed').length || 0;
+  }
+
   getTotalAmount(): string {
     const total = this.paymentsList
       .filter(payment => payment.status === 'pagado')
@@ -1404,17 +1786,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   getPaymentIconClass(status: string): string {
     return status === 'pagado' ? 'icon-paid' : 'icon-pending';
-  }
-
-  getStatusText(status: string): string {
-    switch (status) {
-      case 'pagado':
-        return 'Confirmado';
-      case 'Sin verificar':
-        return 'En Verificación';
-      default:
-        return status;
-    }
   }
 
   getPaymentDate(payment: any): string {
@@ -1480,23 +1851,96 @@ CLABE: 014320123456789012
   }
 
   // Función para abrir modal de datos bancarios con datos específicos de la nanny
-  openBankDetailsModal(nannyName?: string): void {
-    if (nannyName && this.nannyBankData[nannyName]) {
-      this.currentBankData = this.nannyBankData[nannyName];
-    } else {
-      // Datos por defecto si no se encuentra la nanny específica
-      this.currentBankData = {
-        nanny_nombre: 'NannysLM',
-        banco: 'Banco Nacional de Desarrollo',
-        numero_cuenta: '1234567890123456',
-        numero_cuenta_oculto: '****3456',
-        clabe: '014320123456789012',
-        nombre_titular: 'NannysLM Servicios S.A.',
-        tipo_cuenta: 'corriente',
-        es_activa: true
-      };
-    }
+  openBankDetailsModal(nannyId?: number): void {
+    console.log('🏦 Abriendo modal de datos bancarios para nanny ID:', nannyId);
+    console.log('🔍 Tipo de nannyId:', typeof nannyId, 'Valor:', nannyId);
+    
+    // Si no se proporciona nannyId, intentar obtener el primero disponible
+    // (útil para vista general sin servicio específico)
+    this.isLoadingBankData = true;
     this.showBankDetailsModal = true;
+    
+    this.bankDetailsService.getBankDetails().subscribe({
+      next: (response) => {
+        console.log('📊 Respuesta de API completa:', response);
+        
+        const allBankDetails = response.data;
+        console.log('📊 Datos bancarios recibidos:', allBankDetails);
+        console.log('📊 Total de registros:', allBankDetails.length);
+        
+        let nannyBankDetail;
+        
+        if (nannyId) {
+          // Buscar datos de la nanny específica
+          console.log('🔎 Buscando nanny con ID:', nannyId);
+          nannyBankDetail = allBankDetails.find((bd: any) => {
+            console.log('  Comparando:', bd.nannyId, '===', nannyId, '?', bd.nannyId === nannyId);
+            return bd.nannyId === nannyId && bd.isActive;
+          });
+        } else {
+          // Si no hay nannyId específico, tomar el primero activo
+          console.log('⚠️ No se proporcionó nannyId, buscando primer registro activo');
+          nannyBankDetail = allBankDetails.find((bd: any) => bd.isActive);
+        }
+        
+        if (nannyBankDetail) {
+          console.log('✅ Datos bancarios encontrados:', nannyBankDetail);
+          
+          // Mapear de camelCase (API) a snake_case (template)
+          this.currentBankData = {
+            nanny_nombre: nannyBankDetail.nanny.name || 'Nanny',
+            banco: nannyBankDetail.bankName,
+            numero_cuenta: nannyBankDetail.accountNumber,
+            numero_cuenta_oculto: this.maskAccountNumber(nannyBankDetail.accountNumber),
+            clabe: nannyBankDetail.clabe || 'N/A',
+            nombre_titular: nannyBankDetail.accountHolderName,
+            tipo_cuenta: nannyBankDetail.accountType === 'checking' ? 'corriente' : 
+                        nannyBankDetail.accountType === 'savings' ? 'ahorro' : 
+                        nannyBankDetail.accountType,
+            es_activa: nannyBankDetail.isActive
+          };
+          console.log('💳 Datos mapeados para mostrar:', this.currentBankData);
+        } else {
+          console.warn('⚠️ No se encontraron datos bancarios' + (nannyId ? ` para nanny ID: ${nannyId}` : ' activos'));
+          this.currentBankData = {
+            nanny_nombre: nannyId ? 'Nanny' : 'NannysLM',
+            banco: 'Información bancaria no disponible',
+            numero_cuenta: 'Pendiente de registro',
+            numero_cuenta_oculto: 'N/A',
+            clabe: 'N/A',
+            nombre_titular: 'Pendiente',
+            tipo_cuenta: 'N/A',
+            es_activa: false
+          };
+        }
+        
+        this.isLoadingBankData = false;
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar datos bancarios:', error);
+        console.error('❌ Detalles del error:', error.message);
+        this.currentBankData = {
+          nanny_nombre: 'Error',
+          banco: 'Error al cargar información',
+          numero_cuenta: 'Error',
+          numero_cuenta_oculto: 'Error',
+          clabe: 'Error',
+          nombre_titular: 'Error',
+          tipo_cuenta: 'Error',
+          es_activa: false
+        };
+        this.isLoadingBankData = false;
+      }
+    });
+  }
+
+  // Método auxiliar para ocultar parte del número de cuenta
+  private maskAccountNumber(accountNumber: string): string {
+    if (!accountNumber || accountNumber.length < 4) {
+      return accountNumber;
+    }
+    const visibleDigits = accountNumber.slice(-4);
+    return '****' + visibleDigits;
   }
 
   // Función mejorada para copiar datos bancarios específicos
@@ -1536,7 +1980,7 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
 
   // Cargar datos del perfil desde el backend
   async loadProfileData() {
-    this.isLoadingProfile = true;
+    this.isLoadingClientData = true;
     
     try {
       // Obtener datos del perfil desde el backend con el ID del usuario actual
@@ -1607,7 +2051,7 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       console.error('Error de conexión al cargar perfil:', error);
       this.loadFallbackData();
     } finally {
-      this.isLoadingProfile = false;
+      this.isLoadingClientData = false;
     }
   }
 
@@ -1634,68 +2078,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       number_of_children: 0,
       special_requirements: ''
     };
-  }
-
-  // Guardar cambios del perfil usando el servicio Angular
-  saveProfileChanges() {
-    this.isSavingProfile = true;
-    const updateData = {
-      emergency_contact_name: this.clientData.emergency_contact_name,
-      emergency_contact_phone: this.clientData.emergency_contact_phone,
-      number_of_children: this.clientData.number_of_children,
-      special_requirements: this.clientData.special_requirements,
-      verification_status: this.clientData.verification_status
-    };
-    this.clientApiService.updateClientProfile(updateData).subscribe({
-      next: (result) => {
-        if (result.success) {
-          alert('✅ Perfil actualizado exitosamente');
-          // Actualizar datos locales si es necesario
-          Object.assign(this.clientData, updateData);
-        } else {
-          alert('❌ Error al guardar: ' + (result.message || 'Error desconocido'));
-        }
-        this.isSavingProfile = false;
-      },
-      error: (error) => {
-        console.error('❌ Error al guardar perfil:', error);
-        alert('❌ Error de red o del servidor.');
-        this.isSavingProfile = false;
-      }
-    });
-  }
-
-  // Cancelar cambios y recargar datos originales
-  async cancelChanges() {
-    if (confirm('¿Estás seguro de que deseas cancelar los cambios?')) {
-      await this.loadProfileData();
-    }
-  }
-
-
-
-  // Métodos para manejar la subida de imagen de perfil
-  onProfileImageUpload(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      // Validar que sea una imagen
-      if (file.type.startsWith('image/')) {
-        this.selectedProfileImageName = file.name;
-        this.profileImageFile = file;
-        
-        // Crear un FileReader para preview
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          this.profileData.profile_image = e.target.result;
-        };
-        reader.readAsDataURL(file);
-        
-        console.log('✅ Imagen de perfil seleccionada:', file.name);
-      } else {
-        alert('Por favor selecciona un archivo de imagen válido');
-        event.target.value = '';
-      }
-    }
   }
 
   // Métodos para manejar la subida de documento de identificación
@@ -1878,14 +2260,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     }
   }
 
-  // Disparar selección de imagen de perfil
-  triggerProfileImageInput() {
-    const fileInput = document.getElementById('profileImage') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.click();
-    }
-  }
-
   // Disparar selección de documento de identificación
   triggerIdentificationInput() {
     const fileInput = document.getElementById('identificationDocument') as HTMLInputElement;
@@ -1895,7 +2269,13 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
   }
 
   // Obtener texto del estado de verificación
-  getVerificationStatusText(status: string): string {
+  getVerificationStatusText(status?: string): string {
+    // Si se llama sin parámetro, usar el estado actual del clientInfo
+    if (status === undefined) {
+      return this.clientInfo?.is_verified ? 'Verificación completada' : 'Verificación pendiente';
+    }
+    
+    // Si se llama con parámetro, usar el status proporcionado
     switch (status) {
       case 'pending': return 'Pendiente';
       case 'verified': return 'Verificado';
@@ -1944,5 +2324,111 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     }
 
     return this.clientData.identification_document.toLowerCase().endsWith('.pdf');
+  }
+
+  // Métodos para manejar notificaciones
+  handleNotificationClick(notification: Notification) {
+    console.log('Notification clicked:', notification);
+    
+    // Marcar como leída en el backend
+    if (!notification.is_read) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            // Actualizar localmente
+            const index = this.notifications.findIndex(n => n.id === notification.id);
+            if (index !== -1) {
+              this.notifications[index].is_read = true;
+              this.notifications[index].read_at = new Date().toISOString();
+            }
+            console.log('✅ Notificación marcada como leída');
+          }
+        },
+        error: (error) => {
+          console.error('❌ Error marcando notificación como leída:', error);
+        }
+      });
+    }
+
+    // Navegar a la URL de acción si existe
+    if (notification.action_url) {
+      // Extraer la vista del action_url (ej: 'services', 'payments')
+      const view = notification.action_url.replace('/', '');
+      if (view) {
+        this.currentView = view;
+      }
+    }
+  }
+
+  markAllNotificationsAsRead() {
+    console.log('Marking all notifications as read');
+    this.notificationService.markAllAsRead(this.currentUserId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.notifications = this.notifications.map(n => ({
+            ...n,
+            is_read: true,
+            read_at: n.read_at || new Date().toISOString()
+          }));
+          console.log('✅ Todas las notificaciones marcadas como leídas');
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error marcando notificaciones como leídas:', error);
+      }
+    });
+  }
+
+  // Método para cargar notificaciones desde el backend
+  private loadNotifications() {
+    console.log('📋 Cargando notificaciones...');
+    this.notificationService.getNotifications(this.currentUserId, false, 50).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.notifications = response.data;
+          console.log('✅ Notificaciones cargadas:', this.notifications.length);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error cargando notificaciones:', error);
+        // Si hay error, usar datos de ejemplo para desarrollo
+        this.notifications = [
+          {
+            id: 1,
+            title: 'Nuevo servicio confirmado',
+            message: 'Tu servicio de cuidado para el 15 de noviembre ha sido confirmado.',
+            type: 'service',
+            is_read: false,
+            action_url: 'contracted-services',
+            related_id: 123,
+            related_type: 'service',
+            created_at: new Date(Date.now() - 3600000).toISOString()
+          },
+          {
+            id: 2,
+            title: 'Pago procesado exitosamente',
+            message: 'Tu pago de $450.00 ha sido procesado correctamente.',
+            type: 'payment',
+            is_read: false,
+            action_url: 'payments',
+            related_id: 456,
+            related_type: 'payment',
+            created_at: new Date(Date.now() - 7200000).toISOString()
+          },
+          {
+            id: 3,
+            title: 'Recuerda calificar tu servicio',
+            message: 'Tu opinión es importante. Califica el servicio completado el 10 de noviembre.',
+            type: 'info',
+            is_read: true,
+            action_url: 'contracted-services',
+            related_id: 789,
+            related_type: 'service',
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            read_at: new Date(Date.now() - 43200000).toISOString()
+          }
+        ];
+      }
+    });
   }
 }

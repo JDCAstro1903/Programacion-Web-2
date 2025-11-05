@@ -124,12 +124,19 @@ class ClientController {
    */
   static async getClientServices(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id || req.query.userId;
       const { status = 'all', limit = 50 } = req.query;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'userId es requerido'
+        });
+      }
 
       // Obtener ID del cliente
       const clientQuery = 'SELECT id FROM clients WHERE user_id = ?';
-      const clientResult = await executeQuery(clientQuery, [userId]);
+      const clientResult = await executeQuery(clientQuery, [parseInt(userId)]);
 
       if (!clientResult.success || clientResult.data.length === 0) {
         return res.status(404).json({
@@ -165,8 +172,12 @@ class ClientController {
         queryParams.push(status);
       }
 
-      servicesQuery += ' ORDER BY s.created_at DESC LIMIT ?';
-      queryParams.push(parseInt(limit));
+      // Asegurar que limit sea un número entero y agregarlo directamente en el query
+      const limitNum = Number.isInteger(parseInt(limit)) ? parseInt(limit) : 50;
+      servicesQuery += ` ORDER BY s.created_at DESC LIMIT ${limitNum}`;
+
+      console.log('📝 Query params para servicios:', queryParams);
+      console.log('📝 Limit procesado:', limitNum);
 
       const result = await executeQuery(servicesQuery, queryParams);
 
@@ -231,12 +242,19 @@ class ClientController {
    */
   static async getClientPayments(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id || req.query.userId;
       const { status = 'all', limit = 50 } = req.query;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'userId es requerido'
+        });
+      }
 
       // Obtener ID del cliente
       const clientQuery = 'SELECT id FROM clients WHERE user_id = ?';
-      const clientResult = await executeQuery(clientQuery, [userId]);
+      const clientResult = await executeQuery(clientQuery, [parseInt(userId)]);
 
       if (!clientResult.success || clientResult.data.length === 0) {
         return res.status(404).json({
@@ -271,8 +289,12 @@ class ClientController {
         queryParams.push(status);
       }
 
-      paymentsQuery += ' ORDER BY p.created_at DESC LIMIT ?';
-      queryParams.push(parseInt(limit));
+      // Asegurar que limit sea un número entero y agregarlo directamente en el query
+      const limitNum = Number.isInteger(parseInt(limit)) ? parseInt(limit) : 50;
+      paymentsQuery += ` ORDER BY p.created_at DESC LIMIT ${limitNum}`;
+
+      console.log('📝 Query params para pagos:', queryParams);
+      console.log('📝 Limit procesado:', limitNum);
 
       const result = await executeQuery(paymentsQuery, queryParams);
 
@@ -324,11 +346,18 @@ class ClientController {
    */
   static async getClientStats(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id || req.query.userId;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'userId es requerido'
+        });
+      }
 
       // Obtener ID del cliente
       const clientQuery = 'SELECT id FROM clients WHERE user_id = ?';
-      const clientResult = await executeQuery(clientQuery, [userId]);
+      const clientResult = await executeQuery(clientQuery, [parseInt(userId)]);
 
       if (!clientResult.success || clientResult.data.length === 0) {
         return res.status(404).json({

@@ -136,14 +136,53 @@ export class NannyDashboardComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser();
     const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Niñera';
     
+    console.log('🔍 Nanny Constructor - currentUser completo:', currentUser);
+    console.log('🔍 Nanny Constructor - currentUser.profile_image:', currentUser?.profile_image);
+    
+    // Obtener la imagen de perfil con prioridad:
+    // 1. Del localStorage (más reciente)
+    // 2. Del objeto currentUser en memoria
+    // 3. Logo por defecto
+    let userAvatar = '/assets/logo.png';
+    
+    // Verificar localStorage primero
+    const storedUser = localStorage.getItem('currentUser');
+    console.log('🔍 Nanny Constructor - storedUser en localStorage:', storedUser ? 'existe' : 'no existe');
+    
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        console.log('🔍 Nanny Constructor - parsedUser:', parsedUser);
+        console.log('🔍 Nanny Constructor - parsedUser.profile_image:', parsedUser.profile_image);
+        
+        if (parsedUser.profile_image) {
+          userAvatar = parsedUser.profile_image;
+          console.log('🖼️ Nanny Avatar desde localStorage:', userAvatar);
+        }
+      } catch (e) {
+        console.error('Error parseando usuario de localStorage:', e);
+      }
+    }
+    
+    // Si no hay en localStorage, usar del currentUser
+    if (userAvatar === '/assets/logo.png' && currentUser?.profile_image) {
+      userAvatar = currentUser.profile_image;
+      console.log('🖼️ Nanny Avatar desde currentUser:', userAvatar);
+    }
+    
+    console.log('👤 Nanny Usuario actual completo:', currentUser);
+    console.log('📸 Nanny Avatar final seleccionado:', userAvatar);
+    
     this.headerConfig = {
       userType: 'nanny',
       userName: userName || 'Niñera',
       userRole: 'Niñera',
-      userAvatar: 'assets/logo.png',
+      userAvatar: userAvatar,
       showProfileOption: true,
       showLogoutOption: true
     };
+    
+    console.log('✅ Nanny headerConfig final:', this.headerConfig);
   }
 
   ngOnInit() {

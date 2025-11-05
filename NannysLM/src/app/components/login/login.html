@@ -112,16 +112,14 @@
         <div class="form-options">
           <label class="checkbox-container">
             <input 
-              type="checkbox" 
-              [(ngModel)]="rememberMe" 
+              type="checkbox"
+              [(ngModel)]="rememberMe"
               name="rememberMe">
             <span class="checkmark"></span>
             recordarme
           </label>
-          <a href="#" class="forgot-link" (click)="onForgotPassword()">¿Olvidaste tu contraseña?</a>
-        </div>
-
-        <button 
+          <a routerLink="/forgot-password" class="forgot-link">¿Olvidaste tu contraseña?</a>
+        </div>        <button 
           type="submit" 
           class="login-button"
           [disabled]="isLoading">

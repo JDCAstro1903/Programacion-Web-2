@@ -302,15 +302,15 @@
         <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <h3>¡Registro Exitoso!</h3>
-    <p>Tu cuenta ha sido creada correctamente. Serás redirigido al login para iniciar sesión.</p>
-    <div class="modal-buttons">
-      <button class="success-button" (click)="redirectToLogin()">
-        Ir al Login
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
+   <h3>Cuenta creada — Revisa tu correo</h3>
+   <p>
+     Gracias por registrarte. Hemos enviado un correo a <strong>{{ email }}</strong> con un enlace para activar tu cuenta.
+     Para poder iniciar sesión, primero debes hacer clic en el enlace de activación que recibirás en tu correo electrónico.
+   </p>
+   <p style="margin-top:8px; font-size:0.95rem; color:#6b7280;">Revisa también la carpeta de spam si no lo ves en la bandeja principal.</p>
+   <div class="modal-buttons" style="margin-top:18px; display:flex; gap:8px; justify-content:center;">
+     <button class="success-button" (click)="redirectToLogin()">Ir a Iniciar sesión</button>
+     <button class="success-button" (click)="closeSuccessModal()" style="background:#94a3b8;">Cerrar</button>
+   </div>
   </div>
 </div>

@@ -202,8 +202,8 @@ class DashboardController {
                     email: client.email,
                     phone: client.phone_number,
                     address: client.address,
-                    isVerified: client.is_verified,
-                    isActive: client.is_active,
+                    isVerified: Boolean(client.is_verified), // Convertir 0/1 a false/true
+                    isActive: Boolean(client.is_active),     // Convertir 0/1 a false/true
                     profileImage: client.profile_image,
                     emergencyContactName: client.emergency_contact_name,
                     emergencyContactPhone: client.emergency_contact_phone,

@@ -17,9 +17,12 @@ const authRoutes = require('./src/routes/auth');
 const dashboardRoutes = require('./src/routes/dashboard');
 const profileRoutes = require('./src/routes/profile');
 const clientRoutes = require('./src/routes/client');
+const serviceRoutes = require('./src/routes/service');
+const paymentRoutes = require('./src/routes/payment');
+const bankDetailsRoutes = require('./src/routes/bankDetails');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
 // ===============================================
 // CONFIGURACIÓN DE MULTER PARA SUBIDA DE ARCHIVOS
@@ -158,6 +161,9 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/client', clientRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/bank-details', bankDetailsRoutes);
 
 // Importar y usar rutas para datos específicos del cliente
 const clientDataRoutes = require('./src/routes/clientData');
@@ -503,6 +509,102 @@ app.get('/api/v1/client/stats', (req, res) => {
             }
         }
     });
+});
+
+// Endpoint para notificaciones
+app.get('/api/notifications', async (req, res) => {
+    try {
+        const userId = req.query.userId;
+        const limit = parseInt(req.query.limit) || 50;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId es requerido'
+            });
+        }
+
+        console.log('📝 Obteniendo notificaciones para userId:', userId, 'limit:', limit);
+
+        // Asegurar que ambos parámetros sean números enteros
+        const userIdNum = parseInt(userId);
+        const limitNum = Number.isInteger(limit) ? limit : 50;
+        
+        console.log('📝 Params procesados - userId:', userIdNum, 'limit:', limitNum);
+
+        const query = `
+            SELECT 
+                id,
+                user_id,
+                title,
+                message,
+                type,
+                is_read,
+                action_url,
+                related_id,
+                related_type,
+                created_at,
+                read_at
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT ${limitNum}
+        `;
+
+        const result = await executeQuery(query, [userIdNum]);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                data: result.data || [],
+                meta: {
+                    total: result.data?.length || 0,
+                    unread: result.data?.filter(n => !n.is_read).length || 0
+                }
+            });
+        } else {
+            throw new Error('Error al obtener notificaciones');
+        }
+
+    } catch (error) {
+        console.error('Error al obtener notificaciones:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Endpoint para marcar notificación como leída
+app.put('/api/notifications/:id/read', async (req, res) => {
+    try {
+        const notificationId = req.params.id;
+
+        const query = `
+            UPDATE notifications 
+            SET is_read = TRUE, read_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `;
+
+        const result = await executeQuery(query, [parseInt(notificationId)]);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Notificación marcada como leída'
+            });
+        } else {
+            throw new Error('Error al actualizar notificación');
+        }
+
+    } catch (error) {
+        console.error('Error al actualizar notificación:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
 });
 
 // Rutas de perfil - obtener estado del perfil desde base de datos
