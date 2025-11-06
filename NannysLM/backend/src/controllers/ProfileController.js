@@ -212,7 +212,11 @@ class ProfileController {
                         phone_number: user.phone_number,
                         address: user.address,
                         is_verified: user.is_verified,
-                        profile_image: user.profile_image
+                        is_active: user.is_active,
+                        profile_image: user.profile_image,
+                        created_at: user.created_at,
+                        updated_at: user.updated_at,
+                        last_login: user.last_login
                     },
                     specific_profile: specificProfileData
                 }

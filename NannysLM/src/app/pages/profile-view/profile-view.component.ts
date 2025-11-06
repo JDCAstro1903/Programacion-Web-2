@@ -48,6 +48,21 @@ export class ProfileViewComponent implements OnInit {
   confirmPassword = '';
   isChangingPassword = false;
 
+  // Para modal de resultados (contraseña)
+  showPasswordModal = false;
+  passwordModalType: 'loading' | 'success' | 'error' | 'validation' = 'loading';
+  passwordModalMessage = '';
+  passwordModalTitle = '';
+  passwordModalErrors: string[] = [];
+
+  // Para modal de resultados (perfil)
+  showProfileModal = false;
+  profileModalType: 'loading' | 'success' | 'error' | 'validation' | 'confirm' = 'loading';
+  profileModalMessage = '';
+  profileModalTitle = '';
+  profileModalErrors: string[] = [];
+  profileModalCallback: (() => void) | null = null;
+
   constructor(
     private router: Router,
     private authService: AuthService,
@@ -90,11 +105,17 @@ export class ProfileViewComponent implements OnInit {
             phone_number: userData.phone_number || '',
             address: userData.address || '',
             profile_image: userData.profile_image || '',
-            is_active: true,
-            created_at: userData.created_at,
-            updated_at: userData.updated_at,
-            last_login: userData.last_login
+            is_active: (userData as any).is_active !== undefined ? (userData as any).is_active : true,
+            is_verified: userData.is_verified || false,
+            created_at: (userData as any).created_at || undefined,
+            updated_at: (userData as any).updated_at || undefined,
+            last_login: (userData as any).last_login || undefined
           } as UserProfile;
+          
+          console.log('📋 ProfileData completo:', this.profileData);
+          console.log('📅 created_at:', this.profileData.created_at);
+          console.log('📅 updated_at:', this.profileData.updated_at);
+          console.log('📅 last_login:', this.profileData.last_login);
           
           // Actualizar timestamp para imágenes
           this.imageTimestamp = Date.now();
@@ -184,11 +205,17 @@ export class ProfileViewComponent implements OnInit {
     }
 
     if (errors.length > 0) {
-      alert('⚠️ Errores de validación:\n\n' + errors.join('\n'));
+      this.showProfileModalWithErrors('Errores de Validación', errors);
       return;
     }
 
     this.isSavingProfile = true;
+
+    // Mostrar modal de carga
+    this.showProfileModal = true;
+    this.profileModalType = 'loading';
+    this.profileModalTitle = 'Guardando Cambios';
+    this.profileModalMessage = 'Por favor espera...';
 
     // Crear FormData para enviar
     const formData = new FormData();
@@ -227,12 +254,21 @@ export class ProfileViewComponent implements OnInit {
             fileInput.value = '';
           }
 
-          alert('✅ Perfil actualizado exitosamente');
+          // Mostrar modal de éxito
+          this.profileModalType = 'success';
+          this.profileModalTitle = '¡Perfil Actualizado!';
+          this.profileModalMessage = 'Tus cambios han sido guardados exitosamente.';
           
-          // Recargar datos del perfil
-          this.loadProfileData();
+          // Cerrar modal y recargar después de 2 segundos
+          setTimeout(() => {
+            this.closeProfileModal();
+            this.loadProfileData();
+          }, 2000);
         } else {
-          alert('❌ ' + (result.message || 'Error al guardar el perfil'));
+          // Mostrar modal de error
+          this.profileModalType = 'error';
+          this.profileModalTitle = 'Error al Guardar';
+          this.profileModalMessage = result.message || 'Error al guardar el perfil';
         }
         this.isSavingProfile = false;
       },
@@ -241,13 +277,22 @@ export class ProfileViewComponent implements OnInit {
         this.isSavingProfile = false;
 
         if (error.status === 400 && error.error.errors) {
-          alert('⚠️ Errores de validación:\n\n' + error.error.errors.join('\n'));
+          this.showProfileModalWithErrors('Errores de Validación', error.error.errors);
         } else if (error.status === 401) {
-          alert('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
-          this.authService.forceLogout();
-          this.router.navigate(['/login']);
+          this.profileModalType = 'error';
+          this.profileModalTitle = 'Sesión Expirada';
+          this.profileModalMessage = 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+          this.showProfileModal = true;
+          
+          setTimeout(() => {
+            this.authService.forceLogout();
+            this.router.navigate(['/login']);
+          }, 2000);
         } else {
-          alert('❌ Error al guardar el perfil. Por favor intenta de nuevo.');
+          this.profileModalType = 'error';
+          this.profileModalTitle = 'Error al Guardar';
+          this.profileModalMessage = 'Error al guardar el perfil. Por favor intenta de nuevo.';
+          this.showProfileModal = true;
         }
       }
     });
@@ -288,10 +333,14 @@ export class ProfileViewComponent implements OnInit {
     }
 
     if (errors.length > 0) {
-      alert('⚠️ Errores de validación:\n\n' + errors.join('\n'));
+      this.showPasswordModalWithErrors('Errores de Validación', errors);
       return;
     }
 
+    this.showPasswordModal = true;
+    this.passwordModalType = 'loading';
+    this.passwordModalTitle = 'Cambiando Contraseña';
+    this.passwordModalMessage = 'Por favor espera...';
     this.isChangingPassword = true;
 
     this.profileService.changePassword(this.currentPassword, this.newPassword).subscribe({
@@ -300,12 +349,21 @@ export class ProfileViewComponent implements OnInit {
         this.isChangingPassword = false;
 
         if (result.success) {
-          alert('✅ Contraseña cambiada exitosamente');
-          this.currentPassword = '';
-          this.newPassword = '';
-          this.confirmPassword = '';
+          this.passwordModalType = 'success';
+          this.passwordModalTitle = '¡Contraseña Actualizada!';
+          this.passwordModalMessage = 'Tu contraseña ha sido cambiada exitosamente.';
+          
+          // Limpiar campos después de 2 segundos
+          setTimeout(() => {
+            this.currentPassword = '';
+            this.newPassword = '';
+            this.confirmPassword = '';
+            this.closePasswordModal();
+          }, 2000);
         } else {
-          alert('❌ ' + (result.message || 'Error al cambiar contraseña'));
+          this.passwordModalType = 'error';
+          this.passwordModalTitle = 'Error';
+          this.passwordModalMessage = result.message || 'Error al cambiar contraseña';
         }
       },
       error: (error) => {
@@ -313,16 +371,57 @@ export class ProfileViewComponent implements OnInit {
         this.isChangingPassword = false;
 
         if (error.status === 400 && error.error.errors) {
-          alert('⚠️ Errores de validación:\n\n' + error.error.errors.join('\n'));
+          this.showPasswordModalWithErrors('Errores de Validación', error.error.errors);
         } else if (error.status === 401) {
-          alert('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
-          this.authService.forceLogout();
-          this.router.navigate(['/login']);
+          this.passwordModalType = 'error';
+          this.passwordModalTitle = 'Sesión Expirada';
+          this.passwordModalMessage = 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.';
+          
+          setTimeout(() => {
+            this.authService.forceLogout();
+            this.router.navigate(['/login']);
+          }, 2000);
         } else {
-          alert('❌ ' + (error.error.message || 'Error al cambiar la contraseña'));
+          this.passwordModalType = 'error';
+          this.passwordModalTitle = 'Error';
+          this.passwordModalMessage = error.error.message || 'Error al cambiar la contraseña';
         }
       }
     });
+  }
+
+  showPasswordModalWithErrors(title: string, errors: string[]) {
+    this.showPasswordModal = true;
+    this.passwordModalType = 'validation';
+    this.passwordModalTitle = title;
+    this.passwordModalErrors = errors;
+  }
+
+  closePasswordModal() {
+    this.showPasswordModal = false;
+    this.passwordModalErrors = [];
+  }
+
+  onNewPasswordChange() {
+    // Este método se ejecuta cuando el usuario cambia la nueva contraseña
+    // para mostrar feedback en tiempo real
+  }
+
+  onConfirmPasswordChange() {
+    // Este método se ejecuta cuando el usuario cambia la confirmación
+    // para mostrar feedback en tiempo real
+  }
+
+  showProfileModalWithErrors(title: string, errors: string[]) {
+    this.showProfileModal = true;
+    this.profileModalType = 'validation';
+    this.profileModalTitle = title;
+    this.profileModalErrors = errors;
+  }
+
+  closeProfileModal() {
+    this.showProfileModal = false;
+    this.profileModalErrors = [];
   }
 
   togglePasswordVisibility(field: 'current' | 'new' | 'confirm') {
@@ -340,12 +439,21 @@ export class ProfileViewComponent implements OnInit {
   }
 
   cancelChanges() {
-    if (confirm('¿Estás seguro de que deseas cancelar los cambios?')) {
+    this.showProfileModal = true;
+    this.profileModalType = 'confirm';
+    this.profileModalTitle = 'Cancelar Cambios';
+    this.profileModalMessage = '¿Estás seguro de que deseas cancelar los cambios sin guardar?';
+    this.profileModalCallback = () => {
       this.profileImageFile = null;
       this.profileImagePreview = null;
       this.selectedProfileImageName = '';
+      const fileInput = document.getElementById('profileImageUpload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
       this.loadProfileData();
-    }
+      this.closeProfileModal();
+    };
   }
 
   goBack() {
