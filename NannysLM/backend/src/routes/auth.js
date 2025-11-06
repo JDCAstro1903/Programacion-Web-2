@@ -22,6 +22,29 @@ router.post('/register', validateRegister, AuthController.register);
 router.post('/login', validateLogin, AuthController.login);
 
 /**
+ * @route   GET /api/v1/auth/activate
+ * @desc    Activar cuenta desde enlace enviado por email
+ * @query   token=<activation_token>
+ */
+router.get('/activate', AuthController.activate);
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Enviar enlace de restablecimiento de contraseña
+ * @access  Public
+ * @body    { email }
+ */
+router.post('/forgot-password', AuthController.forgotPassword);
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Restablecer contraseña con token
+ * @access  Public
+ * @body    { token, password }
+ */
+router.post('/reset-password', AuthController.resetPassword);
+
+/**
  * @route   GET /api/auth/profile
  * @desc    Obtener perfil del usuario autenticado
  * @access  Private

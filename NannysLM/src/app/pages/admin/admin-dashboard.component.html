@@ -1,26 +1,10 @@
 <div class="admin-layout">
-  <!-- Header -->
-  <header class="admin-header">
-    <div class="header-left">
-      <div class="logo-section">
-        <img src="/assets/logo.png" alt="NannysLM" class="logo">
-        <div class="brand-info">
-          <h1>NannysLM</h1>
-          <p>Panel de administrador</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="header-right">
-      <div class="user-info">
-        <span class="user-name">{{ currentUser.name }}</span>
-        <span class="user-role">{{ currentUser.role }}</span>
-        <div class="user-avatar">
-          <img [src]="currentUser.avatar" alt="Avatar">
-        </div>
-      </div>
-    </div>
-  </header>
+  <!-- Header Genérico -->
+  <app-header 
+    [config]="headerConfig"
+    (onLogout)="onHeaderLogout()"
+    (onProfileClick)="onHeaderProfileClick()">
+  </app-header>
 
   <!-- Layout principal -->
   <div class="main-layout">
@@ -28,8 +12,7 @@
     <app-sidebar 
       [config]="sidebarConfig" 
       [currentView]="currentView"
-      (onViewChange)="onViewChange($event)"
-      (onLogoutClick)="onSidebarLogout()">
+      (onViewChange)="onViewChange($event)">
     </app-sidebar>
 
     <!-- Contenido principal -->
@@ -53,7 +36,7 @@
               </div>
               <div class="metric-content">
                 <h3>Nannys Disponibles</h3>
-                <div class="metric-number">{{ stats.nanniesAvailable }}</div>
+                <div class="metric-number">{{ (dashboardStats && dashboardStats.nannys) ? dashboardStats.nannys.active : 0 }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+3 este mes</span>
                 </div>
@@ -76,7 +59,7 @@
               </div>
               <div class="metric-content">
                 <h3>Clientes Verificados</h3>
-                <div class="metric-number">{{ stats.verifiedClients }}</div>
+                <div class="metric-number">{{ (dashboardStats && dashboardStats.clients) ? dashboardStats.clients.verified : 0 }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+5 esta semana</span>
                 </div>
@@ -99,7 +82,7 @@
               </div>
               <div class="metric-content">
                 <h3>Ingresos del Mes</h3>
-                <div class="metric-number">${{ stats.monthlyRevenue.toLocaleString() }}</div>
+                <div class="metric-number">${{ getMonthlyRevenue().toLocaleString() }}</div>
                 <div class="metric-detail">
                   <span class="trend-positive">+12% vs mes anterior</span>
                 </div>
@@ -156,10 +139,10 @@
                 <h4>Nannys Activas</h4>
               </div>
               <div class="activity-content">
-                <div *ngFor="let nanny of nannysData.active.slice(0, 3)" class="activity-item">
+                <div *ngFor="let nanny of getActiveNannysSlice()" class="activity-item">
                   <div class="activity-info">
                     <span class="activity-name">{{ nanny.name }}</span>
-                    <span class="activity-detail">{{ nanny.rating }}⭐ • ${{ nanny.hourlyRate }}/h</span>
+                    <span class="activity-detail">{{ nanny.rating }}⭐ • --/h</span>
                   </div>
                   <div class="activity-status status-active">Activa</div>
                 </div>
@@ -177,12 +160,33 @@
                 <h4>Pagos Recientes</h4>
               </div>
               <div class="activity-content">
-                <div *ngFor="let payment of paymentsData.verified.slice(0, 3)" class="activity-item">
+                <div *ngFor="let payment of getRecentPayments()" class="activity-item">
                   <div class="activity-info">
                     <span class="activity-name">{{ payment.clientName }}</span>
                     <span class="activity-detail">{{ payment.date }} • {{ payment.hours }}h</span>
                   </div>
                   <div class="activity-amount">${{ payment.amount }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel de clientes no verificados -->
+            <div class="activity-panel">
+              <div class="panel-header">
+                <div class="panel-icon clients-color">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <h4>Clientes Pendientes</h4>
+              </div>
+              <div class="activity-content">
+                <div *ngFor="let client of getUnverifiedClientsSlice()" class="activity-item">
+                  <div class="activity-info">
+                    <span class="activity-name">{{ client.name }}</span>
+                    <span class="activity-detail">{{ formatDate(client.createdAt) }}</span>
+                  </div>
+                  <div class="activity-status status-pending">Pendiente</div>
                 </div>
               </div>
             </div>
@@ -268,15 +272,15 @@
         <!-- Estadísticas rápidas -->
         <div class="nannys-stats">
           <div class="stat-item">
-            <div class="stat-number">{{ nannysData.active.length }}</div>
+            <div class="stat-number">{{ getNannyCount('active') }}</div>
             <div class="stat-label">Activas</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number">{{ nannysData.busy.length }}</div>
-            <div class="stat-label">Ocupadas</div>
+            <div class="stat-number">{{ getNannyCount('suspended') }}</div>
+            <div class="stat-label">Suspendidas</div>
           </div>
           <div class="stat-item">
-            <div class="stat-number">{{ nannysData.inactive.length }}</div>
+            <div class="stat-number">{{ getNannyCount('inactive') }}</div>
             <div class="stat-label">Inactivas</div>
           </div>
           <div class="stat-item">
@@ -299,14 +303,14 @@
                 </svg>
               </div>
               <span class="tab-text">Activas</span>
-              <span class="tab-count">{{ nannysData.active.length }}</span>
+              <span class="tab-count">{{ getNannyCount('active') }}</span>
             </div>
           </button>
           
           <button 
-            (click)="setNannyFilter('busy')" 
-            class="modern-filter-tab busy-tab"
-            [class.active]="nannyFilter === 'busy'">
+            (click)="setNannyFilter('suspended')" 
+            class="modern-filter-tab suspended-tab"
+            [class.active]="nannyFilter === 'suspended'">
             <div class="tab-indicator"></div>
             <div class="tab-content">
               <div class="tab-icon">
@@ -317,8 +321,8 @@
                   <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                 </svg>
               </div>
-              <span class="tab-text">Ocupadas</span>
-              <span class="tab-count">{{ nannysData.busy.length }}</span>
+              <span class="tab-text">Suspendidas</span>
+              <span class="tab-count">{{ getNannyCount('suspended') }}</span>
             </div>
           </button>
           
@@ -336,7 +340,7 @@
                 </svg>
               </div>
               <span class="tab-text">Inactivas</span>
-              <span class="tab-count">{{ nannysData.inactive.length }}</span>
+              <span class="tab-count">{{ getNannyCount('inactive') }}</span>
             </div>
           </button>
         </div>
@@ -369,13 +373,13 @@
                       </svg>
                       <span class="rating-value">{{ nanny.rating }}</span>
                     </div>
-                    <span class="experience-text">{{ nanny.experience }} años</span>
+                    <span class="experience-text">{{ nanny.servicesCompleted }} servicios</span>
                   </div>
                 </div>
               </div>
               <div class="nanny-rate-info">
                 <div class="hourly-rate">
-                  <span class="rate-amount">{{ nanny.hourlyRate }}€</span>
+                  <span class="rate-amount">--€</span>
                   <span class="rate-period">/hora</span>
                 </div>
               </div>
@@ -388,7 +392,7 @@
                   <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 5.02944 7.02944 1 12 1C16.9706 1 21 5.02944 21 10Z" stroke="currentColor" stroke-width="2"/>
                   <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
                 </svg>
-                <span>{{ nanny.location }}</span>
+                <span>{{ nanny.address || 'No especificada' }}</span>
               </div>
               
               <div class="nanny-skills">
@@ -450,7 +454,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ clientsData.verified.length }}</h3>
+              <h3>{{ getClientCount('verified') }}</h3>
               <p>Clientes Verificados</p>
             </div>
           </div>
@@ -463,7 +467,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ clientsData.unverified.length }}</h3>
+              <h3>{{ getClientCount('unverified') }}</h3>
               <p>Pendientes de Verificación</p>
             </div>
           </div>
@@ -478,7 +482,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ clientsData.verified.length + clientsData.unverified.length }}</h3>
+              <h3>{{ clientsData.length }}</h3>
               <p>Total de Clientes</p>
             </div>
           </div>
@@ -492,6 +496,23 @@
           
           <div class="modern-filter-tabs">
             <button 
+              (click)="setClientFilter('all')" 
+              class="modern-filter-tab"
+              [class.active]="clientFilter === 'all'">
+              <div class="filter-tab-content">
+                <div class="tab-icon primary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="tab-info">
+                  <span class="tab-title">Todos</span>
+                  <span class="tab-count">{{ getClientCount('all') }}</span>
+                </div>
+              </div>
+            </button>
+
+            <button 
               (click)="setClientFilter('verified')" 
               class="modern-filter-tab"
               [class.active]="clientFilter === 'verified'">
@@ -503,7 +524,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Verificados</span>
-                  <span class="tab-count">{{ clientsData.verified.length }}</span>
+                  <span class="tab-count">{{ getClientCount('verified') }}</span>
                 </div>
               </div>
             </button>
@@ -521,7 +542,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Pendientes</span>
-                  <span class="tab-count">{{ clientsData.unverified.length }}</span>
+                  <span class="tab-count">{{ getClientCount('unverified') }}</span>
                 </div>
               </div>
             </button>
@@ -565,14 +586,14 @@
                     <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" stroke-width="2"/>
                     <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ client.location }}</span>
+                  <span>{{ client.address || 'No especificada' }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ client.children }} niño{{ client.children !== 1 ? 's' : '' }}</span>
+                  <span>{{ client.numberOfChildren }} niño{{ client.numberOfChildren !== 1 ? 's' : '' }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -581,7 +602,7 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>Desde {{ formatDate(client.memberSince) }}</span>
+                  <span>Desde {{ formatDate(client.createdAt) }}</span>
                 </div>
               </div>
             </div>
@@ -663,7 +684,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ paymentsData.verified.length }}</h3>
+              <h3>{{ getPaymentCount('verified') }}</h3>
               <p>Pagos Completados</p>
             </div>
           </div>
@@ -676,7 +697,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ paymentsData.unverified.length }}</h3>
+              <h3>{{ getPaymentCount('unverified') }}</h3>
               <p>Pagos Pendientes</p>
             </div>
           </div>
@@ -689,7 +710,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ getTotalRevenue() }}€</h3>
+              <h3>${{ getTotalRevenue().toFixed(2) }}</h3>
               <p>Ingresos Totales</p>
             </div>
           </div>
@@ -702,7 +723,7 @@
               </svg>
             </div>
             <div class="stat-content">
-              <h3>{{ getMonthlyRevenue() }}€</h3>
+              <h3>${{ getMonthlyRevenue().toFixed(2) }}</h3>
               <p>Ingresos del Mes</p>
             </div>
           </div>
@@ -955,7 +976,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Completados</span>
-                  <span class="tab-count">{{ paymentsData.verified.length }}</span>
+                  <span class="tab-count">{{ getPaymentCount('verified') }}</span>
                 </div>
               </div>
             </button>
@@ -973,7 +994,7 @@
                 </div>
                 <div class="tab-info">
                   <span class="tab-title">Pendientes</span>
-                  <span class="tab-count">{{ paymentsData.unverified.length }}</span>
+                  <span class="tab-count">{{ getPaymentCount('unverified') }}</span>
                 </div>
               </div>
             </button>
@@ -1003,8 +1024,8 @@
                     </span>
                   </div>
                   <div class="payment-amount-header">
-                    <span class="amount">{{ payment.amount }}€</span>
-                    <span class="payment-date">{{ formatPaymentDate(payment.date) }}</span>
+                    <span class="amount">${{ payment.amount.toFixed(2) }}</span>
+                    <span class="payment-date">{{ formatPaymentDate(payment.paymentDate || payment.createdAt) }}</span>
                   </div>
                 </div>
               </div>
@@ -1018,7 +1039,7 @@
                     <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>Cliente: {{ payment.clientName }}</span>
+                  <span>Cliente: {{ payment.client.name }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1027,14 +1048,14 @@
                     <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2045 16.7006C21.6935 16.047 20.9877 15.5856 20.194 15.3893" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>Nanny: {{ payment.nannyName }}</span>
+                  <span>Nanny: {{ payment.nanny.name }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                     <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ payment.hours }} horas de servicio</span>
+                  <span>{{ payment.service.totalHours }} horas de servicio</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1043,7 +1064,7 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ payment.date }}</span>
+                  <span>{{ payment.service.startDate }}</span>
                 </div>
               </div>
             </div>
@@ -1052,12 +1073,12 @@
             <div class="payment-card-footer">
               <div class="payment-stats">
                 <div class="stat-item">
-                  <span class="stat-label">Tarifa por hora</span>
-                  <span class="stat-value">{{ getHourlyRate(payment) }}€/h</span>
+                  <span class="stat-label">Monto para nanny</span>
+                  <span class="stat-value">${{ payment.nannyAmount.toFixed(2) }}</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">Comisión</span>
-                  <span class="stat-value">{{ getCommission(payment) }}€</span>
+                  <span class="stat-value">${{ payment.platformFee.toFixed(2) }}</span>
                 </div>
               </div>
               <div class="payment-actions">
@@ -1111,108 +1132,198 @@
       </div>
 
       <!-- Vista Datos Bancarios -->
-      <div *ngIf="currentView === 'datos-bancarios'">
+      <div *ngIf="currentView === 'datos-bancarios'" class="banking-view">
         <div class="content-header">
-          <h2>Datos Bancarios</h2>
-          <p>Gestión de información bancaria de las nannys</p>
-          <button class="add-bank-data-btn" (click)="openBankDetailsModal()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
-              <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            Agregar Datos Bancarios
-          </button>
+          <div class="header-content">
+            <div class="header-text">
+              <h2>💳 Datos Bancarios</h2>
+              <p>Gestión de información bancaria de las nannys</p>
+            </div>
+            <button class="modern-add-btn" (click)="openBankDetailsModal()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+              Agregar Datos Bancarios
+            </button>
+          </div>
+        </div>
+
+        <!-- Estadísticas rápidas -->
+        <div class="banking-stats">
+          <div class="stat-card banking-stat">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                <line x1="2" y1="10" x2="22" y2="10" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Total Cuentas</div>
+              <div class="stat-number">{{ datosBancarios.length }}</div>
+            </div>
+          </div>
+
+          <div class="stat-card active-stat">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Cuentas Activas</div>
+              <div class="stat-number">{{ getActiveBankAccountsCount() }}</div>
+            </div>
+          </div>
+
+          <div class="stat-card verified-stat">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                <polyline points="9 12 11 14 15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Nannys Verificadas</div>
+              <div class="stat-number">{{ getVerifiedNannysWithBankCount() }}</div>
+            </div>
+          </div>
         </div>
 
         <!-- Lista de datos bancarios -->
-        <div class="bank-data-content">
-          <div class="bank-data-list">
-            <div *ngFor="let datos of datosBancarios" 
-                 class="bank-data-card" 
-                 [class.inactive]="!datos.es_activa">
+        <div class="modern-banking-grid">
+          <div *ngFor="let datos of datosBancarios" 
+               class="modern-bank-card" 
+               [class.inactive-card]="!datos.isActive">
+            
+            <!-- Header de la tarjeta -->
+            <div class="bank-card-header">
+              <div class="bank-logo-section">
+                <div class="bank-logo">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="bank-name-section">
+                  <h3>{{ datos.bankName }}</h3>
+                  <span class="account-type-badge">{{ datos.accountType === 'savings' ? '💰 Ahorro' : '🏦 Corriente' }}</span>
+                </div>
+              </div>
+              <div class="status-badge-container">
+                <span class="modern-status-badge" [class.active]="datos.isActive" [class.inactive]="!datos.isActive">
+                  <span class="status-dot"></span>
+                  {{ datos.isActive ? 'Activa' : 'Inactiva' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Información de la nanny -->
+            <div class="bank-card-nanny">
+              <div class="nanny-avatar-modern">
+                <div class="avatar-circle">
+                  {{ datos.nanny.name.charAt(0) }}
+                </div>
+                <div class="verification-icon" *ngIf="datos.nanny.status === 'active'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="nanny-info-modern">
+                <h4>{{ datos.nanny.name }}</h4>
+                <p class="nanny-email-modern">{{ datos.nanny.email }}</p>
+                <span class="verification-badge" [class.verified]="datos.nanny.status === 'active'" [class.unverified]="datos.nanny.status !== 'active'">
+                  {{ datos.nanny.status === 'active' ? '✓ Verificada' : '⚠ Sin verificar' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Detalles de la cuenta -->
+            <div class="bank-card-details">
+              <div class="detail-row">
+                <div class="detail-label">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Titular
+                </div>
+                <div class="detail-value">{{ datos.accountHolderName }}</div>
+              </div>
+
+              <div class="detail-row">
+                <div class="detail-label">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                    <line x1="2" y1="10" x2="22" y2="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Número de Cuenta
+                </div>
+                <div class="detail-value account-number">{{ maskAccountNumber(datos.accountNumber) }}</div>
+              </div>
+
+              <div class="detail-row" *ngIf="datos.clabe">
+                <div class="detail-label">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  CLABE Interbancaria
+                </div>
+                <div class="detail-value clabe-number">{{ datos.clabe }}</div>
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="bank-card-actions">
+              <button class="modern-action-btn edit-btn" (click)="openBankDetailsModal(datos)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Editar
+              </button>
               
-              <!-- Información de la nanny -->
-              <div class="bank-nanny-info">
-                <div class="nanny-avatar">
-                  <div class="avatar-placeholder">
-                    {{ datos.nanny_nombre.charAt(0) }}
-                  </div>
-                </div>
-                <div class="nanny-details">
-                  <h4>{{ datos.nanny_nombre }}</h4>
-                  <div class="nanny-email">{{ datos.nanny_email }}</div>
-                  <div class="verification-status">
-                    <span class="status-badge" [class.verified]="datos.nanny_verificada" [class.unverified]="!datos.nanny_verificada">
-                      {{ datos.nanny_verificada ? 'Verificada' : 'Sin verificar' }}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <button class="modern-action-btn toggle-btn" (click)="toggleBankDataStatus(datos.id)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="5" width="22" height="14" rx="7" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="16" cy="12" r="3" fill="currentColor"/>
+                </svg>
+                {{ datos.isActive ? 'Desactivar' : 'Activar' }}
+              </button>
 
-              <!-- Información bancaria -->
-              <div class="bank-account-info">
-                <div class="bank-details">
-                  <div class="bank-name">
-                    <strong>{{ datos.banco }}</strong>
-                  </div>
-                  <div class="account-holder">
-                    Titular: {{ datos.nombre_titular }}
-                  </div>
-                  <div class="account-number">
-                    Cuenta: {{ datos.numero_cuenta_oculto }}
-                  </div>
-                  <div class="account-type">
-                    Tipo: {{ datos.tipo_cuenta === 'ahorro' ? 'Cuenta de Ahorro' : 'Cuenta Corriente' }}
-                  </div>
-                  <div class="clabe" *ngIf="datos.clabe">
-                    CLABE: {{ datos.clabe }}
-                  </div>
-                </div>
-                
-                <!-- Estado de la cuenta -->
-                <div class="account-status">
-                  <span class="status-indicator" [class.active]="datos.es_activa" [class.inactive]="!datos.es_activa">
-                    {{ datos.es_activa ? 'Activa' : 'Inactiva' }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Acciones -->
-              <div class="bank-data-actions">
-                <button class="action-btn primary" (click)="openBankDetailsModal(datos)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                  Editar
-                </button>
-                
-                <button class="action-btn secondary" (click)="toggleBankDataStatus(datos.id)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 11V9a3 3 0 0 1 6 0v2"/>
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  </svg>
-                  {{ datos.es_activa ? 'Desactivar' : 'Activar' }}
-                </button>
-
-                <button class="action-btn danger" (click)="deleteBankData(datos.id)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <polyline points="3,6 5,6 21,6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                  Eliminar
-                </button>
-              </div>
+              <button class="modern-action-btn delete-btn" (click)="deleteBankData(datos.id)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Eliminar
+              </button>
             </div>
           </div>
           
           <!-- Estado vacío si no hay datos bancarios -->
-          <div *ngIf="datosBancarios.length === 0" class="empty-state">
-            <div class="empty-icon">🏦</div>
+          <div *ngIf="datosBancarios.length === 0" class="modern-empty-state">
+            <div class="empty-illustration">
+              <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="#E31B7E" stroke-width="1.5"/>
+                <polyline points="9 22 9 12 15 12 15 22" stroke="#E31B7E" stroke-width="1.5"/>
+                <line x1="2" y1="9" x2="22" y2="9" stroke="#E31B7E" stroke-width="1.5"/>
+              </svg>
+            </div>
             <h3>No hay datos bancarios registrados</h3>
-            <p>Agrega información bancaria para las nannys para facilitar los pagos.</p>
-            <button class="add-first-bank-data-btn" (click)="openBankDetailsModal()">
-              Agregar primer registro
+            <p>Agrega información bancaria para las nannys para facilitar los pagos y transferencias.</p>
+            <button class="modern-add-first-btn" (click)="openBankDetailsModal()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              Agregar Primer Registro
             </button>
           </div>
         </div>

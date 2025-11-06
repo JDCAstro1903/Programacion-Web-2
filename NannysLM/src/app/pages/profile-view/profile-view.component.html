@@ -1,0 +1,463 @@
+<div class="profile-view-container">
+  <!-- Header de la vista de perfil -->
+  <div class="profile-view-header">
+    <button class="back-btn" (click)="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver al Dashboard</span>
+    </button>
+    <h1>Mi Perfil</h1>
+    <p>Gestiona tu información personal y configuración de cuenta</p>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="isLoadingProfile" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando perfil...</p>
+  </div>
+
+  <!-- Contenido del perfil -->
+  <div *ngIf="!isLoadingProfile && profileData" class="profile-content">
+    <!-- Tarjeta de información principal -->
+    <div class="profile-header-card">
+      <div class="profile-avatar-section">
+        <div class="avatar-container">
+          <img [src]="getProfileImageUrl()" alt="Foto de perfil" class="profile-avatar-large">
+          <button class="edit-avatar-btn" (click)="triggerProfileImageInput()" title="Cambiar foto">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <input 
+          type="file" 
+          id="profileImageUpload" 
+          accept="image/*" 
+          style="display: none;"
+          (change)="onProfileImageUpload($event)">
+      </div>
+
+      <div class="profile-header-info">
+        <h2>{{ profileData.first_name }} {{ profileData.last_name }}</h2>
+        <span class="user-type-badge">{{ getUserTypeLabel() }}</span>
+        
+        <div class="profile-meta">
+          <div class="meta-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{{ profileData.email }}</span>
+          </div>
+          
+          <div class="meta-item" *ngIf="profileData.phone_number">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{{ profileData.phone_number }}</span>
+          </div>
+          
+          <div class="status-badge" [class.verified]="profileData.is_verified" [class.not-verified]="!profileData.is_verified">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{{ getVerificationStatusText() }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario de edición -->
+    <form class="profile-form" (ngSubmit)="saveProfileChanges()">
+      <!-- Información básica -->
+      <div class="form-section">
+        <h3>Información Básica</h3>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="first_name">Nombre *</label>
+            <input 
+              type="text" 
+              id="first_name" 
+              [(ngModel)]="profileData.first_name" 
+              name="first_name"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="last_name">Apellido *</label>
+            <input 
+              type="text" 
+              id="last_name" 
+              [(ngModel)]="profileData.last_name" 
+              name="last_name"
+              required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Correo Electrónico</label>
+            <input 
+              type="email" 
+              id="email" 
+              [(ngModel)]="profileData.email" 
+              name="email"
+              disabled
+              title="El correo no puede ser modificado">
+          </div>
+
+          <div class="form-group">
+            <label for="phone_number">Teléfono</label>
+            <input 
+              type="tel" 
+              id="phone_number" 
+              [(ngModel)]="profileData.phone_number" 
+              name="phone_number"
+              placeholder="+52 123 456 7890">
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="address">Dirección</label>
+          <textarea 
+            id="address" 
+            [(ngModel)]="profileData.address" 
+            name="address"
+            rows="3"
+            placeholder="Calle, número, colonia, ciudad..."></textarea>
+        </div>
+      </div>
+
+      <!-- No esta mostrando la fecha de creacion de la cuenta ni la fecha de la ultima modificacion, esto toca arreglarlo o quitarlo -->
+      
+      <!-- Información de cuenta -->
+      <div class="form-section">
+        <h3>Estado de la Cuenta</h3>
+        
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Estado de verificación</label>
+            <span class="info-value" [class.verified]="profileData.is_verified" [class.not-verified]="!profileData.is_verified">
+              {{ getVerificationStatusText() }}
+            </span>
+          </div>
+
+          <div class="info-item">
+            <label>Estado de la cuenta</label>
+            <span class="info-value" [class.active]="profileData.is_active" [class.inactive]="!profileData.is_active">
+              {{ getActiveStatusText() }}
+            </span>
+          </div>
+
+          <div class="info-item" *ngIf="profileData.created_at">
+            <label>Fecha de registro</label>
+            <span class="info-value">{{ formatDate(profileData.created_at) }}</span>
+          </div>
+
+          <div class="info-item" *ngIf="profileData.updated_at">
+            <label>Última actualización</label>
+            <span class="info-value">{{ formatDate(profileData.updated_at) }}</span>
+          </div>
+
+          <div class="info-item" *ngIf="profileData.last_login">
+            <label>Último inicio de sesión</label>
+            <span class="info-value">{{ formatDate(profileData.last_login) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cambiar contraseña -->
+      <div class="form-section">
+        <h3>Cambiar Contraseña</h3>
+        
+        <!-- Contraseña Actual -->
+        <div class="form-group full-width">
+          <label for="current_password">Contraseña Actual *</label>
+          <div class="password-input-wrapper">
+            <input 
+              [type]="showCurrentPassword ? 'text' : 'password'" 
+              id="current_password" 
+              [(ngModel)]="currentPassword" 
+              name="current_password"
+              placeholder="Ingresa tu contraseña actual">
+            <button 
+              type="button" 
+              class="toggle-password-btn" 
+              (click)="togglePasswordVisibility('current')"
+              [title]="showCurrentPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+              <svg *ngIf="!showCurrentPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <svg *ngIf="showCurrentPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Separador visual -->
+        <div class="password-separator">
+          <span>Nueva Contraseña</span>
+        </div>
+
+        <!-- Nueva Contraseña y Confirmación en grid -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new_password">Nueva Contraseña *</label>
+            <div class="password-input-wrapper">
+              <input 
+                [type]="showNewPassword ? 'text' : 'password'" 
+                id="new_password" 
+                [(ngModel)]="newPassword" 
+                name="new_password"
+                placeholder="Mínimo 6 caracteres"
+                (input)="onNewPasswordChange()">
+              <button 
+                type="button" 
+                class="toggle-password-btn" 
+                (click)="togglePasswordVisibility('new')"
+                [title]="showNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+                <svg *ngIf="!showNewPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg *ngIf="showNewPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="confirm_password">Confirmar *</label>
+            <div class="password-input-wrapper">
+              <input 
+                [type]="showConfirmPassword ? 'text' : 'password'" 
+                id="confirm_password" 
+                [(ngModel)]="confirmPassword" 
+                name="confirm_password"
+                placeholder="Repite la nueva contraseña"
+                (input)="onConfirmPasswordChange()">
+              <button 
+                type="button" 
+                class="toggle-password-btn" 
+                (click)="togglePasswordVisibility('confirm')"
+                [title]="showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+                <svg *ngIf="!showConfirmPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <svg *ngIf="showConfirmPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback de coincidencia de contraseñas -->
+        <div *ngIf="newPassword && confirmPassword" class="password-feedback">
+          <div *ngIf="newPassword === confirmPassword" class="feedback-success">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <polyline points="8 12 11 15 16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Las contraseñas coinciden</span>
+          </div>
+          <div *ngIf="newPassword !== confirmPassword" class="feedback-error">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>Las contraseñas no coinciden</span>
+          </div>
+        </div>
+
+        <!-- Botón de cambio -->
+        <div class="password-button-wrapper">
+          <button 
+            type="button" 
+            class="btn-change-password" 
+            (click)="changePassword()"
+            [disabled]="isChangingPassword || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword">
+            <svg *ngIf="!isChangingPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm3-10V7a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span *ngIf="!isChangingPassword">Cambiar Contraseña</span>
+            <span *ngIf="isChangingPassword">
+              <svg class="spinner-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="15.7 47.1"/>
+              </svg>
+              Cambiando...
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="form-actions">
+        <button 
+          type="button" 
+          class="btn-secondary" 
+          (click)="cancelChanges()"
+          [disabled]="isSavingProfile">
+          Cancelar
+        </button>
+        <button 
+          type="submit" 
+          class="btn-primary" 
+          [disabled]="isSavingProfile">
+          <span *ngIf="!isSavingProfile">Guardar Cambios</span>
+          <span *ngIf="isSavingProfile">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Cambio de Contraseña -->
+<div *ngIf="showPasswordModal" class="modal-overlay" (click)="closePasswordModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <!-- Loading State -->
+    <div *ngIf="passwordModalType === 'loading'" class="modal-loading">
+      <div class="spinner"></div>
+      <h3>{{ passwordModalTitle }}</h3>
+      <p>{{ passwordModalMessage }}</p>
+    </div>
+
+    <!-- Success State -->
+    <div *ngIf="passwordModalType === 'success'" class="modal-success">
+      <div class="success-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <polyline points="8 12 11 15 16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3>{{ passwordModalTitle }}</h3>
+      <p>{{ passwordModalMessage }}</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="passwordModalType === 'error'" class="modal-error">
+      <div class="error-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3>{{ passwordModalTitle }}</h3>
+      <p>{{ passwordModalMessage }}</p>
+      <button class="modal-btn-close" (click)="closePasswordModal()">Cerrar</button>
+    </div>
+
+    <!-- Validation Errors State -->
+    <div *ngIf="passwordModalType === 'validation'" class="modal-validation">
+      <div class="validation-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="16" r="1" fill="currentColor"/>
+        </svg>
+      </div>
+      <h3>{{ passwordModalTitle }}</h3>
+      <ul class="error-list">
+        <li *ngFor="let error of passwordModalErrors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          {{ error }}
+        </li>
+      </ul>
+      <button class="modal-btn-close" (click)="closePasswordModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Cambio de Perfil -->
+<div *ngIf="showProfileModal" class="modal-overlay" (click)="closeProfileModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <!-- Loading State -->
+    <div *ngIf="profileModalType === 'loading'" class="modal-loading">
+      <div class="spinner"></div>
+      <h3>{{ profileModalTitle }}</h3>
+      <p>{{ profileModalMessage }}</p>
+    </div>
+
+    <!-- Success State -->
+    <div *ngIf="profileModalType === 'success'" class="modal-success">
+      <div class="success-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <polyline points="8 12 11 15 16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3>{{ profileModalTitle }}</h3>
+      <p>{{ profileModalMessage }}</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="profileModalType === 'error'" class="modal-error">
+      <div class="error-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3>{{ profileModalTitle }}</h3>
+      <p>{{ profileModalMessage }}</p>
+      <button class="modal-btn-close" (click)="closeProfileModal()">Cerrar</button>
+    </div>
+
+    <!-- Validation Errors State -->
+    <div *ngIf="profileModalType === 'validation'" class="modal-validation">
+      <div class="validation-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="16" r="1" fill="currentColor"/>
+        </svg>
+      </div>
+      <h3>{{ profileModalTitle }}</h3>
+      <ul class="error-list">
+        <li *ngFor="let error of profileModalErrors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          {{ error }}
+        </li>
+      </ul>
+      <button class="modal-btn-close" (click)="closeProfileModal()">Cerrar</button>
+    </div>
+
+    <!-- Confirmation State -->
+    <div *ngIf="profileModalType === 'confirm'" class="modal-confirm">
+      <div class="confirm-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 8v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3>{{ profileModalTitle }}</h3>
+      <p>{{ profileModalMessage }}</p>
+      <div class="modal-buttons">
+        <button class="modal-btn-cancel" (click)="closeProfileModal()">No, Mantener Cambios</button>
+        <button class="modal-btn-confirm" (click)="profileModalCallback && profileModalCallback()">Sí, Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>

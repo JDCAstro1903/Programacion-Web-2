@@ -236,6 +236,18 @@
   border: 1px solid #f5c6cb;
 }
 
+.alert-warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.alert-info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
 .alert svg {
   flex-shrink: 0;
 }
@@ -266,9 +278,16 @@
   font-size: 0.875rem;
   margin-top: 4px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   animation: slideDown 0.3s ease-out;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.error-message svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 /* Animación para mostrar mensajes de error */

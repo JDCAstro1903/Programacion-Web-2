@@ -61,6 +61,8 @@ CREATE TABLE nannys (
     id INT PRIMARY KEY AUTO_INCREMENT,                    -- ID único de la niñera en el sistema
     user_id INT UNIQUE NOT NULL,                          -- Referencia al usuario base (relación 1:1)
     description TEXT,                                     -- Descripción personal y enfoque de cuidado
+    experience_years INT DEFAULT 0,                       -- Años de experiencia cuidando niños
+    hourly_rate DECIMAL(8,2) DEFAULT 0.00,               -- Tarifa por hora en pesos mexicanos
     rating_average DECIMAL(3,2) DEFAULT 0.00,            -- Promedio de calificaciones recibidas (1.00 a 5.00)
     total_ratings INT DEFAULT 0,                         -- Total de calificaciones recibidas (para validar promedio)
     services_completed INT DEFAULT 0,                    -- Número de servicios completados exitosamente
@@ -197,19 +199,19 @@ CREATE TABLE client_favorites (
 
 -- =====================================================
 -- TABLA DE DISPONIBILIDAD DE NIÑERAS
--- Control de horarios específicos disponibles para cada niñera
+-- Control simplificado de disponibilidad general de cada niñera
 -- =====================================================
+-- modifica esta tabla
+-- que todas las nannys al esten dentro de esta tabla, y solo las que no esten dsiponibles que marquen sus dias que no estaran disponibles
+-- y que automaticamente se marque cuando este disponible el dia que regresa
 CREATE TABLE nanny_availability (
     id INT PRIMARY KEY AUTO_INCREMENT,                    -- ID único del registro de disponibilidad
-    nanny_id INT NOT NULL,                                -- Niñera a la que pertenece este horario
-    date DATE NOT NULL,                                   -- Fecha específica de disponibilidad
-    start_time TIME NOT NULL,                             -- Hora de inicio del horario disponible
-    end_time TIME NOT NULL,                               -- Hora de fin del horario disponible
-    is_available BOOLEAN DEFAULT TRUE,                    -- Si realmente está disponible en este horario
+    nanny_id INT UNIQUE NOT NULL,                         -- Niñera a la que pertenece este registro (única por niñera)
+    is_available BOOLEAN DEFAULT TRUE,                    -- Si está disponible para recibir servicios
     reason VARCHAR(200),                                  -- Razón si no está disponible (vacaciones, enfermedad, etc.)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,       -- Fecha de creación del registro
-    FOREIGN KEY (nanny_id) REFERENCES nannys(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_availability (nanny_id, date, start_time) -- No puede tener dos registros del mismo horario
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Última actualización
+    FOREIGN KEY (nanny_id) REFERENCES nannys(id) ON DELETE CASCADE
 );
 
 

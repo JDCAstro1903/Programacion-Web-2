@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
+import { HeaderComponent, HeaderConfig } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
@@ -22,7 +23,7 @@ interface Service {
 @Component({
   selector: 'app-nanny-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent, LogoutModalComponent],
+  imports: [CommonModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
   templateUrl: './nanny-dashboard.component.html',
   styleUrl: './nanny-dashboard.component.css'
 })
@@ -35,6 +36,9 @@ export class NannyDashboardComponent implements OnInit {
   
   // Configuración del sidebar
   sidebarConfig: SidebarConfig;
+  
+  // Configuración del header
+  headerConfig: HeaderConfig;
   
   // Estado del modal de logout
   showLogoutModal: boolean = false;
@@ -114,7 +118,6 @@ export class NannyDashboardComponent implements OnInit {
     // Configurar sidebar específico para nanny con tema rosa como el admin
     this.sidebarConfig = {
       userType: 'admin', // Usar tema admin (rosa) para nanny también
-      showLogout: true,
       items: [
         {
           id: 'dashboard',
@@ -128,6 +131,58 @@ export class NannyDashboardComponent implements OnInit {
         }
       ]
     };
+
+    // Configurar header genérico
+    const currentUser = this.authService.getCurrentUser();
+    const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Niñera';
+    
+    console.log('🔍 Nanny Constructor - currentUser completo:', currentUser);
+    console.log('🔍 Nanny Constructor - currentUser.profile_image:', currentUser?.profile_image);
+    
+    // Obtener la imagen de perfil con prioridad:
+    // 1. Del localStorage (más reciente)
+    // 2. Del objeto currentUser en memoria
+    // 3. Logo por defecto
+    let userAvatar = '/assets/logo.png';
+    
+    // Verificar localStorage primero
+    const storedUser = localStorage.getItem('currentUser');
+    console.log('🔍 Nanny Constructor - storedUser en localStorage:', storedUser ? 'existe' : 'no existe');
+    
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        console.log('🔍 Nanny Constructor - parsedUser:', parsedUser);
+        console.log('🔍 Nanny Constructor - parsedUser.profile_image:', parsedUser.profile_image);
+        
+        if (parsedUser.profile_image) {
+          userAvatar = parsedUser.profile_image;
+          console.log('🖼️ Nanny Avatar desde localStorage:', userAvatar);
+        }
+      } catch (e) {
+        console.error('Error parseando usuario de localStorage:', e);
+      }
+    }
+    
+    // Si no hay en localStorage, usar del currentUser
+    if (userAvatar === '/assets/logo.png' && currentUser?.profile_image) {
+      userAvatar = currentUser.profile_image;
+      console.log('🖼️ Nanny Avatar desde currentUser:', userAvatar);
+    }
+    
+    console.log('👤 Nanny Usuario actual completo:', currentUser);
+    console.log('📸 Nanny Avatar final seleccionado:', userAvatar);
+    
+    this.headerConfig = {
+      userType: 'nanny',
+      userName: userName || 'Niñera',
+      userRole: 'Niñera',
+      userAvatar: userAvatar,
+      showProfileOption: true,
+      showLogoutOption: true
+    };
+    
+    console.log('✅ Nanny headerConfig final:', this.headerConfig);
   }
 
   ngOnInit() {
@@ -152,6 +207,15 @@ export class NannyDashboardComponent implements OnInit {
 
   onSidebarLogout() {
     this.openLogoutModal();
+  }
+
+  // Métodos para manejar eventos del header
+  onHeaderLogout() {
+    this.openLogoutModal();
+  }
+
+  onHeaderProfileClick() {
+    console.log('Navegando a perfil...');
   }
 
   // Métodos para el modal de logout

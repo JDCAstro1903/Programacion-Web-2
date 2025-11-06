@@ -146,13 +146,106 @@ const updateProfileSchema = Joi.object({
         })
 });
 
+// Esquema de validación para completar perfil de cliente
+const completeClientProfileSchema = Joi.object({
+    emergency_contact_name: Joi.string()
+        .min(2)
+        .max(100)
+        .pattern(/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/)
+        .required()
+        .messages({
+            'any.required': 'El nombre del contacto de emergencia es requerido',
+            'string.min': 'El nombre debe tener al menos 2 caracteres',
+            'string.max': 'El nombre no puede exceder 100 caracteres',
+            'string.pattern.base': 'El nombre solo puede contener letras y espacios'
+        }),
+    
+    emergency_contact_phone: Joi.string()
+        .max(20)
+        .pattern(/^(\+52\s?)?(\d{2}\s?)?\d{8}$/)
+        .required()
+        .messages({
+            'any.required': 'El teléfono del contacto de emergencia es requerido',
+            'string.max': 'El teléfono no puede exceder 20 caracteres',
+            'string.pattern.base': 'Debe ser un número de teléfono válido de México'
+        }),
+    
+    number_of_children: Joi.number()
+        .integer()
+        .min(0)
+        .max(10)
+        .optional()
+        .messages({
+            'number.base': 'El número de hijos debe ser un número',
+            'number.min': 'El número de hijos no puede ser negativo',
+            'number.max': 'El número máximo de hijos es 10',
+            'number.integer': 'El número de hijos debe ser un número entero'
+        }),
+    
+    special_requirements: Joi.string()
+        .max(1000)
+        .optional()
+        .messages({
+            'string.max': 'Los requerimientos especiales no pueden exceder 1000 caracteres'
+        }),
+    
+    identification_document: Joi.string()
+        .max(500)
+        .optional()
+        .messages({
+            'string.max': 'La ruta del documento no puede exceder 500 caracteres'
+        })
+});
+
+// Esquema de validación para completar perfil de niñera
+const completeNannyProfileSchema = Joi.object({
+    description: Joi.string()
+        .min(50)
+        .max(2000)
+        .required()
+        .messages({
+            'any.required': 'La descripción es requerida',
+            'string.min': 'La descripción debe tener al menos 50 caracteres',
+            'string.max': 'La descripción no puede exceder 2000 caracteres'
+        }),
+    
+    experience_years: Joi.number()
+        .integer()
+        .min(0)
+        .max(50)
+        .required()
+        .messages({
+            'any.required': 'Los años de experiencia son requeridos',
+            'number.base': 'Los años de experiencia deben ser un número',
+            'number.min': 'Los años de experiencia no pueden ser negativos',
+            'number.max': 'Los años de experiencia no pueden exceder 50',
+            'number.integer': 'Los años de experiencia deben ser un número entero'
+        }),
+    
+    hourly_rate: Joi.number()
+        .precision(2)
+        .min(0)
+        .max(9999.99)
+        .required()
+        .messages({
+            'any.required': 'La tarifa por hora es requerida',
+            'number.base': 'La tarifa debe ser un número',
+            'number.min': 'La tarifa no puede ser negativa',
+            'number.max': 'La tarifa no puede exceder $9,999.99'
+        })
+});
+
 const validateRegister = handleValidationErrors(registerSchema);
 const validateLogin = handleValidationErrors(loginSchema);
 const validateUpdateProfile = handleValidationErrors(updateProfileSchema);
+const validateCompleteClientProfile = handleValidationErrors(completeClientProfileSchema);
+const validateCompleteNannyProfile = handleValidationErrors(completeNannyProfileSchema);
 
 module.exports = {
     validateRegister,
     validateLogin,
     validateUpdateProfile,
+    validateCompleteClientProfile,
+    validateCompleteNannyProfile,
     handleValidationErrors
 };

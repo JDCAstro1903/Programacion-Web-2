@@ -1,0 +1,115 @@
+<header [class]="headerClass">
+  <div class="header-left">
+    <div class="logo-section">
+      <img src="/assets/logo.png" alt="NannysLM" class="logo">
+      <div class="brand-info">
+        <h1>NannysLM</h1>
+        <p>{{ panelText }}</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="header-right">
+    <!-- Notificaciones -->
+    <div class="notifications-container" *ngIf="config.showNotifications !== false">
+      <button class="notifications-button" (click)="toggleNotificationsMenu()" type="button">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="notification-badge" *ngIf="getUnreadCount() > 0">{{ getUnreadCount() }}</span>
+      </button>
+
+      <!-- Overlay para cerrar el menú de notificaciones -->
+      <div class="dropdown-overlay" *ngIf="showNotificationsMenu" (click)="closeNotificationsMenu()"></div>
+
+      <!-- Menú de notificaciones -->
+      <div class="notifications-dropdown" *ngIf="showNotificationsMenu">
+        <div class="notifications-header">
+          <h3>Notificaciones</h3>
+          <button class="mark-read-btn" (click)="markAllAsRead()" *ngIf="getUnreadCount() > 0" type="button">
+            Marcar todas como leídas
+          </button>
+        </div>
+
+        <div class="notifications-list" *ngIf="notifications.length > 0">
+          <div 
+            *ngFor="let notification of notifications" 
+            class="notification-item" 
+            [class.unread]="!notification.is_read"
+            [ngClass]="getNotificationTypeClass(notification.type)"
+            (click)="handleNotificationClick(notification)">
+            <div class="notification-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path [attr.d]="getNotificationIcon(notification.type)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="notification-content">
+              <h4>{{ notification.title }}</h4>
+              <p>{{ notification.message }}</p>
+              <span class="notification-time">{{ formatNotificationTime(notification.created_at) }}</span>
+            </div>
+            <div class="unread-dot" *ngIf="!notification.is_read"></div>
+          </div>
+        </div>
+
+        <div class="notifications-empty" *ngIf="notifications.length === 0">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p>No tienes notificaciones</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menú de usuario -->
+    <div class="user-info" (click)="toggleUserMenu()">
+      <span class="user-name">{{ config.userName }}</span>
+      <span class="user-role">{{ config.userRole }}</span>
+      <div class="user-avatar">
+        <img [src]="getAvatarUrl()" [alt]="config.userName">
+      </div>
+      
+      <!-- Icono de menú desplegable -->
+      <div class="dropdown-icon" [class.active]="showUserMenu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 10l5 5 5-5z"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Overlay para cerrar el menú al hacer clic fuera (debe ir ANTES del menú) -->
+    <div class="dropdown-overlay" *ngIf="showUserMenu" (click)="closeUserMenu()"></div>
+
+    <!-- Menú desplegable -->
+    <div class="user-dropdown-menu" *ngIf="showUserMenu">
+      <button 
+        *ngIf="config.showProfileOption !== false" 
+        class="dropdown-item" 
+        (click)="goToProfile()"
+        type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Perfil</span>
+      </button>
+
+      <div class="dropdown-divider"></div>
+
+      <button 
+        *ngIf="config.showLogoutOption !== false" 
+        class="dropdown-item logout" 
+        (click)="logout()"
+        type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="16 17 21 12 16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </div>
+</header>

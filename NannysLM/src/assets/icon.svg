@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <style>
+      .icon-bg { fill: #4f46e5; }
+      .icon-text { fill: white; font-family: 'Arial', sans-serif; font-weight: bold; font-size: 12px; }
+      .icon-heart { fill: #f59e0b; }
+    </style>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="16" class="icon-bg"/>
+  
+  <!-- Small heart -->
+  <path d="M16 10l-1.5-1.5c-1.5-1.5-4-1.5-5.5 0s-1.5 4 0 5.5L16 21l6.5-6.5c1.5-1.5 1.5-4 0-5.5s-4-1.5-5.5 0L16 10z" 
+        class="icon-heart" transform="scale(0.4) translate(20, 20)"/>
+  
+  <!-- Letter N -->
+  <text x="16" y="20" text-anchor="middle" class="icon-text">N</text>
+</svg>

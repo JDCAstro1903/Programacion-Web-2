@@ -46,7 +46,7 @@ export interface LoginData {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/api/auth';
+  private apiUrl = 'http://localhost:8000/api/v1/auth';
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private tokenSubject = new BehaviorSubject<string | null>(null);
 
@@ -59,17 +59,26 @@ export class AuthService {
   }
 
   /**
+   * Solicitar restablecimiento de contraseña (envía email con enlace)
+   */
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  /**
+   * Restablecer contraseña usando token recibido por email
+   */
+  resetPassword(token: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password`, { token, password });
+  }
+
+  /**
    * Registrar nuevo usuario
    */
   register(userData: RegisterData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData)
-      .pipe(
-        tap(response => {
-          if (response.success) {
-            this.setAuthData(response.data.user, response.data.token);
-          }
-        })
-      );
+    // Registration should not automatically log the user in (activation via email required).
+    // The backend returns a simple success message after creating the user and sending the activation link.
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, userData);
   }
 
   /**
@@ -154,20 +163,30 @@ export class AuthService {
    * Configurar datos de autenticación
    */
   private setAuthData(user: User, token: string): void {
+    // Guardar en formato antiguo para compatibilidad
+    const currentUser = { ...user, token };
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    // También guardar en formato nuevo
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('token', token);
+    
     this.currentUserSubject.next(user);
     this.tokenSubject.next(token);
+    
+    console.log('✅ AuthService - Datos guardados:', { user, token: token.substring(0, 20) + '...' });
   }
 
   /**
    * Limpiar datos de autenticación
    */
   private clearAuthData(): void {
+    localStorage.removeItem('currentUser');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     this.currentUserSubject.next(null);
     this.tokenSubject.next(null);
+    console.log('🗑️ AuthService - Sesión limpiada');
   }
 
   /**
@@ -175,15 +194,37 @@ export class AuthService {
    */
   private loadUserFromStorage(): void {
     try {
+      // Intentar cargar del formato antiguo primero
+      const currentUserStr = localStorage.getItem('currentUser');
+      if (currentUserStr) {
+        const currentUser = JSON.parse(currentUserStr);
+        if (currentUser && currentUser.token) {
+          this.currentUserSubject.next(currentUser);
+          this.tokenSubject.next(currentUser.token);
+          console.log('✅ AuthService - Usuario cargado desde currentUser');
+          
+          // Actualizar perfil desde el backend para obtener datos frescos (incluyendo profile_image)
+          this.refreshUserProfile();
+          return;
+        }
+      }
+      
+      // Si no, cargar del formato nuevo
       const user = localStorage.getItem('user');
       const token = localStorage.getItem('token');
       
       if (user && token) {
-        this.currentUserSubject.next(JSON.parse(user));
+        const userData = JSON.parse(user);
+        this.currentUserSubject.next(userData);
         this.tokenSubject.next(token);
+        
+        // Sincronizar con formato antiguo
+        const currentUser = { ...userData, token };
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        console.log('✅ AuthService - Usuario cargado desde user/token');
       }
     } catch (error) {
-      console.error('Error loading user from storage:', error);
+      console.error('❌ AuthService - Error loading user from storage:', error);
       this.clearAuthData();
     }
   }
@@ -196,6 +237,29 @@ export class AuthService {
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
+    });
+  }
+
+  /**
+   * Refrescar perfil del usuario desde el backend
+   */
+  private refreshUserProfile(): void {
+    this.getProfile().subscribe({
+      next: (response) => {
+        if (response.success && response.data.user_data) {
+          const updatedUser = response.data.user_data;
+          const currentToken = this.getToken();
+          
+          // Actualizar en memoria y localStorage
+          if (currentToken) {
+            this.setAuthData(updatedUser, currentToken);
+            console.log('✅ AuthService - Perfil actualizado con profile_image:', updatedUser.profile_image);
+          }
+        }
+      },
+      error: (error) => {
+        console.error('❌ AuthService - Error refrescando perfil:', error);
+      }
     });
   }
 }

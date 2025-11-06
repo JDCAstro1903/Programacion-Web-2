@@ -12,12 +12,4 @@
       <span class="nav-count" *ngIf="item.count !== undefined">{{ item.count }}</span>
     </div>
   </nav>
-
-  <!-- Footer con logout -->
-  <div class="sidebar-footer" *ngIf="config.showLogout">
-    <button type="button" class="logout-btn" (click)="logout()">
-      <div class="nav-icon" [innerHTML]="getIconSvg('logout')"></div>
-      <span>Cerrar Sesión</span>
-    </button>
-  </div>
 </div>

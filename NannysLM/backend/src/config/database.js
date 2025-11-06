@@ -9,16 +9,13 @@ const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    password: process.env.DB_PASSWORD || 'root',
     database: process.env.DB_NAME || 'nannyslm_db',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
     // Configuraciones válidas para MySQL2
-    charset: 'utf8mb4',
-    acquireTimeout: 60000,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0
+    charset: 'utf8mb4'
 };
 
 // Crear el pool de conexiones

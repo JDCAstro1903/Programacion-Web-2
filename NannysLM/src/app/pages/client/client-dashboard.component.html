@@ -1,26 +1,14 @@
+
 <div class="client-layout">
-  <!-- Header -->
-  <header class="client-header">
-    <div class="header-left">
-      <div class="logo-section">
-        <img src="/assets/logo.png" alt="NannysLM" class="logo">
-        <div class="brand-info">
-          <h1>NannysLM</h1>
-          <p>Panel de cliente</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="header-right">
-      <div class="user-info">
-        <span class="user-name">{{ currentUser.name }}</span>
-        <span class="user-role">{{ currentUser.role }}</span>
-        <div class="user-avatar">
-          <img [src]="currentUser.avatar" alt="Avatar">
-        </div>
-      </div>
-    </div>
-  </header>
+  <!-- Header Genérico -->
+  <app-header 
+    [config]="headerConfig"
+    [notifications]="notifications"
+    (onLogout)="onHeaderLogout()"
+    (onProfileClick)="onHeaderProfileClick()"
+    (onNotificationClick)="handleNotificationClick($event)"
+    (onMarkAllAsRead)="markAllNotificationsAsRead()">
+  </app-header>
 
   <!-- Layout principal -->
   <div class="main-layout">
@@ -28,12 +16,27 @@
     <app-sidebar 
       [config]="sidebarConfig" 
       [currentView]="currentView"
-      (onViewChange)="onViewChange($event)"
-      (onLogoutClick)="onSidebarLogout()">
+      (onViewChange)="onViewChange($event)">
     </app-sidebar>
 
     <!-- Contenido principal -->
     <main class="main-content">
+
+      <!-- Overlay/aviso para cuentas no verificadas: bloquea el acceso al dashboard
+           y obliga a completar/mostrar la vista 'Información del Cliente' -->
+      <div *ngIf="!profileData?.is_verified && verificationBlockerVisible" class="verification-blocker">
+        <div class="verification-card">
+          <h3>Tu cuenta está en revisión</h3>
+          <p>Por seguridad, solo puedes completar tu información y subir los documentos solicitados.
+             Una vez que tu cuenta sea verificada, tendrás acceso completo al panel.</p>
+          <div class="verification-actions">
+            <button class="confirm-btn" (click)="currentView = 'client-info'">Completar mi información</button>
+            <!-- El botón de cerrar solo aparece si el usuario ya está en la vista de información -->
+            <button *ngIf="currentView === 'client-info'" class="cancel-btn" (click)="closeVerificationOverlay()">Cerrar</button>
+          </div>
+          <small class="hint">Si ya subiste tus documentos, espera a que el equipo revise tu perfil. Revisa tu correo para notificaciones.</small>
+        </div>
+      </div>
       <!-- Vista Inicio -->
       <div *ngIf="currentView === 'dashboard'" class="dashboard-home">
         <div class="content-header">
@@ -84,7 +87,7 @@
           <!-- Estado de la cuenta -->
           <div class="overview-card account-status">
             <div class="card-header">
-              <div class="card-icon verified">
+              <div class="card-icon" [class.verified]="clientInfo?.is_verified" [class.unverified]="!clientInfo?.is_verified">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                   <polyline points="22,4 12,14.01 9,11.01"/>
@@ -92,15 +95,19 @@
               </div>
               <div class="card-title">
                 <h4>Estado de Cuenta</h4>
-                <p>Verificación completada</p>
+                <p>{{ getVerificationStatusText() }}</p>
               </div>
             </div>
             <div class="card-content">
-              <div class="status-badge-large verified">
+              <div class="status-badge-large" [class.verified]="clientInfo?.is_verified" [class.unverified]="!clientInfo?.is_verified">
                 <span class="status-dot"></span>
-                <span class="status-text">Cuenta Verificada</span>
+                <span class="status-text">{{ clientInfo?.is_verified ? 'Cuenta Verificada' : 'Verificación Pendiente' }}</span>
               </div>
-              <p class="status-description">Tu cuenta está completamente verificada y lista para usar todos los servicios.</p>
+              <p class="status-description">
+                {{ clientInfo?.is_verified 
+                  ? 'Tu cuenta está completamente verificada y lista para usar todos los servicios.' 
+                  : 'Completa tu verificación para acceder a todos los servicios.' }}
+              </p>
             </div>
           </div>
 
@@ -123,12 +130,12 @@
             <div class="card-content">
               <div class="service-stats">
                 <div class="stat-item">
-                  <span class="stat-number">{{ contractedServices.length }}</span>
+                  <span class="stat-number">{{ clientStats?.services?.total || 0 }}</span>
                   <span class="stat-label">Completados</span>
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat-item">
-                  <span class="stat-number">0</span>
+                  <span class="stat-number">{{ clientStats?.services?.pending || 0 }}</span>
                   <span class="stat-label">Pendientes</span>
                 </div>
               </div>
@@ -155,16 +162,16 @@
             <div class="card-content">
               <div class="payment-overview">
                 <div class="total-amount">
-                  <span class="amount">${{ getTotalAmount() }}</span>
-                  <span class="currency">USD</span>
+                  <span class="amount">${{ clientStats?.financial?.total_spent?.toFixed(2) || '0.00' }}</span>
+                  <span class="currency">MXN</span>
                 </div>
                 <div class="payment-breakdown">
                   <div class="breakdown-item confirmed">
-                    <span class="count">{{ getPaidPaymentsCount() }}</span>
+                    <span class="count">{{ getCompletedPaymentsCount() }}</span>
                     <span class="label">Confirmados</span>
                   </div>
                   <div class="breakdown-item pending">
-                    <span class="count">{{ getPendingPaymentsCount() }}</span>
+                    <span class="count">{{ getPendingPaymentsCountFromArray() }}</span>
                     <span class="label">Pendientes</span>
                   </div>
                 </div>
@@ -194,24 +201,6 @@
               <div class="access-content">
                 <h4>Reservar Cuidadora</h4>
                 <p>Programa un nuevo servicio</p>
-              </div>
-              <div class="access-arrow">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <polyline points="9,18 15,12 9,6"/>
-                </svg>
-              </div>
-            </button>
-
-            <button class="quick-access-item" (click)="currentView = 'profile'">
-              <div class="access-icon secondary">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <div class="access-content">
-                <h4>Editar Perfil</h4>
-                <p>Actualiza tu información</p>
               </div>
               <div class="access-arrow">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -277,7 +266,7 @@
               </div>
               <div class="service-details">
                 <h4>{{ service.title }}</h4>
-                <p>{{ formatContractedServiceDate(service) }} • {{ service.nanny.name }}</p>
+                <p>{{ formatContractedServiceDate(service) }} • {{ service.nanny?.name || 'Sin asignar' }}</p>
               </div>
               <div class="service-status">
                 <span class="status-badge completed">{{ service.status }}</span>
@@ -317,7 +306,7 @@
                 <div class="service-details">
                   <p><strong>Hora y fecha:</strong> {{ formatContractedServiceDate(service) }}</p>
                   <p><strong>Indicaciones:</strong></p>
-                  <p class="service-instructions">{{ service.instructions }}</p>
+                  <p class="service-instructions">{{ service.special_instructions || service.instructions }}</p>
                 </div>
               </div>
 
@@ -325,10 +314,10 @@
               <div class="nanny-info">
                 <div class="nanny-card">
                   <div class="nanny-avatar">
-                    <img [src]="service.nanny.photo" [alt]="service.nanny.name">
+                    <img [src]="service.nanny?.profile_image || 'assets/logo.png'" [alt]="service.nanny?.name || 'Nanny'">
                   </div>
                   <div class="nanny-details">
-                    <p class="nanny-assigned">Nanny asignada: {{ service.nanny.name }}</p>
+                    <p class="nanny-assigned">Nanny asignada: {{ service.nanny?.name || 'No asignada' }}</p>
                     <button class="view-profile-btn" (click)="viewNannyProfile()">
                       Ver perfil
                     </button>
@@ -355,7 +344,7 @@
                     *ngFor="let star of getStarsArray()" 
                     class="star"
                     (click)="setRating(service.id, star)"
-                    [class.filled]="star <= service.tempRating"
+                    [class.filled]="star <= (service.tempRating || 0)"
                     (mouseenter)="onStarHover(service.id, star)"
                     (mouseleave)="onStarLeave(service.id)">
                     ⭐
@@ -376,7 +365,7 @@
                     <span 
                       *ngFor="let star of getStarsArray()" 
                       class="star"
-                      [class.filled]="star <= service.rating">
+                      [class.filled]="star <= (service.rating.rating || 0)">
                       ⭐
                     </span>
                   </div>
@@ -385,7 +374,7 @@
 
               <!-- Botón para ver datos bancarios específicos de la nanny -->
               <div class="service-actions">
-                <button class="bank-details-btn" (click)="openBankDetailsModal(service.nanny?.name)">
+                <button class="bank-details-btn" (click)="openBankDetailsModal(service.nanny?.id)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
                     <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
@@ -409,63 +398,229 @@
         </div>
       </div>
 
-      <!-- Vista de detalles del servicio creado -->
-      <div *ngIf="currentView === 'service-details' && showServiceDetails && createdService" class="service-details-view">
+      <!-- Vista de detalles del servicio -->
+      <div *ngIf="currentView === 'service-details' && selectedService" class="service-details-view">
         <div class="content-header">
-          <h2>Servicios</h2>
-          <p>Detalles sobre el servicio</p>
+          <button class="back-button" (click)="backToServices()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Volver a servicios
+          </button>
+          <h2>Detalles del servicio</h2>
+          <p>Información completa sobre tu servicio contratado</p>
         </div>
 
-        <div class="service-card">
-          <h3 class="service-title">{{ createdService.title }}</h3>
-          
-          <div class="service-content">
-            <!-- Información del servicio -->
-            <div class="service-info">
-              <div class="status-badge">
-                <span class="status-label">Estado:</span>
-                <span class="status-value active">{{ createdService.status }}</span>
+        <div class="service-details-container">
+          <!-- Columna principal -->
+          <div class="details-main-column">
+            <!-- Tarjeta de información general -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3>{{ selectedService.title }}</h3>
+                <div class="status-badge" [ngClass]="{
+                  'status-confirmed': selectedService.status === 'confirmed',
+                  'status-pending': selectedService.status === 'pending',
+                  'status-completed': selectedService.status === 'completed',
+                  'status-cancelled': selectedService.status === 'cancelled'
+                }">
+                  <span class="status-dot"></span>
+                  <span>{{ getStatusText(selectedService.status) }}</span>
+                </div>
               </div>
-              
-              <div class="service-details">
-                <p><strong>Hora:</strong> {{ createdService.startTime }} - {{ createdService.endTime }}</p>
-                <p><strong>Fecha:</strong> {{ formatServiceDate() }}</p>
-                <p><strong>Indicaciones:</strong></p>
-                <textarea 
-                  class="instructions-input" 
-                  placeholder="Escriba las indicaciones para el servicio..."
-                  [(ngModel)]="createdService.instructions">
-                </textarea>
-                <button class="add-instructions-btn" (click)="addInstructions()">
-                  Agregar indicaciones
-                </button>
+
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <div class="detail-content">
+                    <span class="detail-label">Fecha</span>
+                    <span class="detail-value">{{ formatDate(selectedService.start_date) }}</span>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <div class="detail-content">
+                    <span class="detail-label">Horario</span>
+                    <span class="detail-value">{{ selectedService.start_time }} - {{ selectedService.end_time }}</span>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <div class="detail-content">
+                    <span class="detail-label">Duración</span>
+                    <span class="detail-value">{{ selectedService.total_hours }} horas</span>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <div class="detail-content">
+                    <span class="detail-label">Número de niños</span>
+                    <span class="detail-value">{{ selectedService.number_of_children }}</span>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="9" r="2.5" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <div class="detail-content">
+                    <span class="detail-label">Dirección</span>
+                    <span class="detail-value">{{ selectedService.address || 'No especificada' }}</span>
+                  </div>
+                </div>
+
+                <div class="detail-item highlight">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <div class="detail-content">
+                    <span class="detail-label">Monto total</span>
+                    <span class="detail-value price">${{ selectedService.total_amount }} MXN</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Información de la nanny -->
-            <div class="nanny-info">
-              <div class="nanny-card">
-                <div class="nanny-avatar">
-                  <img [src]="createdService.nanny.photo" [alt]="createdService.nanny.name">
-                </div>
-                <div class="nanny-details">
-                  <p class="nanny-assigned">Nanny asignada: {{ createdService.nanny.name }}</p>
-                  <button class="view-profile-btn" (click)="viewNannyProfile()">
-                    Ver perfil
+            <!-- Tarjeta de indicaciones especiales -->
+            <div class="detail-card">
+              <div class="card-header">
+                <h3>Indicaciones especiales</h3>
+                <button 
+                  *ngIf="selectedService.status !== 'completed' && selectedService.status !== 'cancelled' && !isEditingInstructions"
+                  class="edit-btn"
+                  (click)="startEditingInstructions()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Editar
+                </button>
+              </div>
+
+              <div class="instructions-content" *ngIf="!isEditingInstructions">
+                <p *ngIf="selectedService.special_instructions">{{ selectedService.special_instructions }}</p>
+                <p *ngIf="!selectedService.special_instructions" class="no-instructions">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="18" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="12" y1="9" x2="12.01" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  No hay indicaciones especiales para este servicio
+                </p>
+              </div>
+
+              <div class="instructions-editor" *ngIf="isEditingInstructions">
+                <textarea 
+                  class="instructions-textarea"
+                  [(ngModel)]="serviceInstructions"
+                  placeholder="Escribe las indicaciones especiales para la niñera (por ejemplo: alergias, rutinas, medicamentos, horarios de comida, etc.)"
+                  rows="6">
+                </textarea>
+                <div class="editor-actions">
+                  <button class="save-btn" (click)="saveInstructions()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Guardar
+                  </button>
+                  <button class="cancel-btn" (click)="cancelEditingInstructions()">
+                    Cancelar
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Acciones del servicio -->
-          <div class="service-actions">
-            <button class="action-btn cancel-btn" (click)="cancelService()">
-              Cancelar
-            </button>
-            <button class="action-btn change-date-btn" (click)="changeServiceDate()">
-              Cambiar fecha
-            </button>
+          <!-- Columna lateral -->
+          <div class="details-sidebar">
+            <!-- Tarjeta de la niñera -->
+            <div class="detail-card nanny-card" *ngIf="selectedService.nanny">
+              <div class="card-header">
+                <h3>Niñera asignada</h3>
+              </div>
+              
+              <div class="nanny-profile">
+                <div class="nanny-avatar-large">
+                  <img [src]="selectedService.nanny.profile_image || 'assets/logo.png'" [alt]="selectedService.nanny.name">
+                </div>
+                <h4 class="nanny-name">{{ selectedService.nanny.name }}</h4>
+                <div class="nanny-rating" *ngIf="selectedService.nanny.rating">
+                  <div class="stars-display">
+                    <svg *ngFor="let star of [1,2,3,4,5]" 
+                         [class.filled]="star <= selectedService.nanny.rating"
+                         width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                    </svg>
+                  </div>
+                  <span class="rating-value">{{ selectedService.nanny.rating }}/5</span>
+                </div>
+                <button class="view-profile-btn" (click)="viewNannyProfile(selectedService.nanny.id)">
+                  Ver perfil completo
+                </button>
+              </div>
+            </div>
+
+            <!-- Tarjeta de acciones -->
+            <div class="detail-card actions-card">
+              <div class="card-header">
+                <h3>Acciones</h3>
+              </div>
+
+              <div class="action-buttons">
+                <button 
+                  *ngIf="selectedService.status === 'confirmed' || selectedService.status === 'pending'"
+                  class="action-btn primary"
+                  (click)="openChangeDateTime()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Cambiar fecha/hora
+                </button>
+
+                <button 
+                  *ngIf="selectedService.status === 'completed' && !selectedService.rating?.given"
+                  class="action-btn secondary"
+                  (click)="openRatingModal()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                  </svg>
+                  Calificar servicio
+                </button>
+
+                <button 
+                  *ngIf="selectedService.status !== 'completed' && selectedService.status !== 'cancelled'"
+                  class="action-btn danger"
+                  (click)="openCancelModal()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Cancelar servicio
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -487,12 +642,14 @@
 
           <!-- Lista de servicios del historial -->
           <div class="services-history-container">
-            <div *ngFor="let service of contractedServices" class="service-history-card">
+            <div *ngFor="let service of contractedServices" 
+                 class="service-history-card clickable" 
+                 (click)="viewServiceDetails(service.id)">
               <!-- Header del servicio -->
               <div class="service-header">
                 <div class="service-info-left">
                   <h3 class="service-title">{{ service.title }}</h3>
-                  <p class="service-type">{{ service.service.name }}</p>
+                  <p class="service-type">{{ service.service_type || service.service?.name }}</p>
                   <p class="service-date">{{ formatContractedServiceDate(service) }}</p>
                 </div>
                 <div class="service-status">
@@ -503,9 +660,9 @@
               <!-- Detalles del servicio -->
               <div class="service-details-row">
                 <div class="nanny-info-compact">
-                  <img [src]="service.nanny.photo" [alt]="service.nanny.name" class="nanny-avatar-small">
+                  <img [src]="service.nanny?.profile_image || 'assets/logo.png'" [alt]="service.nanny?.name || 'Nanny'" class="nanny-avatar-small">
                   <div class="nanny-details">
-                    <span class="nanny-name">{{ service.nanny.name }}</span>
+                    <span class="nanny-name">{{ service.nanny?.name || 'Sin asignar' }}</span>
                     <span class="nanny-role">Niñera certificada</span>
                   </div>
                 </div>
@@ -515,12 +672,12 @@
                   <div *ngIf="service.isRated" class="rating-display">
                     <div class="stars-display">
                       <svg *ngFor="let star of getStarsArray()" 
-                           [class.filled]="star <= service.rating"
+                           [class.filled]="star <= (service.rating.rating || 0)"
                            class="star-icon" width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                       </svg>
                     </div>
-                    <span class="rating-text">{{ getRatingText(service.rating) }}</span>
+                    <span class="rating-text">{{ getRatingText(service.rating.rating || 0) }}</span>
                   </div>
 
                   <div *ngIf="!service.isRated && !service.showRating" class="rating-action">
@@ -536,7 +693,7 @@
                   <div *ngIf="service.showRating" class="rating-input">
                     <div class="stars-input">
                       <svg *ngFor="let star of getStarsArray()" 
-                           [class.filled]="star <= service.tempRating"
+                           [class.filled]="star <= (service.tempRating || 0)"
                            class="star-input" 
                            width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                            (click)="setRating(service.id, star)"
@@ -546,7 +703,7 @@
                       </svg>
                     </div>
                     <div class="rating-actions">
-                      <button class="save-rating-btn" (click)="setRating(service.id, service.tempRating)" [disabled]="service.tempRating === 0">
+                      <button class="save-rating-btn" (click)="setRating(service.id, service.tempRating || 0)" [disabled]="(service.tempRating || 0) === 0">
                         Guardar
                       </button>
                       <button class="cancel-rating-btn" (click)="cancelRating(service.id)">
@@ -559,7 +716,7 @@
 
               <!-- Acciones del servicio -->
               <div class="service-actions-compact">
-                <button class="action-btn view-details" (click)="openBankDetailsModal(service.nanny.name)">
+                <button class="action-btn view-details" (click)="openBankDetailsModal(service.nanny?.id)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M2 4C2 3.45 2.45 3 3 3H21C21.55 3 22 3.45 22 4V20C22 20.55 21.55 21 21 21H3C2.45 21 2 20.55 2 20V4ZM4 5V19H20V5H4ZM6 7H18V9H6V7ZM6 11H14V13H6V11ZM6 15H10V17H6V15Z"/>
                   </svg>
@@ -573,9 +730,9 @@
               </div>
 
               <!-- Instrucciones si las hay -->
-              <div *ngIf="service.instructions" class="service-instructions">
+              <div *ngIf="service.special_instructions || service.instructions" class="service-instructions">
                 <h5>Instrucciones especiales:</h5>
-                <p>{{ service.instructions }}</p>
+                <p>{{ service.special_instructions || service.instructions }}</p>
               </div>
             </div>
 
@@ -609,467 +766,241 @@
           </div>
           
           <div class="services-container">
-          <!-- Selector de tipo de servicio -->
-          <div class="service-type-section">
-            <div class="service-type-card">
-              <div class="service-type-header">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
-                </svg>
-                <span>Tipo de servicio</span>
-              </div>
-              
-              <div class="service-selector">
-                <select class="service-select" 
-                        [value]="selectedServiceType" 
-                        (change)="onServiceTypeChange($event)">
-                  <option value="">Selecciona un servicio</option>
-                  <option *ngFor="let service of serviceTypes" [value]="service.id">
-                    {{ service.name }}
-                  </option>
-                </select>
-                
-                <div class="service-description" *ngIf="selectedServiceType">
-                  <p>{{ getSelectedServiceDescription() }}</p>
-                  <div class="multiple-days-info" *ngIf="allowsMultipleDays()">
-                    <p class="info-text">
-                      <strong>📅 Servicio de múltiples días:</strong> 
-                      Puedes seleccionar un rango de fechas consecutivas
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Selector de niños y nannys -->
-          <div class="children-nannys-section">
-            <div class="children-nannys-card">
-              <div class="selection-grid">
-                <!-- Selector de número de niños -->
-                <div class="selection-item">
-                  <div class="selection-header">
+            <!-- Columna izquierda: Formularios -->
+            <div class="left-column">
+              <!-- Selector de tipo de servicio -->
+              <div class="service-type-section">
+                <div class="service-type-card">
+                  <div class="service-type-header">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2M4 18v-6h3v-3.5c0-1.1.9-2 2-2s2 .9 2 2V12h3v6H4z"/>
-                      <circle cx="12" cy="8" r="2"/>
-                      <path d="M15 13v5h-2v-8.5c0-1.1-.9-2-2-2s-2 .9-2 2V18H7v-5"/>
+                      <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                     </svg>
-                    <span>Número de niños</span>
+                    <span>Tipo de servicio</span>
                   </div>
-                  <select class="selection-select" 
-                          [value]="selectedChildren" 
-                          (change)="onChildrenChange($event)">
-                    <option *ngFor="let num of getChildrenOptions()" [value]="num">
-                      {{ num }} {{ num === 1 ? 'niño' : 'niños' }}
-                    </option>
-                  </select>
+                  
+                  <div class="service-selector">
+                    <select class="service-select" 
+                            [value]="selectedServiceType" 
+                            (change)="onServiceTypeChange($event)">
+                      <option value="">Selecciona un servicio</option>
+                      <option *ngFor="let service of serviceTypes" [value]="service.id">
+                        {{ service.name }}
+                      </option>
+                    </select>
+                    
+                    <div class="service-description" *ngIf="selectedServiceType">
+                      <p>{{ getSelectedServiceDescription() }}</p>
+                      <div class="multiple-days-info" *ngIf="allowsMultipleDays()">
+                        <p class="info-text">
+                          <strong>📅 Servicio de múltiples días:</strong> 
+                          Puedes seleccionar un rango de fechas consecutivas
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                <!-- Selector de número de nannys -->
-                <div class="selection-item">
-                  <div class="selection-header">
+              <!-- Selector de niños y nannys -->
+              <div class="children-nannys-section">
+                <div class="children-nannys-card">
+                  <div class="selection-grid">
+                    <!-- Selector de número de niños -->
+                    <div class="selection-item">
+                      <div class="selection-header">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2M4 18v-6h3v-3.5c0-1.1.9-2 2-2s2 .9 2 2V12h3v6H4z"/>
+                          <circle cx="12" cy="8" r="2"/>
+                          <path d="M15 13v5h-2v-8.5c0-1.1-.9-2-2-2s-2 .9-2 2V18H7v-5"/>
+                        </svg>
+                        <span>Número de niños</span>
+                      </div>
+                      <select class="selection-select" 
+                              [value]="selectedChildren" 
+                              (change)="onChildrenChange($event)">
+                        <option *ngFor="let num of getChildrenOptions()" [value]="num">
+                          {{ num }} {{ num === 1 ? 'niño' : 'niños' }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <!-- Selector de número de nannys -->
+                    <div class="selection-item">
+                      <div class="selection-header">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7.5V8.5C15 9.1 14.6 9.5 14 9.5S13 9.1 13 8.5V7L12 6.5L11 7V8.5C11 9.1 10.6 9.5 10 9.5S9 9.1 9 8.5V7.5L3 7V9C3 10.1 3.9 11 5 11V19H19V11C20.1 11 21 10.1 21 9Z"/>
+                        </svg>
+                        <span>Número de nannys</span>
+                      </div>
+                      <select class="selection-select" 
+                              [value]="selectedNannys" 
+                              (change)="onNannysChange($event)">
+                        <option *ngFor="let num of getNannysOptions()" [value]="num">
+                          {{ num }} {{ num === 1 ? 'nanny' : 'nannys' }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Alerta de recomendación -->
+                  <div class="nanny-recommendation-alert" *ngIf="shouldShowNannyRecommendation()">
+                    <div class="alert-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5zM11 14h2v2h-2v-2zm0-6h2v4h-2V8z"/>
+                      </svg>
+                    </div>
+                    <div class="alert-content">
+                      <p><strong>Recomendación:</strong> Para 3 o más niños, se recomienda contratar 2 o más nannys para garantizar la mejor atención y seguridad.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selector de horarios y confirmación -->
+              <div class="booking-section">
+                <!-- Selector de horario de llegada -->
+                <div class="time-selector-card">
+                  <div class="time-header">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7.5V8.5C15 9.1 14.6 9.5 14 9.5S13 9.1 13 8.5V7L12 6.5L11 7V8.5C11 9.1 10.6 9.5 10 9.5S9 9.1 9 8.5V7.5L3 7V9C3 10.1 3.9 11 5 11V19H19V11C20.1 11 21 10.1 21 9Z"/>
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12,6 12,12 16,14"/>
                     </svg>
-                    <span>Número de nannys</span>
+                    <span>Horario de Llegada</span>
+                    <span class="time-info" *ngIf="isNightService()">🌙 Servicio nocturno</span>
                   </div>
-                  <select class="selection-select" 
-                          [value]="selectedNannys" 
-                          (change)="onNannysChange($event)">
-                    <option *ngFor="let num of getNannysOptions()" [value]="num">
-                      {{ num }} {{ num === 1 ? 'nanny' : 'nannys' }}
-                    </option>
-                  </select>
+                  
+                  <div class="time-grid" *ngIf="selectedDate && selectedServiceType">
+                    <button *ngFor="let time of getAvailableTimesForService()" 
+                            class="time-slot"
+                            [class.selected]="selectedStartTime === time"
+                            [class.night-time]="isNightService()"
+                            (click)="selectStartTime(time)">
+                      {{ time }}
+                    </button>
+                  </div>
+                  
+                  <div class="no-date-selected" *ngIf="!selectedDate || !selectedServiceType">
+                    <p *ngIf="!selectedServiceType">Selecciona un tipo de servicio primero</p>
+                    <p *ngIf="selectedServiceType && !selectedDate">Selecciona una fecha</p>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Alerta de recomendación -->
-              <div class="nanny-recommendation-alert" *ngIf="shouldShowNannyRecommendation()">
-                <div class="alert-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5zM11 14h2v2h-2v-2zm0-6h2v4h-2V8z"/>
-                  </svg>
+                <!-- Selector de horario de salida -->
+                <div class="time-selector-card" *ngIf="selectedStartTime">
+                  <div class="time-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12,6 12,12 16,14"/>
+                    </svg>
+                    <span>Horario de Salida</span>
+                    <span class="selected-start-time">✓ Llegada: {{ selectedStartTime }}</span>
+                  </div>
+                  
+                  <div class="time-grid">
+                    <button *ngFor="let time of getAvailableEndTimes()" 
+                            class="time-slot"
+                            [class.selected]="selectedEndTime === time"
+                            [class.night-time]="isNightService()"
+                            [disabled]="!isValidEndTime(time)"
+                            (click)="selectEndTime(time)">
+                      {{ time }}
+                    </button>
+                  </div>
                 </div>
-                <div class="alert-content">
-                  <p><strong>Recomendación:</strong> Para 3 o más niños, se recomienda contratar 2 o más nannys para garantizar la mejor atención y seguridad.</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Calendario -->
-          <div class="calendar-section">
-            <div class="calendar-card">
-              <div class="calendar-header">
-                <button class="nav-btn" (click)="previousMonth()">‹</button>
-                <h3>{{ getMonthName() }}</h3>
-                <button class="nav-btn" (click)="nextMonth()">›</button>
-              </div>
-              
-              <div class="calendar-subtitle">
-                <span *ngIf="!allowsMultipleDays()">Selecciona una fecha</span>
-                <span *ngIf="allowsMultipleDays()">Selecciona fecha de inicio y fin (días consecutivos)</span>
-              </div>
-              
-              <!-- Indicador de estado de selección -->
-              <div class="selection-status" *ngIf="allowsMultipleDays()">
-                <span class="status-text">{{ getSelectionState() }}</span>
-                <div class="legend" *ngIf="selectedDate">
-                  <div class="legend-item">
-                    <span class="legend-color start-color"></span>
-                    <span>Inicio</span>
+                <!-- Reserva seleccionada -->
+                <div class="reservation-card">
+                  <h3>Reserva seleccionada:</h3>
+                  <div class="reservation-info" *ngIf="hasValidReservation()">
+                    <p><strong>Servicio:</strong> {{ getSelectedServiceName() }}</p>
+                    <p><strong>Fechas:</strong> {{ getDateRangeText() }}</p>
+                    <p><strong>Horario de llegada:</strong> {{ selectedStartTime }}</p>
+                    <p><strong>Horario de salida:</strong> {{ selectedEndTime }}</p>
+                    <p><strong>Duración:</strong> {{ calculateDuration() }}</p>
+                    <p><strong>Niños:</strong> {{ selectedChildren }} {{ selectedChildren === 1 ? 'niño' : 'niños' }}</p>
+                    <p><strong>Nannys:</strong> {{ selectedNannys }} {{ selectedNannys === 1 ? 'nanny' : 'nannys' }}</p>
                   </div>
-                  <div class="legend-item" *ngIf="selectedEndDate">
-                    <span class="legend-color end-color"></span>
-                    <span>Fin</span>
+                  <div class="no-reservation" *ngIf="!hasValidReservation()">
+                    <p>aquí se mostrará el servicio, fecha(s), horarios, niños y nannys</p>
                   </div>
-                  <div class="legend-item" *ngIf="selectedEndDate">
-                    <span class="legend-color range-color"></span>
-                    <span>Rango</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="calendar-grid">
-                <!-- Nombres de los días -->
-                <div class="day-names">
-                  <div *ngFor="let dayName of getDayNames()" class="day-name">
-                    {{ dayName }}
-                  </div>
-                </div>
-                
-                <!-- Días del mes -->
-                <div class="days-grid">
-                  <div *ngFor="let day of getDaysInMonth()" 
-                       class="day-cell"
-                       [class.empty]="day === 0"
-                       [class.selected]="isSelectedDate(day)"
-                       [class.start-date]="isStartDate(day)"
-                       [class.end-date]="isEndDate(day)"
-                       [class.in-range]="isInSelectedRange(day)"
-                       [class.past]="isPastDate(day)"
-                       [class.available]="day > 0 && !isPastDate(day)"
-                       (click)="selectDate(day)">
-                    {{ day || '' }}
+                  
+                  <div class="action-buttons">
+                    <button class="confirm-btn" 
+                            [disabled]="!hasValidReservation()"
+                            (click)="confirmReservation()">
+                      ✓ Confirmar
+                    </button>
+                    <button class="cancel-btn" 
+                            [disabled]="!hasValidReservation()"
+                            (click)="cancelReservation()">
+                      ✗ Cancelar
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Selector de horarios y confirmación -->
-          <div class="booking-section">
-            <!-- Selector de horarios -->
-            <div class="time-selector-card">
-              <div class="time-header">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12,6 12,12 16,14"/>
-                </svg>
-                <span>Horario</span>
-                <span class="time-info" *ngIf="isNightService()">🌙 Servicio nocturno</span>
-              </div>
-              
-              <div class="time-grid" *ngIf="selectedDate && selectedServiceType">
-                <button *ngFor="let time of getAvailableTimesForService()" 
-                        class="time-slot"
-                        [class.selected]="selectedTime === time"
-                        [class.night-time]="isNightService()"
-                        (click)="selectTime(time)">
-                  {{ time }}
-                </button>
-              </div>
-              
-              <div class="no-date-selected" *ngIf="!selectedDate || !selectedServiceType">
-                <p *ngIf="!selectedServiceType">Selecciona un tipo de servicio primero</p>
-                <p *ngIf="selectedServiceType && !selectedDate">Selecciona una fecha</p>
-              </div>
-            </div>
-
-            <!-- Reserva seleccionada -->
-            <div class="reservation-card">
-              <h3>Reserva seleccionada:</h3>
-              <div class="reservation-info" *ngIf="hasValidReservation()">
-                <p><strong>Servicio:</strong> {{ getSelectedServiceName() }}</p>
-                <p><strong>Fechas:</strong> {{ getDateRangeText() }}</p>
-                <p><strong>Hora:</strong> {{ selectedTime }}</p>
-                <p><strong>Niños:</strong> {{ selectedChildren }} {{ selectedChildren === 1 ? 'niño' : 'niños' }}</p>
-                <p><strong>Nannys:</strong> {{ selectedNannys }} {{ selectedNannys === 1 ? 'nanny' : 'nannys' }}</p>
-              </div>
-              <div class="no-reservation" *ngIf="!hasValidReservation()">
-                <p>aquí se mostrará el servicio, fecha(s), hora, niños y nannys</p>
-              </div>
-              
-              <div class="action-buttons">
-                <button class="confirm-btn" 
-                        [disabled]="!hasValidReservation()"
-                        (click)="confirmReservation()">
-                  ✓ Confirmar
-                </button>
-                <button class="cancel-btn" 
-                        [disabled]="!hasValidReservation()"
-                        (click)="cancelReservation()">
-                  ✗ Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vista Perfil -->
-      <div *ngIf="currentView === 'profile'" class="profile-view">
-        <div class="content-header">
-          <h2>Mi Perfil</h2>
-          <p>Gestiona tu información personal y configuración de cuenta</p>
-        </div>
-
-        <!-- Header del perfil con información principal -->
-        <div class="profile-header-card">
-          <div class="profile-header-content">
-            <div class="profile-avatar-large">
-              <img [src]="userProfile.avatar" [alt]="userProfile.firstName" class="avatar-image">
-              <div class="avatar-overlay">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-              </div>
-              <div class="verification-status" *ngIf="userProfile.isVerified">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#10b981" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01"/>
-                </svg>
-              </div>
-            </div>
-            
-            <div class="profile-basic-info">
-              <h3 class="profile-name">{{ userProfile.firstName }} {{ userProfile.lastName }}</h3>
-              <p class="profile-email">{{ userProfile.email }}</p>
-              <div class="profile-status">
-                <span class="status-badge verified" *ngIf="userProfile.isVerified">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12l2 2 4-4"/>
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  </svg>
-                  Cuenta Verificada
-                </span>
-                <span class="status-badge unverified" *ngIf="!userProfile.isVerified">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                  Verificación Pendiente
-                </span>
-              </div>
-            </div>
-
-            <div class="profile-actions">
-              <button class="edit-profile-btn primary" (click)="editProfile()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-                Editar Perfil
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Contenido principal del perfil -->
-        <div class="profile-main-content">
-          <!-- Sección de información personal -->
-          <div class="profile-section">
-            <div class="section-header">
-              <div class="section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-                <h4>Información Personal</h4>
-              </div>
-              <p class="section-description">Actualiza tus datos personales y de contacto</p>
-            </div>
-
-            <form class="profile-form modern">
-              <div class="form-grid">
-                <!-- Nombre y Apellido -->
-                <div class="form-group">
-                  <label for="firstName" class="form-label">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    Nombre
-                  </label>
-                  <input 
-                    type="text" 
-                    id="firstName" 
-                    class="form-input modern"
-                    [(ngModel)]="userProfile.firstName"
-                    name="firstName"
-                    placeholder="Ingresa tu nombre">
-                </div>
-
-                <div class="form-group">
-                  <label for="lastName" class="form-label">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    Apellido
-                  </label>
-                  <input 
-                    type="text" 
-                    id="lastName" 
-                    class="form-input modern"
-                    [(ngModel)]="userProfile.lastName"
-                    name="lastName"
-                    placeholder="Ingresa tu apellido">
-                </div>
-
-                <!-- Correo electrónico -->
-                <div class="form-group full-width">
-                  <label for="email" class="form-label">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                    Correo electrónico
-                  </label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    class="form-input modern"
-                    [(ngModel)]="userProfile.email"
-                    name="email"
-                    placeholder="ejemplo@correo.com">
-                </div>
-
-                <!-- Número de teléfono -->
-                <div class="form-group">
-                  <label for="phone" class="form-label">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    Teléfono
-                  </label>
-                  <input 
-                    type="tel" 
-                    id="phone" 
-                    class="form-input modern"
-                    [(ngModel)]="userProfile.phone"
-                    name="phone"
-                    placeholder="+1 234 567 8900">
-                </div>
-
-                <!-- Dirección -->
-                <div class="form-group">
-                  <label for="address" class="form-label">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    Dirección
-                  </label>
-                  <input 
-                    type="text" 
-                    id="address" 
-                    class="form-input modern"
-                    [(ngModel)]="userProfile.address"
-                    name="address"
-                    placeholder="Calle, Ciudad, País">
-                </div>
-              </div>
-            </form>
-          </div>
-
-          <!-- Sección de verificación -->
-          <div class="profile-section">
-            <div class="section-header">
-              <div class="section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12l2 2 4-4"/>
-                  <path d="M21 12c0 1.66-1.34 3-3 3h-3l-3 3-3-3H6c-1.66 0-3-1.34-3-3V6c0-1.66 1.34-3 3-3h12c1.66 0 3 1.34 3 3v6z"/>
-                </svg>
-                <h4>Verificación de Cuenta</h4>
-              </div>
-              <p class="section-description">Completa la verificación para acceder a todas las funciones</p>
-            </div>
-
-            <div class="verification-content">
-              <div class="verification-item">
-                <div class="verification-info">
-                  <div class="verification-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14,2 14,8 20,8"/>
-                      <line x1="16" y1="13" x2="8" y2="13"/>
-                      <line x1="16" y1="17" x2="8" y2="17"/>
-                      <polyline points="10,9 9,9 8,9"/>
-                    </svg>
+            <!-- Columna derecha: Calendario -->
+            <div class="right-column">
+              <div class="calendar-section">
+                <div class="calendar-card">
+                  <div class="calendar-header">
+                    <button class="nav-btn" (click)="previousMonth()">‹</button>
+                    <h3>{{ getMonthName() }}</h3>
+                    <button class="nav-btn" (click)="nextMonth()">›</button>
                   </div>
-                  <div class="verification-details">
-                    <h5>Documento de Identidad</h5>
-                    <p>Sube una foto clara de tu cédula o pasaporte para verificar tu identidad</p>
+                  
+                  <div class="calendar-subtitle">
+                    <span *ngIf="!allowsMultipleDays()">Selecciona una fecha</span>
+                    <span *ngIf="allowsMultipleDays()">Selecciona fecha de inicio y fin (días consecutivos)</span>
+                  </div>
+                  
+                  <!-- Indicador de estado de selección -->
+                  <div class="selection-status" *ngIf="allowsMultipleDays()">
+                    <span class="status-text">{{ getSelectionState() }}</span>
+                    <div class="legend" *ngIf="selectedDate">
+                      <div class="legend-item">
+                        <span class="legend-color start-color"></span>
+                        <span>Inicio</span>
+                      </div>
+                      <div class="legend-item" *ngIf="selectedEndDate">
+                        <span class="legend-color end-color"></span>
+                        <span>Fin</span>
+                      </div>
+                      <div class="legend-item" *ngIf="selectedEndDate">
+                        <span class="legend-color range-color"></span>
+                        <span>Rango</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="calendar-grid">
+                    <!-- Nombres de los días -->
+                    <div class="day-names">
+                      <div *ngFor="let dayName of getDayNames()" class="day-name">
+                        {{ dayName }}
+                      </div>
+                    </div>
+                    
+                    <!-- Días del mes -->
+                    <div class="days-grid">
+                      <div *ngFor="let day of getDaysInMonth()" 
+                           class="day-cell"
+                           [class.empty]="day === 0"
+                           [class.selected]="isSelectedDate(day)"
+                           [class.start-date]="isStartDate(day)"
+                           [class.end-date]="isEndDate(day)"
+                           [class.in-range]="isInSelectedRange(day)"
+                           [class.past]="isPastDate(day)"
+                           [class.available]="day > 0 && !isPastDate(day)"
+                           (click)="selectDate(day)">
+                        {{ day || '' }}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                <div class="verification-action">
-                  <input 
-                    type="file" 
-                    id="identification" 
-                    class="file-input"
-                    (change)="onFileSelected($event)"
-                    accept="image/*,.pdf"
-                    hidden>
-                  <button 
-                    type="button" 
-                    class="upload-btn modern"
-                    (click)="triggerFileInput()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7,10 12,15 17,10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    {{ selectedFileName ? 'Cambiar archivo' : 'Subir documento' }}
-                  </button>
-                </div>
-              </div>
-
-              <div class="file-status" *ngIf="selectedFileName">
-                <div class="file-info">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <polyline points="9,15 11,17 15,13"/>
-                  </svg>
-                  <span class="file-name">{{ selectedFileName }}</span>
-                  <span class="file-size">Archivo cargado exitosamente</span>
-                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Botones de acción -->
-          <div class="profile-actions-footer">
-            <button class="save-btn" (click)="editProfile()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17,21 17,13 7,13 7,21"/>
-                <polyline points="7,3 7,8 15,8"/>
-              </svg>
-              Guardar Cambios
-            </button>
-            <button class="cancel-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-              Cancelar
-            </button>
           </div>
         </div>
       </div>
@@ -1286,51 +1217,59 @@
             </button>
           </div>
 
-          <!-- Tarjeta bancaria simulada -->
-          <div class="bank-card">
-            <div class="card-background">
-              <div class="card-pattern"></div>
-              <div class="card-content">
-                <div class="card-header">
-                  <div class="bank-logo">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                      <path d="M2 17l10 5 10-5"/>
-                      <path d="M2 12l10 5 10-5"/>
-                    </svg>
-                  </div>
-                  <div class="card-type">
-                    <span>{{ currentBankData?.banco || 'BANCO NACIONAL' }}</span>
-                  </div>
-                </div>
+          <!-- Loader mientras se cargan los datos -->
+          <div *ngIf="isLoadingBankData" class="bank-data-loader">
+            <div class="spinner"></div>
+            <p>Cargando datos bancarios...</p>
+          </div>
 
-                <div class="card-number">
-                  <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(0, 4) }}</span>
-                  <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(4, 8) }}</span>
-                  <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(8, 12) }}</span>
-                  <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(12, 16) }}</span>
-                </div>
-
-                <div class="card-info">
-                  <div class="card-holder">
-                    <span class="label">TITULAR</span>
-                    <span class="value">{{ (currentBankData?.nombre_titular || 'NANNYS LM SERVICIOS').toUpperCase() }}</span>
+          <!-- Contenido del modal (solo se muestra cuando no está cargando) -->
+          <div *ngIf="!isLoadingBankData">
+            <!-- Tarjeta bancaria simulada -->
+            <div class="bank-card">
+              <div class="card-background">
+                <div class="card-pattern"></div>
+                <div class="card-content">
+                  <div class="card-header">
+                    <div class="bank-logo">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                      </svg>
+                    </div>
+                    <div class="card-type">
+                      <span>{{ currentBankData?.banco || 'BANCO NACIONAL' }}</span>
+                    </div>
                   </div>
-                  <div class="card-expiry">
-                    <span class="label">VIGENCIA</span>
-                    <span class="value">12/28</span>
-                  </div>
-                </div>
 
-                <div class="chip">
-                  <div class="chip-lines"></div>
+                  <div class="card-number">
+                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(0, 4) }}</span>
+                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(4, 8) }}</span>
+                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(8, 12) }}</span>
+                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(12, 16) }}</span>
+                  </div>
+
+                  <div class="card-info">
+                    <div class="card-holder">
+                      <span class="label">TITULAR</span>
+                      <span class="value">{{ (currentBankData?.nombre_titular || 'NANNYS LM SERVICIOS').toUpperCase() }}</span>
+                    </div>
+                    <div class="card-expiry">
+                      <span class="label">VIGENCIA</span>
+                      <span class="value">12/28</span>
+                    </div>
+                  </div>
+
+                  <div class="chip">
+                    <div class="chip-lines"></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Detalles adicionales -->
-          <div class="bank-details-grid">
+            <!-- Detalles adicionales -->
+            <div class="bank-details-grid">
             <div class="detail-item">
               <div class="detail-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
@@ -1431,8 +1370,209 @@
               Cerrar
             </button>
           </div>
+          </div>
         </div>
       </div>
+      <!-- Vista Información del Cliente -->
+      <div *ngIf="currentView === 'client-info'" class="client-info-view">
+        <div class="content-header">
+          <h2>Información del Cliente</h2>
+          <p>Gestiona tu información personal y documentos de verificación</p>
+        </div>
+
+        <!-- Indicador de carga -->
+        <div *ngIf="isLoadingClientData" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Cargando información del cliente...</p>
+        </div>
+
+        <div class="client-info-container" *ngIf="!isLoadingClientData">
+          <!-- Estado de verificación -->
+          <div class="verification-status-card" *ngIf="clientData">
+            <div class="status-header">
+              <h3>Estado de Verificación</h3>
+              <div class="status-badge" [ngClass]="{
+                'verified': clientData.verification_status === 'verified',
+                'pending': clientData.verification_status === 'pending',
+                'rejected': clientData.verification_status === 'rejected'
+              }">
+                <span class="status-dot"></span>
+                <span class="status-text">
+                  {{ clientData.verification_status === 'verified' ? 'Verificado' : 
+                     clientData.verification_status === 'pending' ? 'En Revisión' : 
+                     clientData.verification_status === 'rejected' ? 'Rechazado' : 'Sin Verificar' }}
+                </span>
+              </div>
+            </div>
+            <p class="status-description" *ngIf="clientData.verification_date">
+              Verificado el {{ clientData.verification_date | date: 'dd/MM/yyyy' }}
+            </p>
+          </div>
+
+          <!-- Formulario de información del cliente -->
+          <div class="client-info-form-card">
+            <form #clientInfoForm="ngForm" (ngSubmit)="saveClientInfoData()">
+              
+              <!-- Sección: Contacto de Emergencia -->
+              <div class="form-section">
+                <h3 class="section-title">Contacto de Emergencia</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="emergency-contact-name">Nombre Completo *</label>
+                    <input 
+                      type="text" 
+                      id="emergency-contact-name"
+                      name="emergency_contact_name"
+                      [(ngModel)]="clientData.emergency_contact_name"
+                      required
+                      minlength="2"
+                      maxlength="100"
+                      pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$"
+                      placeholder="Nombre del contacto de emergencia"
+                      class="form-input">
+                    <span class="form-hint">Solo letras y espacios (2-100 caracteres)</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="emergency-contact-phone">Teléfono *</label>
+                    <input 
+                      type="tel" 
+                      id="emergency-contact-phone"
+                      name="emergency_contact_phone"
+                      [(ngModel)]="clientData.emergency_contact_phone"
+                      required
+                      minlength="10"
+                      maxlength="15"
+                      pattern="^\d{10,15}$"
+                      placeholder="1234567890"
+                      class="form-input">
+                    <span class="form-hint">Solo números (10-15 dígitos)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección: Información Familiar -->
+              <div class="form-section">
+                <h3 class="section-title">Información Familiar</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="number-of-children">Número de Niños *</label>
+                    <input 
+                      type="number" 
+                      id="number-of-children"
+                      name="number_of_children"
+                      [(ngModel)]="clientData.number_of_children"
+                      required
+                      min="0"
+                      max="20"
+                      placeholder="0"
+                      class="form-input">
+                    <span class="form-hint">Cantidad de niños que requieren cuidado (0-20)</span>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group full-width">
+                    <label for="special-requirements">Requisitos Especiales</label>
+                    <textarea 
+                      id="special-requirements"
+                      name="special_requirements"
+                      [(ngModel)]="clientData.special_requirements"
+                      maxlength="500"
+                      rows="4"
+                      placeholder="Alergias, necesidades especiales, instrucciones médicas, etc."
+                      class="form-textarea"></textarea>
+                    <span class="form-hint">Describe cualquier necesidad especial o consideración importante (máx. 500 caracteres)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección: Documento de Identificación -->
+              <div class="form-section">
+                <h3 class="section-title">Documento de Identificación</h3>
+                <div class="file-upload-area">
+                  <div class="file-upload-preview" *ngIf="clientData.identification_document">
+                    <!-- Vista previa si es una imagen -->
+                    <div class="document-image-preview" *ngIf="isIdentificationImage()">
+                      <img [src]="getIdentificationDocumentUrl()" alt="Documento de identificación" class="preview-image">
+                    </div>
+                    
+                    <!-- Información del archivo -->
+                    <div class="file-info">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      <span class="file-name">{{ clientData.identification_document }}</span>
+                    </div>
+                    <a [href]="getIdentificationDocumentUrl()" 
+                       target="_blank" 
+                       class="view-file-btn">
+                      {{ isIdentificationPDF() ? 'Ver PDF' : 'Ver imagen' }}
+                    </a>
+                  </div>
+                  
+                  <div class="file-upload-input">
+                    <input 
+                      type="file" 
+                      id="identification-document"
+                      (change)="onIdentificationUpload($event)"
+                      accept=".pdf,.jpg,.jpeg,.png,.gif"
+                      class="file-input-hidden">
+                    <label for="identification-document" class="file-input-label">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="17,8 12,3 7,8" stroke="currentColor" stroke-width="2"/>
+                        <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      <span>{{ clientData.identification_document ? 'Cambiar documento' : 'Subir documento' }}</span>
+                    </label>
+                    <span class="form-hint">PDF o imagen (JPG, PNG) - Máximo 10MB</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mensajes de error -->
+              <div class="error-messages" *ngIf="clientInfoErrorMessage">
+                <div class="error-alert">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ clientInfoErrorMessage }}</span>
+                </div>
+              </div>
+
+              <!-- Mensajes de éxito -->
+              <div class="success-messages" *ngIf="clientInfoSuccessMessage">
+                <div class="success-alert">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ clientInfoSuccessMessage }}</span>
+                </div>
+              </div>
+
+              <!-- Botones de acción -->
+              <div class="form-actions">
+                <button 
+                  type="submit" 
+                  class="btn-primary"
+                  [disabled]="isSavingClientData || !clientInfoForm.valid">
+                  <span *ngIf="!isSavingClientData">Guardar Información</span>
+                  <span *ngIf="isSavingClientData">
+                    <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                    Guardando...
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
