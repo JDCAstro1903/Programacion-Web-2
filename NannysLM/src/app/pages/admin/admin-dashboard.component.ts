@@ -297,6 +297,20 @@ export class AdminDashboardComponent implements OnInit {
   showNannyProfileModal: boolean = false;
   selectedNannyProfile: any = null;
 
+  // Estados para modal de resultado de verificación
+  showVerificationResultModal: boolean = false;
+  verificationResultData: {
+    type: 'success' | 'error'; // 'success', 'error', 'rejected'
+    title: string;
+    message: string;
+    action?: string; // 'approved', 'rejected'
+  } = {
+    type: 'success',
+    title: '',
+    message: '',
+    action: ''
+  };
+
   // Usuario actual (temporal)
   currentUser = {
     name: 'Usuario 1',
@@ -1193,6 +1207,25 @@ export class AdminDashboardComponent implements OnInit {
     this.isVerifyingDocument = false;
   }
 
+  // Métodos para el modal de resultado de verificación
+  openVerificationResultModal(type: 'success' | 'error', title: string, message: string, action?: string) {
+    this.verificationResultData = {
+      type,
+      title,
+      message,
+      action
+    };
+    this.showVerificationResultModal = true;
+  }
+
+  closeVerificationResultModal() {
+    this.showVerificationResultModal = false;
+    // Si fue exitoso, recargar clientes
+    if (this.verificationResultData.type === 'success') {
+      this.loadClients();
+    }
+  }
+
   // Obtener URL completa del documento de identificación del cliente
   getClientDocumentUrl(client: any): string {
     if (!client?.identification_document) {
@@ -1269,15 +1302,25 @@ export class AdminDashboardComponent implements OnInit {
         
         this.closeVerifyDocumentModal();
         
-        // Mostrar mensaje de éxito
-        alert('Cliente verificado correctamente');
+        // Mostrar modal de éxito en lugar de alert
+        this.openVerificationResultModal(
+          'success',
+          'Cliente Verificado',
+          'El documento de identificación ha sido aprobado correctamente. El cliente ya puede acceder a todos los servicios de la plataforma.',
+          'approved'
+        );
       } else {
         throw new Error(data.message || 'Error al verificar cliente');
       }
       
     } catch (error) {
       console.error('Error al aprobar verificación:', error);
-      alert('Error al verificar cliente: ' + error);
+      this.openVerificationResultModal(
+        'error',
+        'Error en la Verificación',
+        'No fue posible verificar el documento. Por favor, intenta de nuevo o contacta al administrador.',
+        'error'
+      );
     } finally {
       this.isVerifyingDocument = false;
     }
@@ -1316,15 +1359,25 @@ export class AdminDashboardComponent implements OnInit {
         
         this.closeVerifyDocumentModal();
         
-        // Mostrar mensaje
-        alert('Verificación del cliente rechazada');
+        // Mostrar modal de rechazo en lugar de alert
+        this.openVerificationResultModal(
+          'success',
+          'Verificación Rechazada',
+          'El documento de identificación ha sido rechazado. El cliente ha sido notificado y puede reenviar una nueva solicitud.',
+          'rejected'
+        );
       } else {
         throw new Error(data.message || 'Error al rechazar verificación');
       }
       
     } catch (error) {
       console.error('❌ Error al rechazar verificación:', error);
-      alert('Error al rechazar verificación: ' + error);
+      this.openVerificationResultModal(
+        'error',
+        'Error en el Rechazo',
+        'No fue posible rechazar la verificación. Por favor, intenta de nuevo o contacta al administrador.',
+        'error'
+      );
     } finally {
       this.isVerifyingDocument = false;
     }

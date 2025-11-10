@@ -2173,4 +2173,51 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal de Resultado de Verificación - PROFESIONAL -->
+  <div *ngIf="showVerificationResultModal" class="modal-overlay" (click)="closeVerificationResultModal()">
+    <div class="modal-container verification-result-modal" (click)="$event.stopPropagation()">
+      <!-- Header del modal -->
+      <div class="result-modal-header" [class.result-success]="verificationResultData.type === 'success'" [class.result-error]="verificationResultData.type === 'error'" [class.result-rejected]="verificationResultData.action === 'rejected'">
+        <div class="result-icon-container">
+          <div class="result-icon" [class.icon-success]="verificationResultData.type === 'success'" [class.icon-error]="verificationResultData.type === 'error'" [class.icon-rejected]="verificationResultData.action === 'rejected'">
+            <!-- Ícono de éxito -->
+            <svg *ngIf="verificationResultData.type === 'success'" width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+            </svg>
+            <!-- Ícono de error -->
+            <svg *ngIf="verificationResultData.type === 'error'" width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
+            </svg>
+          </div>
+        </div>
+        <h2>{{ verificationResultData.title }}</h2>
+      </div>
+
+      <!-- Cuerpo del modal -->
+      <div class="result-modal-body">
+        <p class="result-message">{{ verificationResultData.message }}</p>
+        
+        <!-- Información adicional según la acción -->
+        <div class="result-details" *ngIf="verificationResultData.action === 'approved'">
+          <div class="detail-item">
+            <span>El cliente podrá acceder a todos los servicios inmediatamente</span>
+          </div>
+        </div>
+
+        <div class="result-details" *ngIf="verificationResultData.action === 'rejected'">
+          <div class="detail-item">
+            <span>El cliente recibirá una notificación con los detalles del rechazo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="result-modal-footer">
+        <button type="button" class="btn-close-result" (click)="closeVerificationResultModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
