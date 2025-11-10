@@ -9,6 +9,7 @@ import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
 import { DashboardService, DashboardStats, Nanny, Client } from '../../services/dashboard.service';
 import { BankDetailsService } from '../../services/bank-details.service';
+import { NannyService } from '../../services/nanny.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -52,7 +53,8 @@ export class AdminDashboardComponent implements OnInit {
     private userConfigService: UserConfigService,
     private authService: AuthService,
     private dashboardService: DashboardService,
-    private bankDetailsService: BankDetailsService
+    private bankDetailsService: BankDetailsService,
+    private nannyService: NannyService
   ) {
     this.sidebarConfig = this.userConfigService.getSidebarConfig('admin');
     
@@ -60,8 +62,7 @@ export class AdminDashboardComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser();
     const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Administrador';
     
-    console.log('🔍 Constructor - currentUser completo:', currentUser);
-    console.log('🔍 Constructor - currentUser.profile_image:', currentUser?.profile_image);
+    console.log('Constructor - currentUser:', currentUser);
     
     // Obtener la imagen de perfil con prioridad:
     // 1. Del localStorage (más reciente)
@@ -71,17 +72,13 @@ export class AdminDashboardComponent implements OnInit {
     
     // Verificar localStorage primero
     const storedUser = localStorage.getItem('currentUser');
-    console.log('🔍 Constructor - storedUser en localStorage:', storedUser ? 'existe' : 'no existe');
     
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        console.log('🔍 Constructor - parsedUser:', parsedUser);
-        console.log('🔍 Constructor - parsedUser.profile_image:', parsedUser.profile_image);
         
         if (parsedUser.profile_image) {
           userAvatar = parsedUser.profile_image;
-          console.log('🖼️ Avatar desde localStorage:', userAvatar);
         }
       } catch (e) {
         console.error('Error parseando usuario de localStorage:', e);
@@ -91,11 +88,7 @@ export class AdminDashboardComponent implements OnInit {
     // Si no hay en localStorage, usar del currentUser
     if (userAvatar === '/assets/logo.png' && currentUser?.profile_image) {
       userAvatar = currentUser.profile_image;
-      console.log('🖼️ Avatar desde currentUser:', userAvatar);
     }
-    
-    console.log('👤 Usuario actual completo:', currentUser);
-    console.log('📸 Avatar final seleccionado:', userAvatar);
     
     this.headerConfig = {
       userType: 'admin',
@@ -105,8 +98,6 @@ export class AdminDashboardComponent implements OnInit {
       showProfileOption: true,
       showLogoutOption: true
     };
-    
-    console.log('✅ headerConfig final:', this.headerConfig);
   }
 
   ngOnInit() {
@@ -140,10 +131,27 @@ export class AdminDashboardComponent implements OnInit {
 
   private loadNannys() {
     this.isLoadingNannys = true;
-    this.dashboardService.getNannys().subscribe({
+    console.log('🔄 Iniciando carga de nannys...');
+    // Usar el nuevo servicio de nanny que hace llamada a /api/v1/nannys
+    this.nannyService.getAllNannys().subscribe({
       next: (response) => {
+        console.log('📦 Respuesta completa del backend:', response);
         if (response.success) {
-          this.nannysData = response.data;
+          // Convertir campos numéricos que vienen como string desde MySQL
+          this.nannysData = response.data.map((nanny: any) => ({
+            ...nanny,
+            experience_years: Number(nanny.experience_years),
+            hourly_rate: Number(nanny.hourly_rate),
+            rating_average: Number(nanny.rating_average),
+            total_ratings: Number(nanny.total_ratings),
+            services_completed: Number(nanny.services_completed)
+          }));
+          console.log('Nannys cargadas y convertidas:', this.nannysData);
+          if (this.nannysData && this.nannysData.length > 0) {
+            console.log('Primera nanny:', this.nannysData[0]);
+          }
+        } else {
+          console.warn('Backend respondió pero success=false');
         }
         this.isLoadingNannys = false;
       },
@@ -158,11 +166,9 @@ export class AdminDashboardComponent implements OnInit {
     this.isLoadingClients = true;
     this.dashboardService.getClients().subscribe({
       next: (response) => {
-        console.log('📊 Respuesta del backend (clientes):', response);
         if (response.success) {
           this.clientsData = response.data;
-          console.log('✅ Clientes cargados:', this.clientsData.length);
-          console.log('👥 Datos de clientes:', this.clientsData);
+          console.log('Clientes cargados:', this.clientsData.length);
         }
         this.isLoadingClients = false;
       },
@@ -177,15 +183,14 @@ export class AdminDashboardComponent implements OnInit {
     this.isLoadingPayments = true;
     this.dashboardService.getPayments().subscribe({
       next: (response) => {
-        console.log('📊 Respuesta del backend (pagos):', response);
         if (response.success) {
           this.paymentsData = response.data;
-          console.log('✅ Pagos cargados:', this.paymentsData.length);
+          console.log('Pagos cargados:', this.paymentsData.length);
         }
         this.isLoadingPayments = false;
       },
       error: (error) => {
-        console.error('❌ Error cargando pagos:', error);
+        console.error('Error cargando pagos:', error);
         this.isLoadingPayments = false;
       }
     });
@@ -195,16 +200,15 @@ export class AdminDashboardComponent implements OnInit {
     this.isLoadingBankDetails = true;
     this.bankDetailsService.getBankDetails().subscribe({
       next: (response) => {
-        console.log('📊 Respuesta del backend (datos bancarios):', response);
         if (response.success) {
           this.datosBancarios = response.data;
-          console.log('✅ Datos bancarios cargados:', this.datosBancarios.length);
+          console.log('Datos bancarios cargados:', this.datosBancarios.length);
           this.updateSidebarCounts();
         }
         this.isLoadingBankDetails = false;
       },
       error: (error) => {
-        console.error('❌ Error cargando datos bancarios:', error);
+        console.error('Error cargando datos bancarios:', error);
         this.isLoadingBankDetails = false;
       }
     });
@@ -226,6 +230,9 @@ export class AdminDashboardComponent implements OnInit {
   // Estado del modal de logout
   showLogoutModal: boolean = false;
   
+  // Estado de envío del formulario
+  isSubmitting: boolean = false;
+  
   // Estado del desplegable de filtros de fecha
   showDateFilters: boolean = false;
   
@@ -244,29 +251,23 @@ export class AdminDashboardComponent implements OnInit {
   
   // Datos para nueva nanny
   newNannyData = {
-    name: '',
+    // Datos de tabla users
+    first_name: '',
+    last_name: '',
     email: '',
-    phone: '',
-    age: 25,
-    location: '',
-    experience: '',
-    hourlyRate: 15,
+    phone_number: '',
+    address: '',
+    user_type: 'nanny',
+    
+    // Datos de tabla nannys
     description: '',
-    status: 'active',
-    skills: {
-      childcare: false,
-      firstAid: false,
-      education: false,
-      cooking: false,
-      languages: false,
-      specialNeeds: false
-    },
-    availability: {
-      weekdays: false,
-      weekends: false,
-      nights: false,
-      emergency: false
-    }
+    experience_years: 0,
+    hourly_rate: 15.00,
+    status: 'active' as 'active' | 'inactive',
+    
+    // Datos de tabla nanny_availability
+    is_available: true,
+    reason: ''
   };
 
   // Datos para nuevo cliente
@@ -282,6 +283,19 @@ export class AdminDashboardComponent implements OnInit {
   showBankDetailsModal: boolean = false;
   selectedBankData: any = null;
   editingBankData: boolean = false;
+
+  // Estados para verificación de documentos
+  showVerifyDocumentModal: boolean = false;
+  selectedClientForVerification: any = null;
+  isVerifyingDocument: boolean = false;
+
+  // Estados para perfil del cliente
+  showClientProfileModal: boolean = false;
+  selectedClientProfile: any = null;
+
+  // Estados para perfil de nanny
+  showNannyProfileModal: boolean = false;
+  selectedNannyProfile: any = null;
 
   // Usuario actual (temporal)
   currentUser = {
@@ -340,42 +354,46 @@ export class AdminDashboardComponent implements OnInit {
 
   // Obtener nannys según el filtro actual
   getCurrentNannys() {
+      console.log('Filtro actual de nannys:', this.nannyFilter);
+      
+      if (!this.nannysData || this.nannysData.length === 0) {
+        return [];
+      }    let filtered = [];
     switch(this.nannyFilter) {
-      case 'active': return this.nannysData.filter(nanny => nanny.status === 'active');
-      case 'inactive': return this.nannysData.filter(nanny => nanny.status === 'inactive');
-      case 'suspended': return this.nannysData.filter(nanny => nanny.status === 'suspended');
-      default: return this.nannysData.filter(nanny => nanny.status === 'active');
+      case 'active': 
+        filtered = this.nannysData.filter(nanny => nanny.status === 'active');
+        break;
+      case 'inactive': 
+        filtered = this.nannysData.filter(nanny => nanny.status === 'inactive');
+        break;
+      case 'suspended': 
+        filtered = this.nannysData.filter(nanny => nanny.status === 'suspended');
+        break;
+      default: 
+        filtered = this.nannysData.filter(nanny => nanny.status === 'active');
     }
+    
+    console.log(`Nannys filtradas (${this.nannyFilter}):`, filtered.length);
+    
+    return filtered;
   }
 
   // Obtener clientes según el filtro actual
   getCurrentClients() {
-    console.log('🔍 Filtro actual:', this.clientFilter);
-    console.log('📋 Total de clientes:', this.clientsData.length);
-    
     let filtered;
     switch(this.clientFilter) {
       case 'verified': 
-        filtered = this.clientsData.filter(client => {
-          console.log(`Cliente ${client.name}: isVerified=${client.isVerified}`);
-          return client.isVerified === true;
-        });
-        console.log('✅ Clientes verificados:', filtered.length);
+        filtered = this.clientsData.filter(client => client.verificationStatus === 'verified');
         break;
       case 'unverified': 
-        filtered = this.clientsData.filter(client => {
-          console.log(`Cliente ${client.name}: isVerified=${client.isVerified}`);
-          return client.isVerified === false;
-        });
-        console.log('⏳ Clientes no verificados:', filtered.length);
+        filtered = this.clientsData.filter(client => 
+          client.verificationStatus === 'pending' || client.verificationStatus === 'rejected');
         break;
       case 'all':
         filtered = this.clientsData;
-        console.log('👥 Todos los clientes:', filtered.length);
         break;
       default: 
         filtered = this.clientsData;
-        console.log('📊 Clientes (default):', filtered.length);
     }
     
     return filtered;
@@ -447,7 +465,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   getUnverifiedClientsSlice() {
-    return this.clientsData.filter(client => !client.isVerified).slice(0, 3);
+    return this.clientsData.filter(client => client.verificationStatus !== 'verified').slice(0, 3);
   }
 
   // Obtener contadores para los filtros
@@ -466,13 +484,13 @@ export class AdminDashboardComponent implements OnInit {
         return this.clientsData.length;
       case 'verified': 
         return this.clientsData.filter(client => {
-          // Soportar tanto snake_case como camelCase
-          return (client as any).is_verified === true || client.isVerified === true;
+          // Usar verificationStatus del cliente (no isVerified del usuario)
+          return client.verificationStatus === 'verified';
         }).length;
       case 'unverified': 
         return this.clientsData.filter(client => {
-          // Soportar tanto snake_case como camelCase
-          return (client as any).is_verified === false || client.isVerified === false;
+          // Contar pendientes y rechazados
+          return client.verificationStatus === 'pending' || client.verificationStatus === 'rejected';
         }).length;
       default: return this.clientsData.length;
     }
@@ -594,13 +612,13 @@ export class AdminDashboardComponent implements OnInit {
       }).subscribe({
         next: (response) => {
           if (response.success) {
-            console.log('✅ Datos bancarios actualizados');
+            console.log('Datos bancarios actualizados');
             this.loadBankDetails();
             this.closeBankDetailsModal();
           }
         },
         error: (error) => {
-          console.error('❌ Error actualizando datos bancarios:', error);
+          console.error('Error actualizando datos bancarios:', error);
         }
       });
     } else {
@@ -617,13 +635,13 @@ export class AdminDashboardComponent implements OnInit {
       }).subscribe({
         next: (response) => {
           if (response.success) {
-            console.log('✅ Datos bancarios creados');
+            console.log('Datos bancarios creados');
             this.loadBankDetails();
             this.closeBankDetailsModal();
           }
         },
         error: (error) => {
-          console.error('❌ Error creando datos bancarios:', error);
+          console.error('Error creando datos bancarios:', error);
         }
       });
     }
@@ -634,12 +652,12 @@ export class AdminDashboardComponent implements OnInit {
       this.bankDetailsService.deleteBankDetails(id).subscribe({
         next: (response) => {
           if (response.success) {
-            console.log('✅ Datos bancarios eliminados');
+            console.log('Datos bancarios eliminados');
             this.loadBankDetails();
           }
         },
         error: (error) => {
-          console.error('❌ Error eliminando datos bancarios:', error);
+          console.error('Error eliminando datos bancarios:', error);
         }
       });
     }
@@ -649,12 +667,12 @@ export class AdminDashboardComponent implements OnInit {
     this.bankDetailsService.toggleActiveStatus(id).subscribe({
       next: (response) => {
         if (response.success) {
-          console.log('✅ Estado actualizado');
+          console.log('Estado actualizado');
           this.loadBankDetails();
         }
       },
       error: (error) => {
-        console.error('❌ Error actualizando estado:', error);
+        console.error('Error actualizando estado:', error);
       }
     });
   }
@@ -696,43 +714,76 @@ export class AdminDashboardComponent implements OnInit {
 
   resetNewNannyData() {
     this.newNannyData = {
-      name: '',
+      // Datos de tabla users
+      first_name: '',
+      last_name: '',
       email: '',
-      phone: '',
-      age: 25,
-      location: '',
-      experience: '',
-      hourlyRate: 15,
+      phone_number: '',
+      address: '',
+      user_type: 'nanny',
+      
+      // Datos de tabla nannys
       description: '',
-      status: 'active',
-      skills: {
-        childcare: false,
-        firstAid: false,
-        education: false,
-        cooking: false,
-        languages: false,
-        specialNeeds: false
-      },
-      availability: {
-        weekdays: false,
-        weekends: false,
-        nights: false,
-        emergency: false
-      }
+      experience_years: 0,
+      hourly_rate: 15.00,
+      status: 'active' as 'active' | 'inactive',
+      
+      // Datos de tabla nanny_availability
+      is_available: true,
+      reason: ''
     };
   }
 
   onSubmitAddNanny(form: any) {
-    if (form.valid) {
-      // TODO: Implementar cuando tengamos endpoint para crear nannys
-      console.log('Crear nueva nanny:', this.newNannyData);
+    if (form.valid && !this.isSubmitting) {
+      this.isSubmitting = true;
+      console.log('Creando nueva nanny:', this.newNannyData);
       
-      // Cerrar modal
-      this.closeAddNannyModal();
+      // Generar una contraseña aleatoria segura
+      const password = this.generateRandomPassword(12);
       
-      // TODO: Recargar datos desde la base de datos
-      this.loadNannys();
+      // Preparar datos para enviar al backend
+      const createNannyPayload = {
+        ...this.newNannyData,
+        password: password  // El backend hasheará esto
+      };
+      
+      // Llamar al servicio para crear la nanny
+      this.nannyService.createNanny(createNannyPayload).subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log('Nanny creada exitosamente:', response.data);
+            
+            // Cerrar modal
+            this.closeAddNannyModal();
+            
+            // Mostrar mensaje de éxito
+            alert(`Nanny ${this.newNannyData.first_name} ${this.newNannyData.last_name} creada exitosamente.\n\nEmail: ${this.newNannyData.email}\nContraseña temporal: ${password}\n\nLa nanny puede cambiar su contraseña la primera vez que inicie sesión.`);
+            
+            // Recargar datos desde la base de datos
+            this.loadNannys();
+          }
+          this.isSubmitting = false;
+        },
+        error: (error) => {
+          console.error('Error creando nanny:', error);
+          alert(`Error al crear la nanny:\n${error.error?.message || error.message}`);
+          this.isSubmitting = false;
+        }
+      });
     }
+  }
+
+  /**
+   * Generar contraseña aleatoria segura
+   */
+  private generateRandomPassword(length: number): string {
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
   }
 
   // Métodos auxiliares para el manejo de nannys
@@ -788,15 +839,84 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   getClientBookings(clientId: number): string {
-    // Simulación de datos de reservas
-    const bookings = Math.floor(Math.random() * 15) + 1;
-    return bookings.toString();
+    // Contar servicios del cliente desde los datos cargados
+    if (!this.paymentsData || this.paymentsData.length === 0) {
+      return '0';
+    }
+    
+    // Buscar pagos asociados a este cliente
+    const clientBookings = this.paymentsData.filter((payment: any) => {
+      return payment.client?.id === clientId;
+    });
+    
+    return clientBookings.length.toString();
   }
 
   getLastActivity(clientId: number): string {
-    // Simulación de última actividad
-    const activities = ['Hoy', 'Ayer', '2 días', '1 semana', '2 semanas'];
-    return activities[Math.floor(Math.random() * activities.length)];
+    // Buscar el cliente en los datos cargados
+    const client = this.clientsData.find(c => c.id === clientId);
+    
+    if (!client || !client.lastLogin) {
+      return 'Sin actividad';
+    }
+    
+    // Calcular diferencia en días
+    const lastLogin = new Date(client.lastLogin);
+    const today = new Date();
+    const diffMs = today.getTime() - lastLogin.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Hoy';
+    if (diffDays === 1) return 'Ayer';
+    if (diffDays < 7) return `${diffDays} días`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} semanas`;
+    return `${Math.floor(diffDays / 30)} meses`;
+  }
+
+  // Generar color de fondo para el avatar basado en el nombre
+  getAvatarColor(name: string): string {
+    // Paleta de colores predefinida
+    const colors = [
+      '#FF6B6B', // Rojo
+      '#4ECDC4', // Turquesa
+      '#45B7D1', // Azul
+      '#FFA07A', // Naranja
+      '#98D8C8', // Menta
+      '#F7DC6F', // Amarillo
+      '#BB8FCE', // Púrpura
+      '#85C1E2', // Azul claro
+      '#F8B739', // Oro
+      '#52B788'  // Verde
+    ];
+    
+    // Generar índice basado en el primer carácter del nombre
+    const charCode = name.charCodeAt(0);
+    const colorIndex = charCode % colors.length;
+    
+    return colors[colorIndex];
+  }
+
+  // Construir URL completa de la imagen de perfil
+  getProfileImageUrl(profileImage: string): string {
+    if (!profileImage) return '';
+    
+    // Si ya tiene el protocolo, devolverlo tal cual
+    if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+      return profileImage;
+    }
+    
+    // Si ya comienza con /uploads, simplemente agregar el servidor
+    if (profileImage.startsWith('/uploads/')) {
+      return `http://localhost:8000${profileImage}`;
+    }
+    
+    // Si solo tiene el nombre del archivo, agregar /uploads/
+    if (!profileImage.startsWith('/')) {
+      return `http://localhost:8000/uploads/${profileImage}`;
+    }
+    
+    // Si tiene barra al inicio pero no /uploads
+    return `http://localhost:8000/uploads${profileImage}`;
   }
 
   openAddClientModal(): void {
@@ -878,8 +998,22 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   viewNannyProfile(nannyId: number) {
-    console.log('Ver perfil de nanny:', nannyId);
-    // Aquí podrías implementar la navegación al perfil completo
+    console.log('Ver perfil de nanny - ID:', nannyId);
+    
+    // Buscar la nanny en el array de nannys
+    const nanny = this.nannysData.find(n => n.id === nannyId);
+    
+    if (nanny) {
+      this.selectedNannyProfile = nanny;
+      this.showNannyProfileModal = true;
+    } else {
+      alert('No se encontró la información de esta nanny');
+    }
+  }
+
+  closeNannyProfileModal() {
+    this.showNannyProfileModal = false;
+    this.selectedNannyProfile = null;
   }
 
   contactNanny(nannyId: number) {
@@ -1033,5 +1167,166 @@ export class AdminDashboardComponent implements OnInit {
     return date1.getDate() === date2.getDate() &&
            date1.getMonth() === date2.getMonth() &&
            date1.getFullYear() === date2.getFullYear();
+  }
+
+  // Métodos para verificación de documentos
+  openVerifyDocumentModal(client: any) {
+    this.selectedClientForVerification = client;
+    this.showVerifyDocumentModal = true;
+    console.log('📄 Abriendo modal de verificación para cliente:', client);
+  }
+
+  viewClientProfile(client: any) {
+    console.log('👁️ Viendo perfil del cliente:', client);
+    this.selectedClientProfile = client;
+    this.showClientProfileModal = true;
+  }
+
+  closeClientProfileModal() {
+    this.showClientProfileModal = false;
+    this.selectedClientProfile = null;
+  }
+
+  closeVerifyDocumentModal() {
+    this.showVerifyDocumentModal = false;
+    this.selectedClientForVerification = null;
+    this.isVerifyingDocument = false;
+  }
+
+  // Obtener URL completa del documento de identificación del cliente
+  getClientDocumentUrl(client: any): string {
+    if (!client?.identification_document) {
+      return '';
+    }
+
+    const document = client.identification_document;
+
+    // Si ya es una URL completa
+    if (document.startsWith('http')) {
+      return document;
+    }
+
+    // Si empieza con /uploads/
+    if (document.startsWith('/uploads/')) {
+      return `http://localhost:8000${document}`;
+    }
+
+    // Si es solo el nombre del archivo
+    return `http://localhost:8000/uploads/${document}`;
+  }
+
+  // Verificar si el documento es una imagen
+  isClientDocumentImage(client: any): boolean {
+    if (!client?.identification_document) {
+      return false;
+    }
+
+    const doc = client.identification_document.toLowerCase();
+    return doc.endsWith('.jpg') || doc.endsWith('.jpeg') || 
+           doc.endsWith('.png') || doc.endsWith('.gif');
+  }
+
+  // Verificar si el documento es un PDF
+  isClientDocumentPDF(client: any): boolean {
+    if (!client?.identification_document) {
+      return false;
+    }
+
+    return client.identification_document.toLowerCase().endsWith('.pdf');
+  }
+
+  // Aprobar verificación del cliente
+  async approveClientVerification(client: any) {
+    this.isVerifyingDocument = true;
+    try {
+      console.log('Aprobando verificación del cliente:', client.id);
+      
+      const token = this.authService.getToken();
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+      
+      const response = await fetch(`http://localhost:8000/api/v1/client/${client.id}/verify`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'verified'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Actualizar estado local del cliente
+        const clientIndex = this.clientsData.findIndex(c => c.id === client.id);
+        if (clientIndex !== -1) {
+          this.clientsData[clientIndex].verificationStatus = 'verified';
+          this.clientsData[clientIndex].verificationDate = new Date().toISOString();
+        }
+        
+        this.closeVerifyDocumentModal();
+        
+        // Mostrar mensaje de éxito
+        alert('Cliente verificado correctamente');
+      } else {
+        throw new Error(data.message || 'Error al verificar cliente');
+      }
+      
+    } catch (error) {
+      console.error('Error al aprobar verificación:', error);
+      alert('Error al verificar cliente: ' + error);
+    } finally {
+      this.isVerifyingDocument = false;
+    }
+  }
+
+  // Rechazar verificación del cliente
+  async rejectClientVerification(client: any) {
+    this.isVerifyingDocument = true;
+    try {
+      console.log('Rechazando verificación del cliente:', client.id);
+      
+      const token = this.authService.getToken();
+      if (!token) {
+        throw new Error('No hay token de autenticación');
+      }
+      
+      const response = await fetch(`http://localhost:8000/api/v1/client/${client.id}/verify`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'rejected'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Actualizar estado local del cliente
+        const clientIndex = this.clientsData.findIndex(c => c.id === client.id);
+        if (clientIndex !== -1) {
+          this.clientsData[clientIndex].verificationStatus = 'rejected';
+        }
+        
+        this.closeVerifyDocumentModal();
+        
+        // Mostrar mensaje
+        alert('Verificación del cliente rechazada');
+      } else {
+        throw new Error(data.message || 'Error al rechazar verificación');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al rechazar verificación:', error);
+      alert('Error al rechazar verificación: ' + error);
+    } finally {
+      this.isVerifyingDocument = false;
+    }
   }
 }

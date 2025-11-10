@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { verifyToken } = require('../middleware/auth');
 const { validateClientData } = require('../middleware/clientValidation');
-const { getClientData, upsertClientData } = require('../controllers/ClientDataController');
+const { getClientData, upsertClientData, verifyClient, getAllClients } = require('../controllers/ClientDataController');
 
 // Configurar multer para subir documentos de identificación
 const storage = multer.diskStorage({
@@ -46,5 +46,11 @@ router.post(
   ...validateClientData,
   upsertClientData
 );
+
+// GET /api/v1/client/all - Obtener todos los clientes (solo admin)
+router.get('/all', verifyToken, getAllClients);
+
+// PUT /api/v1/client/:clientId/verify - Verificar cliente (solo admin)
+router.put('/:clientId/verify', verifyToken, verifyClient);
 
 module.exports = router;

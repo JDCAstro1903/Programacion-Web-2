@@ -21,20 +21,26 @@ export interface DashboardStats {
 
 export interface Nanny {
   id: number;
-  name: string;
+  user_id: number;
+  first_name: string;
+  last_name: string;
   email: string;
-  phone?: string;
+  phone_number?: string;
   address?: string;
-  isVerified: boolean;
-  isActive: boolean;
-  profileImage?: string;
+  is_verified: boolean;
+  is_active: boolean;
+  profile_image?: string;
   description?: string;
-  rating: number;
-  totalRatings: number;
-  servicesCompleted: number;
+  experience_years: number;
+  hourly_rate: number;
+  rating_average: number;
+  total_ratings: number;
+  services_completed: number;
   status: 'active' | 'inactive' | 'suspended';
-  createdAt: string;
-  lastLogin?: string;
+  is_available?: boolean;
+  reason?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Client {
@@ -52,6 +58,7 @@ export interface Client {
   specialRequirements?: string;
   verificationStatus: 'pending' | 'verified' | 'rejected';
   verificationDate?: string;
+  identification_document?: string; // Documento de identificación subido
   createdAt: string;
   lastLogin?: string;
 }
@@ -88,6 +95,38 @@ export interface Payment {
   };
 }
 
+export interface Service {
+  id: number;
+  client_id: number;
+  nanny_id?: number;
+  title: string;
+  service_type: string;
+  start_date: string;
+  end_date?: string;
+  start_time: string;
+  end_time: string;
+  number_of_children: number;
+  special_requirements?: string;
+  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  total_hours?: number;
+  created_at: string;
+  updated_at: string;
+  client?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone_number: string;
+  };
+  nanny?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone_number: string;
+  };
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -120,7 +159,7 @@ export class DashboardService {
    * Obtener todos los clientes
    */
   getClients(): Observable<ApiResponse<Client[]>> {
-    return this.http.get<ApiResponse<Client[]>>(`${this.apiUrl}/clients`);
+    return this.http.get<ApiResponse<Client[]>>('http://localhost:8000/api/v1/client/all');
   }
 
   /**
@@ -128,6 +167,20 @@ export class DashboardService {
    */
   getPayments(): Observable<ApiResponse<Payment[]>> {
     return this.http.get<ApiResponse<Payment[]>>('http://localhost:8000/api/v1/payments');
+  }
+
+  /**
+   * Obtener todos los servicios/reservas
+   */
+  getServices(): Observable<ApiResponse<Service[]>> {
+    return this.http.get<ApiResponse<Service[]>>('http://localhost:8000/api/v1/services');
+  }
+
+  /**
+   * Obtener servicios de un cliente específico
+   */
+  getClientServices(clientId: number): Observable<ApiResponse<Service[]>> {
+    return this.http.get<ApiResponse<Service[]>>(`http://localhost:8000/api/v1/services?client_id=${clientId}`);
   }
 
   /**

@@ -20,6 +20,8 @@ const clientRoutes = require('./src/routes/client');
 const serviceRoutes = require('./src/routes/service');
 const paymentRoutes = require('./src/routes/payment');
 const bankDetailsRoutes = require('./src/routes/bankDetails');
+const notificationRoutes = require('./src/routes/notifications');
+const nannyRoutes = require('./src/routes/nannys');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -164,6 +166,8 @@ app.use('/api/v1/client', clientRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/bank-details', bankDetailsRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/nannys', nannyRoutes);
 
 // Importar y usar rutas para datos específicos del cliente
 const clientDataRoutes = require('./src/routes/clientData');

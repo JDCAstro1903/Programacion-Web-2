@@ -1,5 +1,6 @@
 const UserModel = require('../models/User');
 const { executeQuery } = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 /**
  * Controlador para manejo de perfiles específicos
@@ -386,7 +387,6 @@ class ProfileController {
             }
 
             // Verificar la contraseña actual
-            const bcrypt = require('bcrypt');
             const isValidPassword = await bcrypt.compare(current_password, user.password_hash);
             
             if (!isValidPassword) {

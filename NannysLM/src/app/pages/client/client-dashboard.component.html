@@ -1488,45 +1488,84 @@
               <!-- Sección: Documento de Identificación -->
               <div class="form-section">
                 <h3 class="section-title">Documento de Identificación</h3>
-                <div class="file-upload-area">
-                  <div class="file-upload-preview" *ngIf="clientData.identification_document">
-                    <!-- Vista previa si es una imagen -->
-                    <div class="document-image-preview" *ngIf="isIdentificationImage()">
-                      <img [src]="getIdentificationDocumentUrl()" alt="Documento de identificación" class="preview-image">
-                    </div>
-                    
-                    <!-- Información del archivo -->
-                    <div class="file-info">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
-                        <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
+                
+                <!-- Preview del archivo seleccionado (nuevo archivo) -->
+                <div class="file-upload-preview" *ngIf="identificationPreviewUrl">
+                  <div class="preview-header">
+                    <h4>Vista previa del documento seleccionado:</h4>
+                    <button type="button" class="clear-preview-btn" (click)="clearIdentificationPreview()">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
                       </svg>
-                      <span class="file-name">{{ clientData.identification_document }}</span>
-                    </div>
-                    <a [href]="getIdentificationDocumentUrl()" 
-                       target="_blank" 
-                       class="view-file-btn">
-                      {{ isIdentificationPDF() ? 'Ver PDF' : 'Ver imagen' }}
-                    </a>
+                    </button>
                   </div>
                   
-                  <div class="file-upload-input">
-                    <input 
-                      type="file" 
-                      id="identification-document"
-                      (change)="onIdentificationUpload($event)"
-                      accept=".pdf,.jpg,.jpeg,.png,.gif"
-                      class="file-input-hidden">
-                    <label for="identification-document" class="file-input-label">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2"/>
-                        <polyline points="17,8 12,3 7,8" stroke="currentColor" stroke-width="2"/>
-                        <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2"/>
-                      </svg>
-                      <span>{{ clientData.identification_document ? 'Cambiar documento' : 'Subir documento' }}</span>
-                    </label>
-                    <span class="form-hint">PDF o imagen (JPG, PNG) - Máximo 10MB</span>
+                  <!-- Preview de imagen -->
+                  <div class="document-image-preview" *ngIf="identificationPreviewType === 'image'">
+                    <img [src]="identificationPreviewUrl" alt="Vista previa del documento" class="preview-image">
                   </div>
+                  
+                  <!-- Preview de PDF -->
+                  <div class="document-pdf-preview" *ngIf="identificationPreviewType === 'pdf'">
+                    <div class="pdf-icon">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="#e11d48" stroke-width="2" fill="#fef2f2"/>
+                        <polyline points="13,2 13,9 20,9" stroke="#e11d48" stroke-width="2"/>
+                        <text x="12" y="16" text-anchor="middle" font-size="8" fill="#e11d48">PDF</text>
+                      </svg>
+                    </div>
+                    <p class="pdf-name">{{ identificationDocumentFile?.name }}</p>
+                    <a [href]="identificationPreviewUrl" target="_blank" class="view-pdf-btn">
+                      Ver PDF completo
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Documento ya guardado en el servidor -->
+                <div class="file-upload-preview" *ngIf="clientData.identification_document && !identificationPreviewUrl">
+                  <div class="preview-header">
+                    <h4>Documento guardado:</h4>
+                  </div>
+                  
+                  <!-- Vista previa si es una imagen -->
+                  <div class="document-image-preview" *ngIf="isIdentificationImage()">
+                    <img [src]="getIdentificationDocumentUrl()" alt="Documento de identificación" class="preview-image">
+                  </div>
+                  
+                  <!-- Información del archivo PDF guardado -->
+                  <div class="document-pdf-preview" *ngIf="isIdentificationPDF()">
+                    <div class="pdf-icon">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="#e11d48" stroke-width="2" fill="#fef2f2"/>
+                        <polyline points="13,2 13,9 20,9" stroke="#e11d48" stroke-width="2"/>
+                        <text x="12" y="16" text-anchor="middle" font-size="8" fill="#e11d48">PDF</text>
+                      </svg>
+                    </div>
+                    <p class="pdf-name">{{ clientData.identification_document }}</p>
+                    <a [href]="getIdentificationDocumentUrl()" target="_blank" class="view-pdf-btn">
+                      Ver PDF completo
+                    </a>
+                  </div>
+                </div>
+                
+                <!-- Input para subir archivo -->
+                <div class="file-upload-input">
+                  <input 
+                    type="file" 
+                    id="identification-document"
+                    (change)="onIdentificationUpload($event)"
+                    accept=".pdf,.jpg,.jpeg,.png,.gif"
+                    class="file-input-hidden">
+                  <label for="identification-document" class="file-input-label">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2"/>
+                      <polyline points="17,8 12,3 7,8" stroke="currentColor" stroke-width="2"/>
+                      <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>{{ (clientData.identification_document || identificationPreviewUrl) ? 'Cambiar documento' : 'Subir documento' }}</span>
+                  </label>
+                  <span class="form-hint">PDF o imagen (JPG, PNG) - Máximo 10MB</span>
                 </div>
               </div>
 
@@ -1574,6 +1613,52 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- Modal de servicio -->
+  <div class="modal-overlay" *ngIf="showServiceModal" (click)="closeServiceModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <!-- Loading State -->
+      <div *ngIf="serviceModalType === 'loading'" class="modal-loading">
+        <div class="spinner"></div>
+        <h3>{{ serviceModalTitle }}</h3>
+        <p>{{ serviceModalMessage }}</p>
+      </div>
+
+      <!-- Success State -->
+      <div *ngIf="serviceModalType === 'success'" class="modal-success">
+        <div class="success-icon">✓</div>
+        <h3>{{ serviceModalTitle }}</h3>
+        <p>{{ serviceModalMessage }}</p>
+        <button class="modal-btn-confirm" (click)="closeServiceModal()">Entendido</button>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="serviceModalType === 'error'" class="modal-error">
+        <div class="error-icon">✕</div>
+        <h3>{{ serviceModalTitle }}</h3>
+        <p>{{ serviceModalMessage }}</p>
+        <div *ngIf="serviceModalErrors.length > 0" class="error-list">
+          <ul>
+            <li *ngFor="let error of serviceModalErrors">{{ error }}</li>
+          </ul>
+        </div>
+        <button class="modal-btn-close" (click)="closeServiceModal()">Cerrar</button>
+      </div>
+
+      <!-- Warning State -->
+      <div *ngIf="serviceModalType === 'warning'" class="modal-warning">
+        <div class="warning-icon">⚠</div>
+        <h3>{{ serviceModalTitle }}</h3>
+        <p>{{ serviceModalMessage }}</p>
+        <div *ngIf="serviceModalErrors.length > 0" class="error-list">
+          <ul>
+            <li *ngFor="let error of serviceModalErrors">{{ error }}</li>
+          </ul>
+        </div>
+        <button class="modal-btn-close" (click)="closeServiceModal()">Entendido</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de logout reutilizable -->

@@ -67,6 +67,9 @@ export class LoginComponent {
           // Guardar en localStorage si "recordarme" está marcado
           if (this.rememberMe) {
             localStorage.setItem('rememberUser', 'true');
+          } else {
+            // Asegurarse de eliminar la bandera si el usuario no marcó "recordarme"
+            localStorage.removeItem('rememberUser');
           }
           
           // Redirigir después de 3 segundos

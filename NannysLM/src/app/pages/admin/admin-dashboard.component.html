@@ -37,9 +37,6 @@
               <div class="metric-content">
                 <h3>Nannys Disponibles</h3>
                 <div class="metric-number">{{ (dashboardStats && dashboardStats.nannys) ? dashboardStats.nannys.active : 0 }}</div>
-                <div class="metric-detail">
-                  <span class="trend-positive">+3 este mes</span>
-                </div>
               </div>
             </div>
             <div class="metric-actions">
@@ -60,9 +57,6 @@
               <div class="metric-content">
                 <h3>Clientes Verificados</h3>
                 <div class="metric-number">{{ (dashboardStats && dashboardStats.clients) ? dashboardStats.clients.verified : 0 }}</div>
-                <div class="metric-detail">
-                  <span class="trend-positive">+5 esta semana</span>
-                </div>
               </div>
             </div>
             <div class="metric-actions">
@@ -83,9 +77,6 @@
               <div class="metric-content">
                 <h3>Ingresos del Mes</h3>
                 <div class="metric-number">${{ getMonthlyRevenue().toLocaleString() }}</div>
-                <div class="metric-detail">
-                  <span class="trend-positive">+12% vs mes anterior</span>
-                </div>
               </div>
             </div>
             <div class="metric-actions">
@@ -124,7 +115,6 @@
         <div class="activity-section">
           <div class="section-header">
             <h3>Actividad Reciente</h3>
-            <button class="view-all-btn">Ver Todo</button>
           </div>
           
           <div class="activity-grid">
@@ -141,8 +131,8 @@
               <div class="activity-content">
                 <div *ngFor="let nanny of getActiveNannysSlice()" class="activity-item">
                   <div class="activity-info">
-                    <span class="activity-name">{{ nanny.name }}</span>
-                    <span class="activity-detail">{{ nanny.rating }}⭐ • --/h</span>
+                    <span class="activity-name">{{ nanny.first_name }} {{ nanny.last_name }}</span>
+                    <span class="activity-detail">{{ nanny.rating_average.toFixed(1) || '0.0' }}⭐ • €{{ nanny.hourly_rate }}/h</span>
                   </div>
                   <div class="activity-status status-active">Activa</div>
                 </div>
@@ -354,14 +344,14 @@
                 <div class="nanny-avatar-container">
                   <div class="nanny-avatar">
                     <div class="avatar-image">
-                      {{ nanny.name.charAt(0) }}
+                      {{ ((nanny.first_name || 'N')[0] || 'N') + ((nanny.last_name || 'A')[0] || 'A') }}
                     </div>
                   </div>
                   <div class="nanny-status-indicator" [class]="'status-' + getStatusFromData(nanny)"></div>
                 </div>
                 <div class="nanny-basic-info">
                   <div class="name-with-status">
-                    <h3 class="nanny-name">{{ nanny.name }}</h3>
+                    <h3 class="nanny-name">{{ nanny.first_name || 'Sin nombre' }} {{ nanny.last_name || '' }}</h3>
                     <span class="status-text" [class]="'status-' + getStatusFromData(nanny)">
                       {{ getStatusText(getStatusFromData(nanny)) }}
                     </span>
@@ -371,15 +361,15 @@
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" fill="#fbbf24"/>
                       </svg>
-                      <span class="rating-value">{{ nanny.rating }}</span>
+                      <span class="rating-value">{{ (nanny.rating_average || 0).toFixed(1) }}</span>
                     </div>
-                    <span class="experience-text">{{ nanny.servicesCompleted }} servicios</span>
+                    <span class="experience-text">{{ nanny.services_completed || 0 }} servicios</span>
                   </div>
                 </div>
               </div>
               <div class="nanny-rate-info">
                 <div class="hourly-rate">
-                  <span class="rate-amount">--€</span>
+                  <span class="rate-amount">€{{ nanny.hourly_rate || 0 }}</span>
                   <span class="rate-period">/hora</span>
                 </div>
               </div>
@@ -395,10 +385,8 @@
                 <span>{{ nanny.address || 'No especificada' }}</span>
               </div>
               
-              <div class="nanny-skills">
-                <div class="skill-tag">Cuidado infantil</div>
-                <div class="skill-tag">Primeros auxilios</div>
-                <div class="skill-tag">Educación</div>
+              <div class="nanny-description" *ngIf="nanny.description">
+                <p>{{ nanny.description.length > 100 ? (nanny.description | slice:0:100) + '...' : nanny.description }}</p>
               </div>
             </div>
 
@@ -557,8 +545,20 @@
               <div class="client-profile">
                 <div class="client-avatar-container">
                   <div class="client-avatar">
-                    <div class="avatar-image">
-                      {{ client.name.charAt(0) }}
+                    <!-- Mostrar foto de perfil si existe -->
+                    <img 
+                      *ngIf="client.profileImage" 
+                      [src]="getProfileImageUrl(client.profileImage)" 
+                      [alt]="client.name"
+                      class="avatar-image-photo"
+                      onerror="this.parentElement.querySelector('.avatar-image-fallback')?.style.removeProperty('display')">
+                    
+                    <!-- Si no hay foto, mostrar inicial con fondo de color -->
+                    <div 
+                      *ngIf="!client.profileImage" 
+                      class="avatar-image avatar-image-fallback"
+                      [ngStyle]="{'background-color': getAvatarColor(client.name)}">
+                      {{ client.name.charAt(0).toUpperCase() }}
                     </div>
                   </div>
                   <div class="client-status-indicator" [class]="'status-' + getClientStatusFromData(client)"></div>
@@ -620,31 +620,50 @@
                 </div>
               </div>
               <div class="client-actions">
-                <button class="action-btn secondary" title="Ver perfil">
+                <button class="action-btn secondary" title="Ver perfil" (click)="viewClientProfile(client)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
                     <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
                   </svg>
                   Ver Perfil
                 </button>
+                
+                <!-- Botón para verificar documentos (solo si el cliente tiene documentos) -->
                 <button 
-                  *ngIf="clientFilter === 'unverified'" 
-                  class="action-btn primary" 
-                  title="Verificar cliente">
+                  *ngIf="client.identification_document && getClientStatusFromData(client) === 'unverified'" 
+                  class="action-btn verify-docs" 
+                  title="Verificar documentos"
+                  (click)="openVerifyDocumentModal(client)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
+                    <path d="M9 13L11 15L15 11" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  Verificar
+                  Verificar Docs
                 </button>
+                
                 <button 
-                  *ngIf="clientFilter === 'verified'" 
-                  class="action-btn primary" 
-                  title="Contactar cliente">
+                  *ngIf="!client.identification_document && getClientStatusFromData(client) === 'unverified'" 
+                  class="action-btn warning" 
+                  title="Cliente sin documentos"
+                  disabled>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2"/>
-                    <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  Contactar
+                  Sin Docs
+                </button>
+                
+                <button 
+                  *ngIf="getClientStatusFromData(client) === 'verified'" 
+                  class="action-btn success" 
+                  title="Cliente verificado"
+                  disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Verificado
                 </button>
               </div>
             </div>
@@ -1048,7 +1067,7 @@
                     <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2045 16.7006C21.6935 16.047 20.9877 15.5856 20.194 15.3893" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>Nanny: {{ payment.nanny.name }}</span>
+                  <span>Nanny: {{ payment.nanny.first_name }} {{ payment.nanny.last_name }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1223,7 +1242,7 @@
             <div class="bank-card-nanny">
               <div class="nanny-avatar-modern">
                 <div class="avatar-circle">
-                  {{ datos.nanny.name.charAt(0) }}
+                  {{ (datos.nanny.first_name.charAt(0) || 'N') + (datos.nanny.last_name.charAt(0) || 'A') }}
                 </div>
                 <div class="verification-icon" *ngIf="datos.nanny.status === 'active'">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1233,10 +1252,10 @@
                 </div>
               </div>
               <div class="nanny-info-modern">
-                <h4>{{ datos.nanny.name }}</h4>
+                <h4>{{ datos.nanny.first_name }} {{ datos.nanny.last_name }}</h4>
                 <p class="nanny-email-modern">{{ datos.nanny.email }}</p>
                 <span class="verification-badge" [class.verified]="datos.nanny.status === 'active'" [class.unverified]="datos.nanny.status !== 'active'">
-                  {{ datos.nanny.status === 'active' ? '✓ Verificada' : '⚠ Sin verificar' }}
+                  {{ datos.nanny.status === 'active' ? 'Verificada' : 'Sin verificar' }}
                 </span>
               </div>
             </div>
@@ -1355,7 +1374,7 @@
                   class="form-control">
             <option value="">Seleccione una nanny</option>
             <option *ngFor="let nanny of getAvailableNannysForBankData()" [value]="nanny.id">
-              {{ nanny.name }}
+              {{ nanny.first_name }} {{ nanny.last_name }}
             </option>
           </select>
         </div>
@@ -1456,232 +1475,239 @@
     </div>
   </div>
 
-  <!-- Modal para agregar nueva nanny -->
-  <div *ngIf="showAddNannyModal" class="modal-overlay" (click)="closeAddNannyModal()">
-    <div class="modal-container add-nanny-modal" (click)="$event.stopPropagation()">
-      <!-- Header del modal -->
-      <div class="modal-header">
-        <div class="modal-title-section">
-          <div class="modal-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+  <!-- Modal para agregar nueva nanny - PROFESIONAL -->
+  <div *ngIf="showAddNannyModal" class="modal-overlay professional-overlay" (click)="closeAddNannyModal()">
+    <div class="modal-container professional-nanny-modal" (click)="$event.stopPropagation()">
+      <!-- Header del modal mejorado -->
+      <div class="professional-modal-header">
+        <div class="header-gradient"></div>
+        <div class="header-content">
+          <div class="header-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
             </svg>
           </div>
-          <div class="modal-title-content">
-            <h3>Agregar Nueva Nanny</h3>
-            <p>Registra una nueva cuidadora en la plataforma</p>
-          </div>
+          <h2>Registrar Nueva Nanny</h2>
+          <p>Agrega una cuidadora profesional a la plataforma</p>
         </div>
-        <button class="modal-close-btn" (click)="closeAddNannyModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
-            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
+        <button class="professional-close-btn" (click)="closeAddNannyModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       </div>
 
       <!-- Cuerpo del modal -->
-      <div class="modal-body">
-        <form #addNannyForm="ngForm" (ngSubmit)="onSubmitAddNanny(addNannyForm)">
-          <!-- Sección de información personal -->
-          <div class="form-section">
-            <div class="section-header">
-              <h4>Información Personal</h4>
-              <div class="section-divider"></div>
+      <div class="professional-modal-body">
+        <form #addNannyForm="ngForm" (ngSubmit)="onSubmitAddNanny(addNannyForm)" class="professional-form">
+          
+          <!-- Sección 1: Información Personal -->
+          <div class="form-section-professional">
+            <div class="section-header-professional">
+              <div class="section-number">1</div>
+              <div class="section-info">
+                <h3>Información Personal</h3>
+                <p>Datos básicos de la cuidadora</p>
+              </div>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
-                <label for="nannyName">Nombre Completo *</label>
+            <div class="form-grid-2">
+              <div class="form-group-professional">
+                <label for="firstName">
+                  <span class="label-text">Nombre</span>
+                  <span class="required-star">*</span>
+                </label>
                 <input type="text" 
-                       id="nannyName" 
-                       [(ngModel)]="newNannyData.name" 
-                       name="name" 
+                       id="firstName" 
+                       [(ngModel)]="newNannyData.first_name" 
+                       name="first_name" 
                        required
-                       minlength="3"
-                       class="form-control"
-                       placeholder="Ingrese el nombre completo">
+                       minlength="2"
+                       class="input-professional"
+                       placeholder="María">
               </div>
               
-              <div class="form-group">
-                <label for="nannyEmail">Correo Electrónico *</label>
+              <div class="form-group-professional">
+                <label for="lastName">
+                  <span class="label-text">Apellido</span>
+                  <span class="required-star">*</span>
+                </label>
+                <input type="text" 
+                       id="lastName" 
+                       [(ngModel)]="newNannyData.last_name" 
+                       name="last_name" 
+                       required
+                       minlength="2"
+                       class="input-professional"
+                       placeholder="García López">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group-professional">
+                <label for="email">
+                  <span class="label-text">Correo Electrónico</span>
+                  <span class="required-star">*</span>
+                </label>
                 <input type="email" 
-                       id="nannyEmail" 
+                       id="email" 
                        [(ngModel)]="newNannyData.email" 
                        name="email" 
                        required
-                       class="form-control"
-                       placeholder="ejemplo@correo.com">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="nannyPhone">Teléfono *</label>
-                <input type="tel" 
-                       id="nannyPhone" 
-                       [(ngModel)]="newNannyData.phone" 
-                       name="phone" 
-                       required
-                       class="form-control"
-                       placeholder="+34 XXX XXX XXX">
+                       class="input-professional"
+                       placeholder="maria.garcia@email.com">
               </div>
               
-              <div class="form-group">
-                <label for="nannyAge">Edad</label>
-                <input type="number" 
-                       id="nannyAge" 
-                       [(ngModel)]="newNannyData.age" 
-                       name="age" 
-                       min="18"
-                       max="65"
-                       class="form-control"
-                       placeholder="25">
+              <div class="form-group-professional">
+                <label for="phone">
+                  <span class="label-text">Teléfono</span>
+                  <span class="required-star">*</span>
+                </label>
+                <input type="tel" 
+                       id="phone" 
+                       [(ngModel)]="newNannyData.phone_number" 
+                       name="phone_number" 
+                       required
+                       class="input-professional"
+                       placeholder="+34 666 123 456">
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="nannyLocation">Ubicación *</label>
+            <div class="form-group-professional">
+              <label for="address">
+                <span class="label-text">Dirección</span>
+              </label>
               <input type="text" 
-                     id="nannyLocation" 
-                     [(ngModel)]="newNannyData.location" 
-                     name="location" 
-                     required
-                     class="form-control"
-                     placeholder="Madrid Centro, Barcelona, Valencia...">
+                     id="address" 
+                     [(ngModel)]="newNannyData.address" 
+                     name="address" 
+                     class="input-professional"
+                     placeholder="Calle Principal 123, Madrid">
             </div>
           </div>
 
-          <!-- Sección de experiencia profesional -->
-          <div class="form-section">
-            <div class="section-header">
-              <h4>Experiencia Profesional</h4>
-              <div class="section-divider"></div>
+          <!-- Separador visual -->
+          <div class="section-divider-professional"></div>
+
+          <!-- Sección 2: Información Profesional -->
+          <div class="form-section-professional">
+            <div class="section-header-professional">
+              <div class="section-number">2</div>
+              <div class="section-info">
+                <h3>Información Profesional</h3>
+                <p>Experiencia y tarifas</p>
+              </div>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
-                <label for="nannyExperience">Años de Experiencia *</label>
-                <select id="nannyExperience" 
-                        [(ngModel)]="newNannyData.experience" 
-                        name="experience" 
-                        required
-                        class="form-control">
-                  <option value="">Seleccione...</option>
-                  <option value="1">1 año</option>
-                  <option value="2">2 años</option>
-                  <option value="3">3 años</option>
-                  <option value="4">4 años</option>
-                  <option value="5">5 años</option>
-                  <option value="6">6-10 años</option>
-                  <option value="7">Más de 10 años</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="nannyRate">Tarifa por Hora *</label>
+            <div class="form-grid-2">
+              <div class="form-group-professional">
+                <label for="experience_years">
+                  <span class="label-text">Años de Experiencia</span>
+                  <span class="required-star">*</span>
+                </label>
                 <div class="input-with-suffix">
                   <input type="number" 
-                         id="nannyRate" 
-                         [(ngModel)]="newNannyData.hourlyRate" 
-                         name="hourlyRate" 
+                         id="experience_years" 
+                         [(ngModel)]="newNannyData.experience_years" 
+                         name="experience_years" 
+                         required
+                         min="0"
+                         max="60"
+                         class="input-professional"
+                         placeholder="5">
+                  <span class="input-suffix">años</span>
+                </div>
+              </div>
+              
+              <div class="form-group-professional">
+                <label for="hourly_rate">
+                  <span class="label-text">Tarifa por Hora</span>
+                  <span class="required-star">*</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="input-prefix">€</span>
+                  <input type="number" 
+                         id="hourly_rate" 
+                         [(ngModel)]="newNannyData.hourly_rate" 
+                         name="hourly_rate" 
                          required
                          min="10"
-                         max="50"
-                         class="form-control"
-                         placeholder="15">
-                  <span class="input-suffix">€/h</span>
+                         max="100"
+                         step="0.50"
+                         class="input-professional"
+                         placeholder="15.00">
                 </div>
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="nannySkills">Habilidades y Certificaciones</label>
-              <div class="skills-selector">
-                <div class="skill-option">
-                  <input type="checkbox" id="skill1" [(ngModel)]="newNannyData.skills.childcare" name="childcare">
-                  <label for="skill1">Cuidado infantil</label>
-                </div>
-                <div class="skill-option">
-                  <input type="checkbox" id="skill2" [(ngModel)]="newNannyData.skills.firstAid" name="firstAid">
-                  <label for="skill2">Primeros auxilios</label>
-                </div>
-                <div class="skill-option">
-                  <input type="checkbox" id="skill3" [(ngModel)]="newNannyData.skills.education" name="education">
-                  <label for="skill3">Educación</label>
-                </div>
-                <div class="skill-option">
-                  <input type="checkbox" id="skill4" [(ngModel)]="newNannyData.skills.cooking" name="cooking">
-                  <label for="skill4">Cocina</label>
-                </div>
-                <div class="skill-option">
-                  <input type="checkbox" id="skill5" [(ngModel)]="newNannyData.skills.languages" name="languages">
-                  <label for="skill5">Idiomas</label>
-                </div>
-                <div class="skill-option">
-                  <input type="checkbox" id="skill6" [(ngModel)]="newNannyData.skills.specialNeeds" name="specialNeeds">
-                  <label for="skill6">Necesidades especiales</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="nannyDescription">Descripción Personal</label>
-              <textarea id="nannyDescription" 
+            <div class="form-group-professional">
+              <label for="description">
+                <span class="label-text">Descripción Profesional</span>
+                <span class="required-star">*</span>
+                <span class="label-hint">(Máximo 500 caracteres)</span>
+              </label>
+              <textarea id="description" 
                         [(ngModel)]="newNannyData.description" 
                         name="description" 
+                        required
                         rows="4"
-                        class="form-control"
-                        placeholder="Cuéntanos sobre tu experiencia, personalidad y lo que te hace especial como cuidadora..."></textarea>
+                        maxlength="500"
+                        class="input-professional textarea-professional"
+                        placeholder="Comparte tu experiencia, especialidades, idiomas, certificaciones..."></textarea>
+              <div class="character-counter">
+                <span>{{ (newNannyData.description || '').length }}/500</span>
+              </div>
             </div>
           </div>
 
-          <!-- Sección de disponibilidad -->
-          <div class="form-section">
-            <div class="section-header">
-              <h4>Disponibilidad</h4>
-              <div class="section-divider"></div>
+          <!-- Separador visual -->
+          <div class="section-divider-professional"></div>
+
+          <!-- Sección 3: Disponibilidad -->
+          <div class="form-section-professional">
+            <div class="section-header-professional">
+              <div class="section-number">3</div>
+              <div class="section-info">
+                <h3>Disponibilidad</h3>
+                <p>Estado inicial de la cuidadora</p>
+              </div>
             </div>
             
-            <div class="form-group">
-              <label for="nannyStatus">Estado Inicial</label>
-              <select id="nannyStatus" 
-                      [(ngModel)]="newNannyData.status" 
-                      name="status" 
-                      class="form-control">
-                <option value="active">Activa</option>
-                <option value="inactive">Inactiva</option>
-              </select>
+            <div class="availability-card">
+              <input type="checkbox" 
+                     id="isAvailable" 
+                     [(ngModel)]="newNannyData.is_available" 
+                     name="is_available"
+                     class="availability-checkbox">
+              <label for="isAvailable" class="availability-label">
+                <div class="availability-check"></div>
+                <div class="availability-content">
+                  <span class="availability-title">Disponible Inmediatamente</span>
+                  <span class="availability-desc">La cuidadora podrá aceptar servicios desde el primer día</span>
+                </div>
+              </label>
             </div>
 
-            <div class="availability-grid">
-              <div class="availability-item">
-                <input type="checkbox" id="available-weekdays" [(ngModel)]="newNannyData.availability.weekdays" name="weekdays">
-                <label for="available-weekdays">
-                  <div class="availability-icon">📅</div>
-                  <span>Días laborables</span>
-                </label>
+            <div class="form-group-professional" *ngIf="!newNannyData.is_available" [@fadeInOut]>
+              <label for="reason">
+                <span class="label-text">Razón de Indisponibilidad</span>
+              </label>
+              <textarea id="reason" 
+                        [(ngModel)]="newNannyData.reason" 
+                        name="reason" 
+                        rows="2"
+                        class="input-professional textarea-professional"
+                        placeholder="Ej: De vacaciones hasta el 20 de noviembre"></textarea>
+            </div>
+
+            <div class="info-alert">
+              <div class="alert-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
               </div>
-              <div class="availability-item">
-                <input type="checkbox" id="available-weekends" [(ngModel)]="newNannyData.availability.weekends" name="weekends">
-                <label for="available-weekends">
-                  <div class="availability-icon">🎉</div>
-                  <span>Fines de semana</span>
-                </label>
-              </div>
-              <div class="availability-item">
-                <input type="checkbox" id="available-nights" [(ngModel)]="newNannyData.availability.nights" name="nights">
-                <label for="available-nights">
-                  <div class="availability-icon">🌙</div>
-                  <span>Noches</span>
-                </label>
-              </div>
-              <div class="availability-item">
-                <input type="checkbox" id="available-emergency" [(ngModel)]="newNannyData.availability.emergency" name="emergency">
-                <label for="available-emergency">
-                  <div class="availability-icon">🚨</div>
-                  <span>Emergencias</span>
-                </label>
+              <div class="alert-content">
+                <strong>Estado automático:</strong> Las nannys registradas aquí se crearán como verificadas y activas de inmediato.
               </div>
             </div>
           </div>
@@ -1689,18 +1715,23 @@
       </div>
 
       <!-- Footer del modal -->
-      <div class="modal-footer">
-        <button type="button" class="btn-secondary" (click)="closeAddNannyModal()">
+      <div class="professional-modal-footer">
+        <div class="footer-background"></div>
+        <button type="button" class="btn-secondary-professional" (click)="closeAddNannyModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+          </svg>
           Cancelar
         </button>
         <button type="submit" 
-                class="btn-primary" 
+                class="btn-primary-professional" 
                 (click)="onSubmitAddNanny(addNannyForm)"
                 [disabled]="!addNannyForm.form.valid">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/>
           </svg>
-          Agregar Nanny
+          <span *ngIf="!isSubmitting">Registrar Nanny</span>
+          <span *ngIf="isSubmitting">Guardando...</span>
         </button>
       </div>
     </div>
@@ -1716,4 +1747,430 @@
     (onCancel)="closeLogoutModal()"
     (onConfirm)="confirmLogout()">
   </app-logout-modal>
+
+  <!-- Modal para verificar documentos de cliente -->
+  <div *ngIf="showVerifyDocumentModal" class="modal-overlay" (click)="closeVerifyDocumentModal()">
+    <div class="modal-container verify-document-modal" (click)="$event.stopPropagation()">
+      <!-- Header del modal -->
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-icon verify-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
+              <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
+              <path d="M9 13L11 15L15 11" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div>
+            <h2>Verificar Documento de Identificación</h2>
+            <p style="margin: 4px 0 0 0; font-size: 14px; color: rgba(255,255,255,0.85);">{{ selectedClientForVerification?.name }}</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="closeVerifyDocumentModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo del modal -->
+      <div class="modal-body">
+      <!-- Información del cliente -->
+      <div class="client-verification-info">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label"> Email</span>
+            <span class="value">{{ selectedClientForVerification?.email }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label"> Teléfono</span>
+            <span class="value">{{ selectedClientForVerification?.phone || '—' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label"> Número de niños</span>
+            <span class="value">{{ selectedClientForVerification?.numberOfChildren }}</span>
+          </div>
+        </div>
+      </div>
+
+        <!-- Preview del documento -->
+        <div class="document-verification-preview">
+          <h4>Documento de Identificación:</h4>
+          
+          <!-- Preview de imagen -->
+          <div class="document-image-container" *ngIf="isClientDocumentImage(selectedClientForVerification)">
+            <img 
+              [src]="getClientDocumentUrl(selectedClientForVerification)" 
+              alt="Documento de identificación" 
+              class="verification-document-image">
+          </div>
+          
+          <!-- Preview de PDF -->
+          <div class="document-pdf-container" *ngIf="isClientDocumentPDF(selectedClientForVerification)">
+            <div class="pdf-preview-info">
+              <div class="pdf-icon-large">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="#e11d48" stroke-width="2" fill="#fef2f2"/>
+                  <polyline points="13,2 13,9 20,9" stroke="#e11d48" stroke-width="2"/>
+                  <text x="12" y="16" text-anchor="middle" font-size="8" fill="#e11d48">PDF</text>
+                </svg>
+              </div>
+              <p class="pdf-file-name">{{ selectedClientForVerification?.identification_document }}</p>
+              <a 
+                [href]="getClientDocumentUrl(selectedClientForVerification)" 
+                target="_blank" 
+                class="view-full-pdf-btn">
+                Abrir PDF completo
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del modal con acciones -->
+      <div class="verification-actions">
+        <div class="action-buttons">
+          <button 
+            type="button" 
+            class="btn-reject" 
+            (click)="rejectClientVerification(selectedClientForVerification)"
+            [disabled]="isVerifyingDocument"
+            title="Rechazar documento">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
+              <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            {{ isVerifyingDocument ? 'Procesando...' : 'Rechazar' }}
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn-approve" 
+            (click)="approveClientVerification(selectedClientForVerification)"
+            [disabled]="isVerifyingDocument"
+            title="Aprobar documento">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            {{ isVerifyingDocument ? 'Procesando...' : 'Aprobar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para ver perfil del cliente - DISEÑO PROFESIONAL -->
+  <div *ngIf="showClientProfileModal" class="modal-overlay professional-overlay" (click)="closeClientProfileModal()">
+    <div class="modal-container client-profile-modal-pro" (click)="$event.stopPropagation()">
+      <!-- Header con gradiente y datos principales -->
+      <div class="client-profile-header-pro">
+        <div class="header-gradient-client-pro"></div>
+        <div class="header-content-pro" *ngIf="selectedClientProfile">
+          <div class="avatar-section-pro">
+            <div class="avatar-large-pro client-avatar">
+              {{ (selectedClientProfile.name || 'C')[0] }}<span>{{ (selectedClientProfile.name || 'C').split(' ')[1]?.[0] || 'C' }}</span>
+            </div>
+          </div>
+          <div class="header-info-pro">
+            <h2>{{ selectedClientProfile.name }}</h2>
+            <p class="client-role">Cliente VIP</p>
+            <div class="quick-status-pro">
+              <span class="status-pill" [class.verified]="selectedClientProfile.verificationStatus === 'verified'">
+                {{ selectedClientProfile.verificationStatus === 'verified' ? 'Verificado' : 'Pendiente' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <button class="professional-close-btn" (click)="closeClientProfileModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido del modal -->
+      <div class="client-profile-content-pro">
+        <!-- Primera fila: Contacto e Información Familiar -->
+        <div class="profile-cards-grid">
+          <!-- Tarjeta de Contacto -->
+          <div class="profile-card-pro">
+            <div class="card-header-pro">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Información de Contacto</h3>
+            </div>
+            <div class="card-content-pro">
+              <div class="contact-item">
+                <span class="contact-label">Email</span>
+                <a [href]="'mailto:' + selectedClientProfile.email" class="contact-value">
+                  {{ selectedClientProfile.email }}
+                </a>
+              </div>
+              <div class="contact-item">
+                <span class="contact-label">Teléfono</span>
+                <a [href]="'tel:' + selectedClientProfile.phone" class="contact-value">
+                  {{ selectedClientProfile.phone || 'No disponible' }}
+                </a>
+              </div>
+              <div class="contact-item">
+                <span class="contact-label">Dirección</span>
+                <p class="contact-value">{{ selectedClientProfile.address || 'No proporcionada' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Familia -->
+          <div class="profile-card-pro">
+            <div class="card-header-pro">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Información Familiar</h3>
+            </div>
+            <div class="card-content-pro">
+              <div class="exp-item">
+                <span class="exp-label">Número de Niños</span>
+                <span class="exp-value">{{ selectedClientProfile.numberOfChildren || 'No especificado' }}</span>
+              </div>
+              <div class="exp-item">
+                <span class="exp-label">Contacto de Emergencia</span>
+                <span class="exp-value">{{ selectedClientProfile.emergencyContactName || 'No especificado' }}</span>
+              </div>
+              <div class="exp-item">
+                <span class="exp-label">Teléfono Emergencia</span>
+                <span class="exp-value">{{ selectedClientProfile.emergencyContactPhone || 'No especificado' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Estado -->
+          <div class="profile-card-pro">
+            <div class="card-header-pro">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Verificación</h3>
+            </div>
+            <div class="card-content-pro verification-card">
+              <div class="verification-display">
+                <span class="verification-badge-pro" [class]="selectedClientProfile.verificationStatus">
+                  {{ getClientStatusText(selectedClientProfile.verificationStatus) }}
+                </span>
+              </div>
+              <p class="verification-info" *ngIf="selectedClientProfile.verificationDate">
+                {{ formatDate(selectedClientProfile.verificationDate) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Segunda fila: Requisitos Especiales -->
+        <div class="profile-card-pro full-width" *ngIf="selectedClientProfile.specialRequirements">
+          <div class="card-header-pro">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="8" x2="12.01" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Requisitos Especiales</h3>
+          </div>
+          <div class="card-content-pro">
+            <p class="description-text">{{ selectedClientProfile.specialRequirements }}</p>
+          </div>
+        </div>
+
+        <!-- Tercera fila: Información Adicional -->
+        <div class="profile-card-pro full-width">
+          <div class="card-header-pro">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Historial</h3>
+          </div>
+          <div class="card-content-pro">
+            <div class="history-grid">
+              <div class="history-item">
+                <span class="history-label">Cliente desde</span>
+                <span class="history-value">{{ formatDate(selectedClientProfile.createdAt) }}</span>
+              </div>
+              <div class="history-item">
+                <span class="history-label">Última actividad</span>
+                <span class="history-value">{{ selectedClientProfile.lastLogin ? formatDate(selectedClientProfile.lastLogin) : 'Sin actividad' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="client-profile-footer-pro">
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para ver perfil de nanny (ADMIN) - DISEÑO PROFESIONAL -->
+  <div *ngIf="showNannyProfileModal" class="modal-overlay professional-overlay" (click)="closeNannyProfileModal()">
+    <div class="modal-container nanny-profile-modal-pro" (click)="$event.stopPropagation()">
+      <!-- Header con gradiente y datos principales -->
+      <div class="nanny-profile-header-pro">
+        <div class="header-gradient-pro"></div>
+        <div class="header-content-pro" *ngIf="selectedNannyProfile">
+          <div class="avatar-section-pro">
+            <div class="avatar-large-pro">
+              {{ (selectedNannyProfile.first_name || 'N')[0] }}<span>{{ (selectedNannyProfile.last_name || 'N')[0] }}</span>
+            </div>
+          </div>
+          <div class="header-info-pro">
+            <h2>{{ selectedNannyProfile.first_name }} {{ selectedNannyProfile.last_name }}</h2>
+            <p class="nanny-role">Cuidadora Profesional</p>
+            <div class="quick-status-pro">
+              <span class="status-pill" [class.active]="selectedNannyProfile.status === 'active'">
+                {{ selectedNannyProfile.status === 'active' ? 'Activa' : 'Inactiva' }}
+              </span>
+              <span class="status-pill verified" *ngIf="selectedNannyProfile.is_verified">
+                Verificada
+              </span>
+            </div>
+          </div>
+        </div>
+        <button class="professional-close-btn" (click)="closeNannyProfileModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido del modal -->
+      <div class="nanny-profile-content-pro">
+        <!-- Primera fila: Contacto y Experiencia -->
+        <div class="profile-cards-grid">
+          <!-- Tarjeta de Contacto -->
+          <div class="profile-card-pro">
+            <div class="card-header-pro">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Información de Contacto</h3>
+            </div>
+            <div class="card-content-pro">
+              <div class="contact-item">
+                <span class="contact-label">Email</span>
+                <a [href]="'mailto:' + selectedNannyProfile.email" class="contact-value">
+                  {{ selectedNannyProfile.email }}
+                </a>
+              </div>
+              <div class="contact-item">
+                <span class="contact-label">Teléfono</span>
+                <a [href]="'tel:' + selectedNannyProfile.phone_number" class="contact-value">
+                  {{ selectedNannyProfile.phone_number || 'No disponible' }}
+                </a>
+              </div>
+              <div class="contact-item">
+                <span class="contact-label">Dirección</span>
+                <p class="contact-value">{{ selectedNannyProfile.address || 'No proporcionada' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Experiencia -->
+          <div class="profile-card-pro">
+            <div class="card-header-pro">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Experiencia Profesional</h3>
+            </div>
+            <div class="card-content-pro">
+              <div class="exp-item">
+                <span class="exp-label">Años de Experiencia</span>
+                <span class="exp-value">{{ selectedNannyProfile.experience_years }} años</span>
+              </div>
+              <div class="exp-item">
+                <span class="exp-label">Tarifa Horaria</span>
+                <span class="exp-value price">€{{ selectedNannyProfile.hourly_rate }}/h</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta de Calificación -->
+          <div class="profile-card-pro">
+            <div class="card-header-pro">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="12 2 15.09 10.26 24 10.27 17.18 16.27 20.27 24 12 18.01 3.73 24 6.82 16.27 0 10.27 8.91 10.26 12 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+              <h3>Desempeño</h3>
+            </div>
+            <div class="card-content-pro rating-card">
+              <div class="rating-display">
+                <span class="rating-value">{{ selectedNannyProfile.rating_average || 'N/A' }}</span>
+                <span class="rating-max">/5</span>
+              </div>
+              <p class="rating-reviews">({{ selectedNannyProfile.total_ratings || 0 }} calificaciones)</p>
+              <div class="services-stat">
+                <span class="services-count">{{ selectedNannyProfile.services_completed || 0 }}</span>
+                <span class="services-label">servicios completados</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Segunda fila: Descripción -->
+        <div class="profile-card-pro full-width">
+          <div class="card-header-pro">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Descripción Profesional</h3>
+          </div>
+          <div class="card-content-pro">
+            <p class="description-text">
+              {{ selectedNannyProfile.description || 'Sin descripción disponible' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Tercera fila: Disponibilidad -->
+        <div class="profile-card-pro full-width">
+          <div class="card-header-pro">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Estado de Disponibilidad</h3>
+          </div>
+          <div class="card-content-pro availability-section">
+            <div class="availability-indicator" [class.available]="selectedNannyProfile.is_available">
+              <div class="status-dot"></div>
+              <div class="availability-text">
+                <span class="availability-status">{{ selectedNannyProfile.is_available ? 'Disponible' : 'No disponible' }}</span>
+                <p *ngIf="!selectedNannyProfile.is_available && selectedNannyProfile.reason" class="availability-reason">
+                  {{ selectedNannyProfile.reason }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="nanny-profile-footer-pro">
+        <button type="button" class="btn-secondary-pro" (click)="closeNannyProfileModal()">
+          Cerrar Perfil
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

@@ -90,6 +90,13 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Estado del modal de datos bancarios
   showBankDetailsModal: boolean = false;
 
+  // Estado del modal de creación de servicio
+  showServiceModal: boolean = false;
+  serviceModalType: 'loading' | 'success' | 'error' | 'warning' = 'loading';
+  serviceModalTitle: string = '';
+  serviceModalMessage: string = '';
+  serviceModalErrors: string[] = [];
+
   // Datos bancarios activos para mostrar en el modal
   currentBankData: any = null;
 
@@ -151,6 +158,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Archivo de identificación
   identificationDocumentFile: File | null = null;
+
+  // Preview del documento de identificación
+  identificationPreviewUrl: string | null = null;
+  identificationPreviewType: 'image' | 'pdf' | null = null;
 
   // ID del usuario actual (en producción vendría del JWT)
   currentUserId: number = 2; // Default, se actualiza en ngOnInit
@@ -493,6 +504,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     // Limpiar listeners
     window.removeEventListener('storage', this.handleStorageChange.bind(this));
     document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    
+    // Limpiar Object URLs del preview
+    this.clearIdentificationPreview();
   }
 
   private handleStorageChange(event: StorageEvent) {
@@ -881,6 +895,48 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     console.log('onHeaderProfileClick called - Navegando a perfil...');
   }
 
+  /**
+   * Manejar click en una notificación
+   */
+  handleNotificationClick(notification: Notification) {
+    console.log('📬 Notificación clickeada:', notification);
+    
+    // Marcar como leída si no está leída
+    if (!notification.is_read) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          console.log(`✅ Notificación ${notification.id} marcada como leída`);
+        },
+        error: (error) => {
+          console.error('❌ Error al marcar como leída:', error);
+        }
+      });
+    }
+    
+    // Navegar a la URL de acción si existe
+    if (notification.action_url) {
+      console.log(`🔗 Navegando a: ${notification.action_url}`);
+      this.router.navigate([notification.action_url]);
+    }
+  }
+
+  /**
+   * Marcar todas las notificaciones como leídas
+   */
+  markAllNotificationsAsRead() {
+    console.log('📖 Marcando todas las notificaciones como leídas...');
+    
+    this.notificationService.markAllAsRead().subscribe({
+      next: (response) => {
+        console.log(`✅ Todas las notificaciones marcadas como leídas:`, response);
+        // Las notificaciones se actualizan automáticamente en el BehaviorSubject
+      },
+      error: (error) => {
+        console.error('❌ Error al marcar todas como leídas:', error);
+      }
+    });
+  }
+
   // Métodos para el modal de logout
   openLogoutModal() {
     console.log('openLogoutModal called - Setting showLogoutModal to true');
@@ -1228,15 +1284,24 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   }
 
   confirmReservation() {
-    if (!this.selectedDate || !this.selectedStartTime || !this.selectedEndTime || !this.selectedServiceType || !this.selectedChildren || !this.selectedNannys) {
-      alert('Por favor completa todos los campos requeridos');
+    // Validar campos requeridos
+    const validationErrors: string[] = [];
+    
+    if (!this.selectedDate) validationErrors.push('Debes seleccionar una fecha');
+    if (!this.selectedStartTime) validationErrors.push('Debes seleccionar una hora de inicio');
+    if (!this.selectedEndTime) validationErrors.push('Debes seleccionar una hora de fin');
+    if (!this.selectedServiceType) validationErrors.push('Debes seleccionar un tipo de servicio');
+    if (!this.selectedChildren || this.selectedChildren < 1) validationErrors.push('Debes indicar al menos 1 niño');
+    
+    if (validationErrors.length > 0) {
+      this.showServiceModalWithErrors('warning', '⚠️ Campos incompletos', 'Por favor completa todos los campos requeridos', validationErrors);
       return;
     }
 
     // Obtener el client_id del cliente logueado
     const userStr = localStorage.getItem('user');
     if (!userStr) {
-      alert('Error: No se encontró información del usuario');
+      this.showServiceModalWithErrors('error', '❌ Error de usuario', 'No se encontró información del usuario', ['Inicia sesión nuevamente']);
       return;
     }
 
@@ -1246,26 +1311,33 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       clientId = this.clientInfo?.id || userData.client_id;
       
       if (!clientId) {
-        alert('Error: No se pudo obtener el ID del cliente');
+        this.showServiceModalWithErrors('error', '❌ Error de usuario', 'No se pudo obtener el ID del cliente', ['Verifica tu perfil']);
         return;
       }
     } catch (error) {
       console.error('Error parsing user data:', error);
-      alert('Error al procesar los datos del usuario');
+      this.showServiceModalWithErrors('error', '❌ Error al procesar datos', 'Hubo un problema procesando tu información', ['Inicia sesión nuevamente']);
       return;
     }
+
+    // Mostrar modal de carga
+    this.showServiceModal = true;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = '⏳ Creando servicio...';
+    this.serviceModalMessage = 'Por favor espera mientras procesamos tu solicitud';
+    this.serviceModalErrors = [];
 
     // Obtener el nombre del servicio desde serviceTypes
     const selectedService = this.serviceTypes.find(s => s.id === this.selectedServiceType);
     const serviceTitle = selectedService ? selectedService.name : 'Servicio de cuidado';
 
-    // Preparar datos del servicio - usar los tiempos seleccionados por el usuario
+    // Preparar datos del servicio (selectedDate ya fue validado arriba)
     const serviceData: ServiceData = {
       client_id: clientId,
-      title: `${serviceTitle} - ${this.selectedDate.getDate()} de ${this.getMonthName()}`,
+      title: `${serviceTitle} - ${this.selectedDate!.getDate()} de ${this.getMonthName()}`,
       service_type: this.getServiceTypeEnum(this.selectedServiceType),
       description: `Servicio de ${serviceTitle} para ${this.selectedChildren} niño(s)`,
-      start_date: this.serviceService.formatDate(this.selectedDate),
+      start_date: this.serviceService.formatDate(this.selectedDate!),
       end_date: this.selectedEndDate ? this.serviceService.formatDate(this.selectedEndDate) : undefined,
       start_time: this.selectedStartTime,
       end_time: this.selectedEndTime,
@@ -1282,33 +1354,43 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         if (response.success && response.data) {
           console.log('✅ Servicio creado exitosamente:', response.data);
           
-          // Mostrar mensaje de éxito
-          alert(`¡Servicio creado exitosamente!\n\nNanny asignada: ${response.data.nannyAssigned.name}\nCalificación: ${response.data.nannyAssigned.rating}⭐\nHoras totales: ${response.data.totalHours}h\nCosto total: $${response.data.totalAmount}`);
+          // Mostrar modal de éxito
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = '✅ ¡Servicio creado exitosamente!';
+          this.serviceModalMessage = `Tu servicio ha sido confirmado para el ${this.formatSelectedDate()} de ${this.selectedStartTime} a ${this.selectedEndTime}.\n\nUna nanny ha sido asignada y recibirá una notificación sobre tu solicitud.`;
+          this.serviceModalErrors = [];
 
-          // Obtener detalles completos del servicio y mostrarlo
-          this.serviceService.getServiceById(response.data.serviceId).subscribe({
-            next: (detailResponse) => {
-              if (detailResponse.success && detailResponse.data) {
-                // Transformar datos para que coincidan con el formato esperado
-                this.selectedService = this.transformServiceData(detailResponse.data);
-                this.serviceInstructions = detailResponse.data.special_instructions || '';
-                this.currentView = 'service-details';
-                
-                console.log('✅ Detalles del servicio cargados:', this.selectedService);
+          // Después de 3 segundos, cargar detalles del servicio
+          setTimeout(() => {
+            if (response.data?.serviceId) {
+              this.serviceService.getServiceById(response.data.serviceId).subscribe({
+                next: (detailResponse) => {
+                  if (detailResponse.success && detailResponse.data) {
+                    // Transformar datos para que coincidan con el formato esperado
+                    this.selectedService = this.transformServiceData(detailResponse.data);
+                    this.serviceInstructions = detailResponse.data.special_instructions || '';
+                    this.currentView = 'service-details';
+                    
+                    console.log('✅ Detalles del servicio cargados:', this.selectedService);
 
-                // Recargar la lista de servicios en background
-                this.loadClientServices();
-              }
-            },
-            error: (error) => {
-              console.error('Error cargando detalles del servicio:', error);
-              // Aunque haya error cargando detalles, el servicio se creó exitosamente
-              // Llevar al usuario a la lista de servicios
-              this.currentView = 'services';
-              this.servicesView = 'services-history';
-              this.loadClientServices();
+                    // Cerrar modal
+                    this.closeServiceModal();
+
+                    // Recargar la lista de servicios en background
+                    this.loadClientServices();
+                  }
+                },
+                error: (error) => {
+                  console.error('Error cargando detalles del servicio:', error);
+                  // Aunque haya error cargando detalles, el servicio se creó exitosamente
+                  this.currentView = 'services';
+                  this.servicesView = 'services-history';
+                  this.closeServiceModal();
+                  this.loadClientServices();
+                }
+              });
             }
-          });
+          }, 2000);
 
           // Limpiar la selección del formulario
           this.selectedDate = null;
@@ -1322,19 +1404,51 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('❌ Error creando servicio:', error);
         
-        let errorMessage = 'Error al crear el servicio. Por favor intenta de nuevo.';
+        let errorTitle = '❌ Error al crear servicio';
+        let errorMessage = 'Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.';
+        const errorDetails: string[] = [];
         
         if (error.error && error.error.message) {
           errorMessage = error.error.message;
         } else if (error.status === 400) {
-          errorMessage = 'No hay nannys disponibles para las fechas y horarios solicitados. Por favor, intenta con otro horario o fecha.';
+          errorTitle = '⚠️ No hay nannys disponibles';
+          errorMessage = 'No hay nannys disponibles para las fechas y horarios solicitados.';
+          errorDetails.push('Intenta con otro horario o fecha');
         } else if (error.status === 500) {
-          errorMessage = 'Error del servidor. Por favor contacta al administrador.';
+          errorTitle = '❌ Error del servidor';
+          errorMessage = 'Hubo un error interno del servidor.';
+          errorDetails.push('Por favor contacta al administrador');
+        } else if (error.status === 0) {
+          errorTitle = '❌ Error de conexión';
+          errorMessage = 'No se pudo conectar con el servidor.';
+          errorDetails.push('Verifica tu conexión a internet');
         }
         
-        alert(`Error al crear el servicio:\n\n${errorMessage}\n\nDetalles técnicos:\nFecha: ${this.selectedDate ? this.serviceService.formatDate(this.selectedDate) : 'Sin fecha'}\nHora inicio: ${this.selectedStartTime}\nHora fin: ${this.selectedEndTime}\nNiños: ${this.selectedChildren}`);
+        this.showServiceModalWithErrors('error', errorTitle, errorMessage, errorDetails);
       }
     });
+  }
+
+  /**
+   * Muestra modal de servicio con mensajes de error
+   */
+  private showServiceModalWithErrors(type: 'loading' | 'success' | 'error' | 'warning', title: string, message: string, errors: string[] = []) {
+    this.showServiceModal = true;
+    this.serviceModalType = type;
+    this.serviceModalTitle = title;
+    this.serviceModalMessage = message;
+    this.serviceModalErrors = errors;
+  }
+
+  /**
+   * Cierra el modal de servicio
+   */
+  closeServiceModal() {
+    this.showServiceModal = false;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = '';
+    this.serviceModalMessage = '';
+    this.serviceModalErrors = [];
   }
 
   /**
@@ -1579,45 +1693,51 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Métodos helper para datos dinámicos
   get currentUser() {
     console.log('🔍 Header - currentUser getter llamado');
-    console.log('🔍 Header - clientInfo:', this.clientInfo);
+    console.log('🔍 Header - clientInfo disponible:', !!this.clientInfo);
+    console.log('🔍 Header - profileData disponible:', !!this.profileData);
     
-    if (this.clientInfo) {
+    // Preferir clientInfo si está disponible, sino usar profileData
+    const userData = this.clientInfo || this.profileData;
+    
+    if (userData && userData.first_name) {
       // Construir URL completa de la imagen de perfil para el header
       let avatarUrl = 'assets/logo.png';
-      console.log('🖼️ Header - Profile image desde clientInfo:', this.clientInfo.profile_image);
-      console.log('🖼️ Header - Tipo de profile_image:', typeof this.clientInfo.profile_image);
-      console.log('🖼️ Header - Valor completo de clientInfo:', JSON.stringify(this.clientInfo, null, 2));
+      const profileImage = userData.profile_image || (this.profileData?.profile_image);
       
-      if (this.clientInfo.profile_image) {
-        if (this.clientInfo.profile_image.startsWith('http')) {
-          avatarUrl = this.clientInfo.profile_image;
+      console.log('🖼️ Header - Profile image:', profileImage);
+      console.log('🖼️ Header - Usuario detectado:', `${userData.first_name} ${userData.last_name}`);
+      
+      if (profileImage) {
+        if (profileImage.startsWith('http')) {
+          avatarUrl = profileImage;
           console.log('🌐 Header - Usando URL completa:', avatarUrl);
-        } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
+        } else if (profileImage.startsWith('/uploads/')) {
           // Si ya incluye /uploads/, solo agregar el host
-          avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
+          avatarUrl = `http://localhost:8000${profileImage}`;
           console.log('🔗 Header - URL con ruta completa:', avatarUrl);
         } else {
           // Si es solo el nombre del archivo
-          avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
+          avatarUrl = `http://localhost:8000/uploads/${profileImage}`;
           console.log('🔗 Header - URL construida:', avatarUrl);
         }
       } else {
-        console.log('❌ Header - No hay profile_image en clientInfo');
-        console.log('❌ Header - clientInfo.profile_image es:', this.clientInfo.profile_image);
+        console.log('❌ Header - No hay profile_image');
       }
       
       return {
-        name: `${this.clientInfo.first_name} ${this.clientInfo.last_name}`,
+        name: `${userData.first_name} ${userData.last_name}`.trim(),
         role: 'Cliente',
-        first_name: this.clientInfo.first_name,
-        last_name: this.clientInfo.last_name,
-        email: this.clientInfo.email,
-        phone: this.clientInfo.phone_number,
-        address: this.clientInfo.address,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        email: userData.email,
+        phone: userData.phone_number,
+        address: userData.address,
         avatar: avatarUrl,
-        isVerified: this.clientInfo.is_verified
+        isVerified: userData.is_verified
       };
     }
+    
+    console.log('⚠️ Header - No hay datos de usuario, retornando valores por defecto');
     return {
       name: 'Usuario',
       role: 'Cliente',
@@ -2042,6 +2162,30 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
             clientData: this.clientData 
           });
           console.log(`👤 Usuario: ${this.profileData.first_name} ${this.profileData.last_name}`);
+
+          // Sincronizar clientInfo con profileData si clientInfo no está disponible
+          // Esto asegura que el getter currentUser siempre tenga datos disponibles
+          if (!this.clientInfo && this.profileData) {
+            this.clientInfo = {
+              id: this.profileData.id || 0,
+              user_id: this.profileData.id || 0,
+              first_name: this.profileData.first_name,
+              last_name: this.profileData.last_name,
+              email: this.profileData.email,
+              phone_number: this.profileData.phone_number,
+              address: this.profileData.address,
+              profile_image: this.profileData.profile_image,
+              is_verified: this.profileData.is_verified,
+              emergency_contact_name: '',
+              emergency_contact_phone: '',
+              number_of_children: 0,
+              verification_status: this.clientData?.verification_status || 'pending',
+              identification_document: this.clientData?.identification_document || '',
+              created_at: this.profileData.created_at || new Date().toISOString(),
+              client_since: this.profileData.created_at || new Date().toISOString()
+            } as ClientInfo;
+            console.log('🔄 clientInfo sincronizado desde profileData para el header');
+          }
         }
       } else {
         console.error('Error al cargar datos del perfil:', response.status);
@@ -2090,6 +2234,10 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         // Validar tamaño (10MB max)
         if (file.size <= 10 * 1024 * 1024) {
           this.identificationDocumentFile = file;
+          
+          // Generar preview
+          this.generateIdentificationPreview(file);
+          
           console.log('✅ Documento de identificación seleccionado:', file.name);
         } else {
           this.clientInfoErrorMessage = 'El archivo no debe superar los 10MB';
@@ -2101,6 +2249,33 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         setTimeout(() => this.clientInfoErrorMessage = '', 5000);
         event.target.value = '';
       }
+    }
+  }
+
+  // Generar preview del documento de identificación
+  generateIdentificationPreview(file: File) {
+    // Limpiar preview anterior
+    if (this.identificationPreviewUrl) {
+      URL.revokeObjectURL(this.identificationPreviewUrl);
+    }
+
+    if (file.type.startsWith('image/')) {
+      // Para imágenes, crear Object URL
+      this.identificationPreviewUrl = URL.createObjectURL(file);
+      this.identificationPreviewType = 'image';
+    } else if (file.type === 'application/pdf') {
+      // Para PDFs, también crear Object URL
+      this.identificationPreviewUrl = URL.createObjectURL(file);
+      this.identificationPreviewType = 'pdf';
+    }
+  }
+
+  // Limpiar preview
+  clearIdentificationPreview() {
+    if (this.identificationPreviewUrl) {
+      URL.revokeObjectURL(this.identificationPreviewUrl);
+      this.identificationPreviewUrl = null;
+      this.identificationPreviewType = null;
     }
   }
 
@@ -2326,109 +2501,30 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     return this.clientData.identification_document.toLowerCase().endsWith('.pdf');
   }
 
-  // Métodos para manejar notificaciones
-  handleNotificationClick(notification: Notification) {
-    console.log('Notification clicked:', notification);
-    
-    // Marcar como leída en el backend
-    if (!notification.is_read) {
-      this.notificationService.markAsRead(notification.id).subscribe({
-        next: (response) => {
-          if (response.success) {
-            // Actualizar localmente
-            const index = this.notifications.findIndex(n => n.id === notification.id);
-            if (index !== -1) {
-              this.notifications[index].is_read = true;
-              this.notifications[index].read_at = new Date().toISOString();
-            }
-            console.log('✅ Notificación marcada como leída');
-          }
-        },
-        error: (error) => {
-          console.error('❌ Error marcando notificación como leída:', error);
-        }
-      });
-    }
-
-    // Navegar a la URL de acción si existe
-    if (notification.action_url) {
-      // Extraer la vista del action_url (ej: 'services', 'payments')
-      const view = notification.action_url.replace('/', '');
-      if (view) {
-        this.currentView = view;
-      }
-    }
-  }
-
-  markAllNotificationsAsRead() {
-    console.log('Marking all notifications as read');
-    this.notificationService.markAllAsRead(this.currentUserId).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.notifications = this.notifications.map(n => ({
-            ...n,
-            is_read: true,
-            read_at: n.read_at || new Date().toISOString()
-          }));
-          console.log('✅ Todas las notificaciones marcadas como leídas');
-        }
-      },
-      error: (error) => {
-        console.error('❌ Error marcando notificaciones como leídas:', error);
-      }
-    });
-  }
-
   // Método para cargar notificaciones desde el backend
   private loadNotifications() {
     console.log('📋 Cargando notificaciones...');
-    this.notificationService.getNotifications(this.currentUserId, false, 50).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.notifications = response.data;
-          console.log('✅ Notificaciones cargadas:', this.notifications.length);
-        }
+    
+    // Obtener notificaciones del servidor
+    this.notificationService.getNotifications().subscribe({
+      next: (notifications) => {
+        this.notifications = notifications;
+        console.log(`✅ Notificaciones cargadas: ${notifications.length} notificaciones`);
+        
+        // Actualizar el header config con las notificaciones
+        this.headerConfig = {
+          ...this.headerConfig,
+          showNotifications: true
+        };
       },
       error: (error) => {
         console.error('❌ Error cargando notificaciones:', error);
-        // Si hay error, usar datos de ejemplo para desarrollo
-        this.notifications = [
-          {
-            id: 1,
-            title: 'Nuevo servicio confirmado',
-            message: 'Tu servicio de cuidado para el 15 de noviembre ha sido confirmado.',
-            type: 'service',
-            is_read: false,
-            action_url: 'contracted-services',
-            related_id: 123,
-            related_type: 'service',
-            created_at: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 2,
-            title: 'Pago procesado exitosamente',
-            message: 'Tu pago de $450.00 ha sido procesado correctamente.',
-            type: 'payment',
-            is_read: false,
-            action_url: 'payments',
-            related_id: 456,
-            related_type: 'payment',
-            created_at: new Date(Date.now() - 7200000).toISOString()
-          },
-          {
-            id: 3,
-            title: 'Recuerda calificar tu servicio',
-            message: 'Tu opinión es importante. Califica el servicio completado el 10 de noviembre.',
-            type: 'info',
-            is_read: true,
-            action_url: 'contracted-services',
-            related_id: 789,
-            related_type: 'service',
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            read_at: new Date(Date.now() - 43200000).toISOString()
-          }
-        ];
+        this.notifications = [];
       }
     });
+    
+    // Iniciar polling automático cada 30 segundos para actualizar notificaciones
+    console.log('⏱️ Iniciando polling de notificaciones...');
+    this.notificationService.startPolling(30000);
   }
 }

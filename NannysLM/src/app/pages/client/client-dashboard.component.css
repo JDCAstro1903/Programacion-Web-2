@@ -5358,6 +5358,115 @@
   stroke: currentColor;
 }
 
+/* Preview Header con botón de limpiar */
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.preview-header h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.clear-preview-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-preview-btn:hover {
+  background: #fecaca;
+  border-color: #f87171;
+}
+
+/* Preview de PDF mejorado */
+.document-pdf-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.pdf-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  border-radius: 12px;
+}
+
+.pdf-name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.view-pdf-btn {
+  padding: 0.625rem 1.25rem;
+  background: #e11d48;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.view-pdf-btn:hover {
+  background: #be185d;
+}
+
+/* Mejoras al preview de imagen */
+.document-image-preview {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  background: white;
+  margin: 0 auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.document-image-preview .preview-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 400px;
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+
+.document-image-preview:hover .preview-image {
+  transform: scale(1.02);
+}
+
 /* Error and Success Messages */
 .error-messages,
 .success-messages {
@@ -5947,4 +6056,249 @@
     width: 100px;
     height: 100px;
   }
+}
+
+/* ==========================================
+   MODAL DE SERVICIO
+   ========================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading State */
+.modal-loading {
+  text-align: center;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 1.5rem;
+  border: 4px solid #f0f0f0;
+  border-top: 4px solid #1EB2E5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.modal-loading h3 {
+  color: #1f2937;
+  font-size: 1.3rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.modal-loading p {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Success State */
+.modal-success {
+  text-align: center;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1rem;
+  background: #dcfce7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #22c55e;
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.modal-success h3 {
+  color: #1f2937;
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+}
+
+.modal-success p {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0 0 1.5rem;
+  white-space: pre-wrap;
+}
+
+/* Error State */
+.modal-error {
+  text-align: center;
+}
+
+.error-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1rem;
+  background: #fee2e2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #ef4444;
+  animation: scaleIn 0.3s ease-out;
+}
+
+.modal-error h3 {
+  color: #1f2937;
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+}
+
+.modal-error p {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  white-space: pre-wrap;
+}
+
+.error-list {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0 0 1.5rem;
+  text-align: left;
+}
+
+.error-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.error-list li {
+  color: #dc2626;
+  font-size: 0.9rem;
+  padding: 0.4rem 0;
+  display: flex;
+  align-items: center;
+}
+
+.error-list li:before {
+  content: "• ";
+  margin-right: 0.5rem;
+  font-weight: bold;
+}
+
+/* Warning State */
+.modal-warning {
+  text-align: center;
+}
+
+.warning-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1rem;
+  background: #fef3c7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #f59e0b;
+  animation: scaleIn 0.3s ease-out;
+}
+
+.modal-warning h3 {
+  color: #1f2937;
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+}
+
+.modal-warning p {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+/* Modal Buttons */
+.modal-btn-confirm {
+  background: linear-gradient(135deg, #1EB2E5 0%, #E31B7E 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.modal-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(30, 178, 229, 0.3);
+}
+
+.modal-btn-close {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.modal-btn-close:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
 }
