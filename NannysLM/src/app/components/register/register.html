@@ -238,39 +238,6 @@
           </div>
         </div>
 
-        <!-- Identificación válida -->
-        <div class="input-group">
-          <label for="identification">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Identificación válida (opcional)
-          </label>
-          <div class="file-upload-container">
-            <input 
-              type="file" 
-              id="identificationFile" 
-              (change)="onFileSelect($event)"
-              accept=".pdf,.jpg,.jpeg,.png"
-              style="display: none;">
-            <button 
-              type="button" 
-              class="file-upload-button" 
-              (click)="triggerFileInput()">
-              <span>{{ identificationFile ? identificationFile.name : 'Selecciona un archivo' }}</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
         <button 
           type="submit" 
           class="register-button"
@@ -297,20 +264,36 @@
 <div *ngIf="showSuccessModal" class="modal-overlay" (click)="closeSuccessModal()">
   <div class="success-modal" (click)="$event.stopPropagation()">
     <div class="success-icon">
-      <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="70" height="70" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="12" cy="12" r="10" fill="#10B981" stroke="#10B981" stroke-width="2"/>
-        <path d="M9 12L11 14L15 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 12L11 14L15 10" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-   <h3>Cuenta creada — Revisa tu correo</h3>
-   <p>
-     Gracias por registrarte. Hemos enviado un correo a <strong>{{ email }}</strong> con un enlace para activar tu cuenta.
-     Para poder iniciar sesión, primero debes hacer clic en el enlace de activación que recibirás en tu correo electrónico.
-   </p>
-   <p style="margin-top:8px; font-size:0.95rem; color:#6b7280;">Revisa también la carpeta de spam si no lo ves en la bandeja principal.</p>
-   <div class="modal-buttons" style="margin-top:18px; display:flex; gap:8px; justify-content:center;">
-     <button class="success-button" (click)="redirectToLogin()">Ir a Iniciar sesión</button>
-     <button class="success-button" (click)="closeSuccessModal()" style="background:#94a3b8;">Cerrar</button>
-   </div>
+    <h3>¡Cuenta creada exitosamente!</h3>
+    <p>
+      Gracias por registrarte en <strong>NannysLM</strong>. Hemos enviado un correo de activación a:
+    </p>
+    <p>
+      <strong>{{ email }}</strong>
+    </p>
+    <p>
+      Para poder iniciar sesión, debes hacer clic en el enlace de activación que recibirás en tu correo electrónico. Este enlace te permitirá confirmar tu identidad y acceder a la plataforma.
+    </p>
+    <p>Si no ves el correo, revisa también la carpeta de <strong>spam</strong> o <strong>promociones</strong>.</p>
+    <div class="modal-buttons">
+      <button class="success-button" (click)="redirectToLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 19L1 10M1 10H23M1 10L10 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Ir a iniciar sesión
+      </button>
+      <button class="success-button" (click)="closeSuccessModal()" style="background:#cbd5e1; box-shadow: 0 4px 15px rgba(203, 213, 225, 0.3); color: #334155;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Cerrar
+      </button>
+    </div>
   </div>
 </div>

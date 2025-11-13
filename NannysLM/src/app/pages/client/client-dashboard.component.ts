@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { HeaderComponent, HeaderConfig, Notification } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
+import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
 import { ClientService as ClientApiService, ClientInfo, ClientServiceData, ClientPayment, ClientStats } from '../../services/client.service';
@@ -67,7 +68,7 @@ interface ClientProfileData {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.css'
 })
@@ -279,7 +280,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   selectedEndTime: string = '';
   selectedServiceType: string = '';
   selectedChildren: number = 1;
-  selectedNannys: number = 1;
   currentMonth: number = new Date().getMonth();
   currentYear: number = new Date().getFullYear();
   availableTimes: string[] = [
@@ -424,6 +424,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           icon: 'dollar-sign'
         },
         {
+          id: 'notifications',
+          label: 'Notificaciones',
+          icon: 'bell'
+        },
+        {
           id: 'client-info',
           label: 'Información del Cliente',
           icon: 'user-check'
@@ -463,7 +468,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       
       // Intentar obtener desde localStorage directamente
       try {
-        const userStr = localStorage.getItem('user');
+        const userStr = localStorage.getItem('current_user');
         if (userStr) {
           const user = JSON.parse(userStr);
           console.log('📋 Usuario desde localStorage:', user);
@@ -731,7 +736,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.selectedTime = '';
     this.selectedServiceType = '';
     this.selectedChildren = 1;
-    this.selectedNannys = 1;
   }
 
   // Transformar datos del servicio para la vista
@@ -896,16 +900,36 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Manejar click en una notificación
+   * Manejar click en una notificación - Navega a la vista de notificaciones
    */
   handleNotificationClick(notification: Notification) {
-    console.log('📬 Notificación clickeada:', notification);
+    const timestamp = new Date().toLocaleTimeString('es-CO', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
+    
+    console.group(`📬 CLICK EN NOTIFICACIÓN [${timestamp}]`);
+    console.log('ID:', notification.id);
+    console.log('Título:', notification.title);
+    console.log('Mensaje:', notification.message);
+    console.log('Tipo:', notification.type);
+    console.log('URL de Acción (original):', notification.action_url);
+    console.log('Leída:', notification.is_read);
+    console.log('Tipo Relacionado:', notification.related_type);
+    console.log('Objeto completo:', notification);
+    console.groupEnd();
     
     // Marcar como leída si no está leída
     if (!notification.is_read) {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: () => {
           console.log(`✅ Notificación ${notification.id} marcada como leída`);
+          // Actualizar en la lista local
+          const notif = this.notifications.find(n => n.id === notification.id);
+          if (notif) {
+            notif.is_read = true;
+          }
         },
         error: (error) => {
           console.error('❌ Error al marcar como leída:', error);
@@ -913,11 +937,18 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       });
     }
     
-    // Navegar a la URL de acción si existe
-    if (notification.action_url) {
-      console.log(`🔗 Navegando a: ${notification.action_url}`);
-      this.router.navigate([notification.action_url]);
-    }
+    // Navegar a la vista de notificaciones en el dashboard
+    console.log('📍 Navegando a la vista de notificaciones...');
+    this.currentView = 'notifications';
+  }
+
+  /**
+   * Manejar click en notificación desde el panel en la vista de notificaciones
+   * (Solo por logging/futuras acciones adicionales)
+   */
+  handleNotificationPanelClick(notification: Notification) {
+    console.log('✅ Notificación seleccionada desde el panel:', notification);
+    // Aquí puedes agregar lógica adicional si es necesario
   }
 
   /**
@@ -1135,30 +1166,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   onChildrenChange(event: Event) {
     const target = event.target as HTMLSelectElement;
     this.selectedChildren = parseInt(target.value, 10);
-    
-    // Auto-sugerir número de nannys basado en número de niños
-    if (this.selectedChildren >= 3 && this.selectedNannys < 2) {
-      this.selectedNannys = 2;
-    }
-  }
-
-  onNannysChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    this.selectedNannys = parseInt(target.value, 10);
-  }
-
-  // Verificar si mostrar la alerta de recomendación
-  shouldShowNannyRecommendation(): boolean {
-    return this.selectedChildren >= 3 && this.selectedNannys < 2;
   }
 
   // Generar opciones para los combobox
   getChildrenOptions(): number[] {
     return Array.from({length: 8}, (_, i) => i + 1); // 1-8 niños
-  }
-
-  getNannysOptions(): number[] {
-    return Array.from({length: 5}, (_, i) => i + 1); // 1-5 nannys
   }
 
   getDaysInMonth(): number[] {
@@ -1299,25 +1311,31 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     }
 
     // Obtener el client_id del cliente logueado
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      this.showServiceModalWithErrors('error', '❌ Error de usuario', 'No se encontró información del usuario', ['Inicia sesión nuevamente']);
-      return;
-    }
-
-    let clientId: number;
-    try {
-      const userData = JSON.parse(userStr);
-      clientId = this.clientInfo?.id || userData.client_id;
-      
-      if (!clientId) {
-        this.showServiceModalWithErrors('error', '❌ Error de usuario', 'No se pudo obtener el ID del cliente', ['Verifica tu perfil']);
+    let clientId: number | undefined;
+    
+    // Primero intentar obtener desde clientInfo (ya cargado)
+    if (this.clientInfo?.id) {
+      clientId = this.clientInfo.id;
+      console.log('✅ client_id obtenido desde clientInfo:', clientId);
+    } else {
+      // Si clientInfo no está disponible, intentar desde localStorage
+      const userStr = localStorage.getItem('current_user');
+      if (!userStr) {
+        this.showServiceModalWithErrors('error', '❌ Error de usuario', 'No se encontró información del usuario', ['Inicia sesión nuevamente']);
         return;
       }
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      this.showServiceModalWithErrors('error', '❌ Error al procesar datos', 'Hubo un problema procesando tu información', ['Inicia sesión nuevamente']);
-      return;
+
+      try {
+        const userData = JSON.parse(userStr);
+        // El userData solo tiene user_id, necesitamos esperar a que clientInfo se cargue
+        console.warn('⚠️ clientInfo no disponible aún, intenta de nuevo en unos segundos');
+        this.showServiceModalWithErrors('error', '❌ Información incompleta', 'Todavía se está cargando tu información. Por favor, espera unos segundos e intenta de nuevo.', ['Intenta de nuevo']);
+        return;
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        this.showServiceModalWithErrors('error', '❌ Error al procesar datos', 'Hubo un problema procesando tu información', ['Inicia sesión nuevamente']);
+        return;
+      }
     }
 
     // Mostrar modal de carga
@@ -1333,7 +1351,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
     // Preparar datos del servicio (selectedDate ya fue validado arriba)
     const serviceData: ServiceData = {
-      client_id: clientId,
+      client_id: clientId!,
       title: `${serviceTitle} - ${this.selectedDate!.getDate()} de ${this.getMonthName()}`,
       service_type: this.getServiceTypeEnum(this.selectedServiceType),
       description: `Servicio de ${serviceTitle} para ${this.selectedChildren} niño(s)`,
@@ -1343,7 +1361,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       end_time: this.selectedEndTime,
       number_of_children: this.selectedChildren,
       special_instructions: '',
-      address: this.clientInfo?.address || ''
+      address: this.clientInfo?.address || 'Dirección no proporcionada'
     };
 
     console.log('📤 Enviando servicio al backend:', serviceData);
@@ -1398,7 +1416,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           this.selectedTime = '';
           this.selectedServiceType = '';
           this.selectedChildren = 1;
-          this.selectedNannys = 1;
         }
       },
       error: (error) => {
@@ -1592,7 +1609,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.selectedTime = '';
     this.selectedServiceType = '';
     this.selectedChildren = 1;
-    this.selectedNannys = 1;
   }
 
   hasValidReservation(): boolean {
@@ -1601,8 +1617,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       this.selectedStartTime && 
       this.selectedEndTime && 
       this.selectedServiceType && 
-      this.selectedChildren && 
-      this.selectedNannys
+      this.selectedChildren
     );
   }
 

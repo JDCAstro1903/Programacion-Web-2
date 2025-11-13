@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
-import { HeaderComponent, HeaderConfig } from '../../shared/components/header/header.component';
+import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
+import { HeaderComponent } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
@@ -21,12 +21,12 @@ import { NannyService } from '../../services/nanny.service';
 export class AdminDashboardComponent implements OnInit {
   // Vista actual del dashboard
   currentView: string = 'dashboard';
-  
+
   // Configuración del sidebar
-  sidebarConfig: SidebarConfig;
+  sidebarConfig: any;
 
   // Configuración del header
-  headerConfig: HeaderConfig;
+  headerConfig: any;
 
   // Datos dinámicos desde la base de datos
   dashboardStats: DashboardStats = {
@@ -61,8 +61,6 @@ export class AdminDashboardComponent implements OnInit {
     // Configurar header genérico
     const currentUser = this.authService.getCurrentUser();
     const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Administrador';
-    
-    console.log('Constructor - currentUser:', currentUser);
     
     // Obtener la imagen de perfil con prioridad:
     // 1. Del localStorage (más reciente)
@@ -227,6 +225,11 @@ export class AdminDashboardComponent implements OnInit {
   paymentFilter: string = 'verified';
   paymentDateFilter: string = 'all';
   
+  // Términos de búsqueda
+  nannySearchTerm: string = '';
+  clientSearchTerm: string = '';
+  paymentSearchTerm: string = '';
+  
   // Estado del modal de logout
   showLogoutModal: boolean = false;
   
@@ -292,6 +295,14 @@ export class AdminDashboardComponent implements OnInit {
   // Estados para perfil del cliente
   showClientProfileModal: boolean = false;
   selectedClientProfile: any = null;
+
+  // Estados para detalles de pago
+  showPaymentDetailsModal: boolean = false;
+  selectedPaymentDetails: any = null;
+
+  // Estados para modal de recibo
+  showReceiptModal: boolean = false;
+  selectedReceiptPayment: any = null;
 
   // Estados para perfil de nanny
   showNannyProfileModal: boolean = false;
@@ -366,6 +377,22 @@ export class AdminDashboardComponent implements OnInit {
     this.showDateFilters = !this.showDateFilters;
   }
 
+  // Métodos para búsqueda
+  onNannySearchChange() {
+    // El filtro se aplica automáticamente en getCurrentNannys()
+    // debido al [(ngModel)] binding
+  }
+
+  onClientSearchChange() {
+    // El filtro se aplica automáticamente en getCurrentClients()
+    // debido al [(ngModel)] binding
+  }
+
+  onPaymentSearchChange() {
+    // El filtro se aplica automáticamente en getCurrentPayments()
+    // debido al [(ngModel)] binding
+  }
+
   // Obtener nannys según el filtro actual
   getCurrentNannys() {
       console.log('Filtro actual de nannys:', this.nannyFilter);
@@ -385,6 +412,17 @@ export class AdminDashboardComponent implements OnInit {
         break;
       default: 
         filtered = this.nannysData.filter(nanny => nanny.status === 'active');
+    }
+    
+    // Aplicar búsqueda
+    if (this.nannySearchTerm.trim()) {
+      const searchLower = this.nannySearchTerm.toLowerCase();
+      filtered = filtered.filter(nanny => 
+        (nanny.first_name?.toLowerCase().includes(searchLower) ||
+         nanny.last_name?.toLowerCase().includes(searchLower) ||
+         nanny.email?.toLowerCase().includes(searchLower) ||
+         nanny.phone_number?.includes(searchLower))
+      );
     }
     
     console.log(`Nannys filtradas (${this.nannyFilter}):`, filtered.length);
@@ -408,6 +446,16 @@ export class AdminDashboardComponent implements OnInit {
         break;
       default: 
         filtered = this.clientsData;
+    }
+    
+    // Aplicar búsqueda
+    if (this.clientSearchTerm.trim()) {
+      const searchLower = this.clientSearchTerm.toLowerCase();
+      filtered = filtered.filter(client => 
+        (client.name?.toLowerCase().includes(searchLower) ||
+         client.email?.toLowerCase().includes(searchLower) ||
+         client.phone?.toLowerCase().includes(searchLower))
+      );
     }
     
     return filtered;
@@ -466,6 +514,18 @@ export class AdminDashboardComponent implements OnInit {
       });
     }
     
+    // Aplicar búsqueda
+    if (this.paymentSearchTerm.trim()) {
+      const searchLower = this.paymentSearchTerm.toLowerCase();
+      payments = payments.filter(payment => 
+        (payment.client?.name?.toLowerCase().includes(searchLower) ||
+         payment.nanny?.first_name?.toLowerCase().includes(searchLower) ||
+         payment.nanny?.last_name?.toLowerCase().includes(searchLower) ||
+         payment.amount?.toString().includes(searchLower) ||
+         payment.id?.toString().includes(searchLower))
+      );
+    }
+    
     return payments;
   }
 
@@ -475,11 +535,20 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   getRecentPayments() {
-    return this.paymentsData.filter((payment: any) => payment.type === 'completed').slice(0, 3);
+    // Retornar los últimos 3 pagos ordenados por fecha (más recientes primero)
+    if (!this.paymentsData || this.paymentsData.length === 0) {
+      return [];
+    }
+    return [...this.paymentsData]
+      .sort((a, b) => new Date(b.paymentDate || b.createdAt).getTime() - new Date(a.paymentDate || a.createdAt).getTime())
+      .slice(0, 3);
   }
 
   getUnverifiedClientsSlice() {
-    return this.clientsData.filter(client => client.verificationStatus !== 'verified').slice(0, 3);
+    // Filtrar clientes no verificados
+    return this.clientsData
+      .filter(client => !client.isVerified)
+      .slice(0, 3);
   }
 
   // Obtener contadores para los filtros
@@ -772,7 +841,7 @@ export class AdminDashboardComponent implements OnInit {
             this.closeAddNannyModal();
             
             // Mostrar mensaje de éxito
-            alert(`Nanny ${this.newNannyData.first_name} ${this.newNannyData.last_name} creada exitosamente.\n\nEmail: ${this.newNannyData.email}\nContraseña temporal: ${password}\n\nLa nanny puede cambiar su contraseña la primera vez que inicie sesión.`);
+            alert(`✅ Nanny ${this.newNannyData.first_name} ${this.newNannyData.last_name} creada exitosamente.\n\n📧 Se envió un correo a ${this.newNannyData.email} con sus credenciales de acceso.\n\n⏰ La nanny podrá iniciar sesión inmediatamente con las credenciales enviadas.`);
             
             // Recargar datos desde la base de datos
             this.loadNannys();
@@ -803,6 +872,10 @@ export class AdminDashboardComponent implements OnInit {
   // Métodos auxiliares para el manejo de nannys
   getTotalNannys(): number {
     return this.nannysData.length;
+  }
+
+  getTotalClients(): number {
+    return this.clientsData.length;
   }
 
   getFilterLabel(): string {
@@ -1286,7 +1359,7 @@ export class AdminDashboardComponent implements OnInit {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          status: 'verified'
+          status: 'approved'
         })
       });
       
@@ -1306,7 +1379,7 @@ export class AdminDashboardComponent implements OnInit {
         this.openVerificationResultModal(
           'success',
           'Cliente Verificado',
-          'El documento de identificación ha sido aprobado correctamente. El cliente ya puede acceder a todos los servicios de la plataforma.',
+          'El documento de identificación ha sido aprobado correctamente. El cliente ya puede acceder a todos los servicios de la plataforma. ✓ Se ha enviado un correo de confirmación.',
           'approved'
         );
       } else {
@@ -1361,9 +1434,9 @@ export class AdminDashboardComponent implements OnInit {
         
         // Mostrar modal de rechazo en lugar de alert
         this.openVerificationResultModal(
-          'success',
+          'error',
           'Verificación Rechazada',
-          'El documento de identificación ha sido rechazado. El cliente ha sido notificado y puede reenviar una nueva solicitud.',
+          'El documento de identificación ha sido rechazado. El cliente ha sido notificado por correo y puede reenviar una nueva solicitud.',
           'rejected'
         );
       } else {
@@ -1381,5 +1454,63 @@ export class AdminDashboardComponent implements OnInit {
     } finally {
       this.isVerifyingDocument = false;
     }
+  }
+
+  // Métodos para detalles de pago
+  viewPaymentDetails(payment: any) {
+    this.selectedPaymentDetails = payment;
+    this.showPaymentDetailsModal = true;
+  }
+
+  closePaymentDetailsModal() {
+    this.showPaymentDetailsModal = false;
+    this.selectedPaymentDetails = null;
+  }
+
+  // Métodos para recibo
+  viewReceipt(payment: any) {
+    this.selectedReceiptPayment = payment;
+    this.showReceiptModal = true;
+  }
+
+  closeReceiptModal() {
+    this.showReceiptModal = false;
+    this.selectedReceiptPayment = null;
+  }
+
+  // Obtener URL completa del recibo de transferencia
+  getReceiptUrl(payment: any): string {
+    if (!payment?.receiptProof) {
+      return '';
+    }
+    
+    const receiptProof = payment.receiptProof;
+    
+    // Si ya es una URL completa, devolverla
+    if (receiptProof.startsWith('http')) {
+      return receiptProof;
+    }
+    
+    // Si es una ruta relativa, construir URL completa
+    const baseUrl = 'http://localhost:3000/uploads/receipts'; // TODO: Cambiar según configuración del backend
+    return `${baseUrl}/${receiptProof}`;
+  }
+
+  // Verificar si el recibo es una imagen
+  isReceiptImage(payment: any): boolean {
+    if (!payment?.receiptProof) {
+      return false;
+    }
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const extension = payment.receiptProof.split('.').pop().toLowerCase();
+    return imageExtensions.includes(extension);
+  }
+
+  // Verificar si el recibo es un PDF
+  isReceiptPDF(payment: any): boolean {
+    if (!payment?.receiptProof) {
+      return false;
+    }
+    return payment.receiptProof.toLowerCase().endsWith('.pdf');
   }
 }

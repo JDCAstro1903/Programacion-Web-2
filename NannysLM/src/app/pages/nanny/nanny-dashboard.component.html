@@ -2,8 +2,11 @@
   <!-- Header Genérico -->
   <app-header 
     [config]="headerConfig"
+    [notifications]="notifications"
     (onLogout)="onHeaderLogout()"
-    (onProfileClick)="onHeaderProfileClick()">
+    (onProfileClick)="onHeaderProfileClick()"
+    (onNotificationClick)="handleNotificationClick($event)"
+    (onMarkAllAsRead)="markAllNotificationsAsRead()">
   </app-header>
 
   <!-- Layout principal -->
@@ -17,6 +20,19 @@
 
     <!-- Contenido principal -->
     <main class="main-content">
+      <!-- Mensaje de error de carga -->
+      <div *ngIf="loadError" style="background: #fef2f2; border: 2px solid #f87171; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="#dc2626"/>
+          </svg>
+          <div>
+            <h3 style="color: #dc2626; margin: 0 0 0.5rem 0; font-weight: 600;">Error al cargar datos</h3>
+            <p style="color: #991b1b; margin: 0;">{{ loadError }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Vista Inicio -->
       <div *ngIf="currentView === 'dashboard'" class="dashboard-home">
         <div class="content-header">
@@ -48,10 +64,13 @@
             <div class="hero-illustration">
               <div class="floating-card">
                 <div class="floating-content">
-                  <div class="service-preview">
+                  <div class="service-preview" *ngIf="nextService">
                     <h4>{{ nextService.date }}</h4>
                     <p>{{ nextService.time }}</p>
                     <span class="client-name">{{ nextService.client }}</span>
+                  </div>
+                  <div class="service-preview" *ngIf="!nextService" style="text-align: center; color: rgba(255,255,255,0.8);">
+                    <p>Sin servicios</p>
                   </div>
                 </div>
               </div>
@@ -74,7 +93,7 @@
                 <p>Tu siguiente trabajo programado</p>
               </div>
             </div>
-            <div class="card-content">
+            <div class="card-content" *ngIf="nextService">
               <div class="service-details-compact">
                 <div class="service-date-large">{{ nextService.date }}</div>
                 <div class="service-time-highlight">{{ nextService.time }}</div>
@@ -83,12 +102,15 @@
                 </div>
                 <div class="service-location-brief">{{ nextService.location }}</div>
               </div>
-              <button class="card-action-btn" (click)="getMoreInfo(1)">
+              <button class="card-action-btn" (click)="services.upcoming[0] && getMoreInfo(services.upcoming[0].id)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2C13.65 2 15 3.35 15 5C15 6.65 13.65 8 12 8C10.35 8 9 6.65 9 5C9 3.35 10.35 2 12 2ZM21 9V7L15 1V3H9V1L3 7V9H21Z"/>
                 </svg>
                 Ver detalles
               </button>
+            </div>
+            <div class="card-content" *ngIf="!nextService" style="text-align: center; color: #64748b; padding: 2rem;">
+              <p>No tienes servicios programados</p>
             </div>
           </div>
 
@@ -107,13 +129,14 @@
             </div>
             <div class="card-content">
               <div class="rating-display-large">
-                <div class="rating-number">{{ stats.rating }}</div>
+                <div class="rating-number">{{ stats.rating.toFixed(1) }}</div>
                 <div class="rating-stars-row">
-                  <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= stats.rating" class="star-icon" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= stats.rating" class="star-icon" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" [attr.fill]="star <= stats.rating ? '#fbbf24' : '#e5e7eb'">
                     <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                   </svg>
                 </div>
-                <span class="rating-label">Excelente trabajo</span>
+                <span class="rating-label" *ngIf="stats.rating > 0">{{ getRatingText(Math.round(stats.rating)) }}</span>
+                <span class="rating-label" *ngIf="stats.rating === 0" style="color: #94a3b8;">Sin calificaciones aún</span>
               </div>
             </div>
           </div>

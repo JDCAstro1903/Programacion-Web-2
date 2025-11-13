@@ -224,7 +224,7 @@ const verifyClient = async (req, res) => {
             '¡Cuenta Verificada! ✓',
             'Tu cuenta ha sido verificada exitosamente. Ya puedes acceder a todos los servicios de NannysLM.',
             'success',
-            '/dashboard/profile',
+            '/profile',
             'verification'
           ]
         );
@@ -245,7 +245,7 @@ const verifyClient = async (req, res) => {
             'Verificación Rechazada',
             `${reason ? 'Razón: ' + reason : 'Tu solicitud de verificación ha sido rechazada. Por favor contacta al equipo de soporte.'}`,
             'warning',
-            '/dashboard/profile',
+            '/profile',
             'verification'
           ]
         );

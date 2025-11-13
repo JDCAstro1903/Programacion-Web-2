@@ -42,4 +42,12 @@ router.get('/payments', verifyToken, ClientController.getClientPayments);
  */
 router.get('/stats', verifyToken, ClientController.getClientStats);
 
+/**
+ * @route   PUT /api/v1/client/:id/verify
+ * @desc    Verificar o rechazar cliente (Admin)
+ * @access  Private (solo admin)
+ * @body    { status: 'approved' | 'rejected' }
+ */
+router.put('/:id/verify', verifyToken, ClientController.verifyClient);
+
 module.exports = router;

@@ -1,6 +1,7 @@
 // Controlador para gestionar nannys
 const { pool } = require('../config/database');
 const bcrypt = require('bcrypt');
+const { sendNannyCredentialsEmail } = require('../utils/email');
 
 /**
  * Crear una nueva nanny (SOLO PARA ADMIN)
@@ -150,9 +151,30 @@ const createNanny = async (req, res) => {
         await connection.commit();
         console.log(`✅ Transacción completada exitosamente`);
         
+        // 6️⃣ Enviar correo con credenciales a la nanny
+        const loginLink = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/login`;
+        try {
+            const emailResult = await sendNannyCredentialsEmail(
+                email,
+                `${first_name} ${last_name}`,
+                password,  // Enviar contraseña sin hashear (ya que es temporal)
+                loginLink
+            );
+            
+            if (emailResult.success) {
+                console.log('📧 Correo de credenciales enviado exitosamente a:', email);
+            } else {
+                console.warn('⚠️ Error al enviar correo de credenciales:', emailResult.message);
+                // No hacemos reject aquí, la nanny fue creada correctamente
+            }
+        } catch (emailError) {
+            console.error('❌ Error en el intento de envío de correo:', emailError.message);
+            // No bloqueamos la respuesta si falla el correo
+        }
+        
         return res.status(201).json({
             success: true,
-            message: `Nanny ${first_name} ${last_name} creada exitosamente`,
+            message: `Nanny ${first_name} ${last_name} creada exitosamente. Se envió un correo con sus credenciales.`,
             data: {
                 user_id: userId,
                 nanny_id: nannyId,
@@ -307,8 +329,70 @@ const getNannyById = async (req, res) => {
     }
 };
 
+/**
+ * Obtener una nanny por su user_id
+ */
+const getNannyByUserId = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        console.log(`🔍 Buscando nanny con user_id: ${userId}`);
+        
+        const [nannys] = await pool.query(
+            `SELECT 
+                n.id,
+                n.user_id,
+                n.description,
+                n.experience_years,
+                n.hourly_rate,
+                n.rating_average,
+                n.total_ratings,
+                n.services_completed,
+                n.status,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone_number,
+                u.address,
+                u.profile_image,
+                u.is_verified,
+                ua.is_available,
+                ua.reason as unavailability_reason
+            FROM nannys n
+            JOIN users u ON n.user_id = u.id
+            LEFT JOIN nanny_availability ua ON n.id = ua.nanny_id
+            WHERE n.user_id = ?`,
+            [userId]
+        );
+        
+        if (nannys.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Nanny no encontrada para este usuario'
+            });
+        }
+        
+        console.log(`✅ Nanny encontrada para user_id ${userId}:`, nannys[0].id);
+        
+        return res.status(200).json({
+            success: true,
+            message: 'Nanny obtenida correctamente',
+            data: nannys[0]
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al obtener nanny por user_id:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createNanny,
     getAllNannys,
-    getNannyById
+    getNannyById,
+    getNannyByUserId
 };

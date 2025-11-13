@@ -6,9 +6,11 @@ class ServiceController {
    */
   static async getAllServices(req, res) {
     try {
-      const { clientId, status, limit = 100 } = req.query;
+      const { clientId, nannyId, status, limit = 100 } = req.query;
       
-      const result = await Service.getAll(clientId, status, limit);
+      console.log('📋 GET /api/services - Parámetros:', { clientId, nannyId, status, limit });
+      
+      const result = await Service.getAll(clientId, nannyId, status, limit);
       return res.json({ success: true, data: result.data || [] });
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -165,6 +167,36 @@ class ServiceController {
       return res.json({ success: true, data: result.data || [] });
     } catch (error) {
       console.error('Error fetching nanny availability:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Aceptar un servicio por parte de una nanny
+   */
+  static async acceptService(req, res) {
+    try {
+      const { serviceId } = req.params;
+      const { nanny_id } = req.body;
+
+      console.log(`🤝 Request to accept service ${serviceId} by nanny ${nanny_id}`);
+
+      if (!nanny_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere el ID de la nanny (nanny_id)'
+        });
+      }
+
+      const result = await Service.acceptService(serviceId, nanny_id);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      return res.json(result);
+    } catch (error) {
+      console.error('Error accepting service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }

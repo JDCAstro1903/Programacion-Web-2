@@ -419,6 +419,105 @@ class ClientController {
       });
     }
   }
+
+  /**
+   * Verificar o rechazar cliente (Admin)
+   */
+  static async verifyClient(req, res) {
+    try {
+      const clientId = req.params.id;
+      const { status } = req.body; // 'approved' o 'rejected'
+
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Estado de verificación inválido'
+        });
+      }
+
+      // Obtener datos del cliente
+      const clientQuery = `
+        SELECT u.id, u.email, u.first_name, u.last_name, c.verification_status
+        FROM users u
+        JOIN clients c ON u.id = c.user_id
+        WHERE c.id = ? AND u.user_type = 'client'
+      `;
+
+      const clientResult = await executeQuery(clientQuery, [clientId]);
+
+      if (!clientResult.success || clientResult.data.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      const client = clientResult.data[0];
+      const verificationStatus = status === 'approved' ? 'verified' : 'rejected';
+
+      // Actualizar estado de verificación en tabla clients
+      const updateClientQuery = `
+        UPDATE clients 
+        SET verification_status = ?, verification_date = NOW()
+        WHERE id = ?
+      `;
+
+      const updateClientResult = await executeQuery(updateClientQuery, [verificationStatus, clientId]);
+
+      if (!updateClientResult.success) {
+        throw new Error('Error al actualizar estado de verificación del cliente');
+      }
+
+      // Actualizar is_verified en tabla users solo si es aprobado
+      if (status === 'approved') {
+        const updateUserQuery = `
+          UPDATE users 
+          SET is_verified = 1
+          WHERE id = ?
+        `;
+
+        const updateUserResult = await executeQuery(updateUserQuery, [client.id]);
+
+        if (!updateUserResult.success) {
+          throw new Error('Error al actualizar is_verified del usuario');
+        }
+      }
+
+      // Importar funciones de email
+      const { sendVerificationApprovedEmail, sendVerificationRejectedEmail } = require('../utils/email');
+
+      // Enviar email según el estado
+      const clientName = `${client.first_name} ${client.last_name}`.trim();
+      let emailResult;
+
+      if (status === 'approved') {
+        emailResult = await sendVerificationApprovedEmail(client.email, clientName);
+        console.log('✓ Email de verificación aprobada enviado a:', client.email);
+      } else {
+        emailResult = await sendVerificationRejectedEmail(client.email, clientName);
+        console.log('✗ Email de verificación rechazada enviado a:', client.email);
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Cliente verificación ${status === 'approved' ? 'aprobada' : 'rechazada'} correctamente. Email enviado a ${client.email}`,
+        data: {
+          clientId,
+          verificationStatus,
+          emailSent: emailResult.success,
+          emailStatus: emailResult.message
+        }
+      });
+
+    } catch (error) {
+      console.error('Error al verificar cliente:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 // ...existing code...
@@ -428,5 +527,6 @@ module.exports = {
   getClientInfo: ClientController.getClientInfo,
   getClientServices: ClientController.getClientServices,
   getClientPayments: ClientController.getClientPayments,
-  getClientStats: ClientController.getClientStats
+  getClientStats: ClientController.getClientStats,
+  verifyClient: ClientController.verifyClient
 };

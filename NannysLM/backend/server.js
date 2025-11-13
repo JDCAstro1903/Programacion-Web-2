@@ -163,7 +163,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/client', clientRoutes);
-app.use('/api/services', serviceRoutes);
+app.use('/api/v1/services', serviceRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/bank-details', bankDetailsRoutes);
 app.use('/api/v1/notifications', notificationRoutes);

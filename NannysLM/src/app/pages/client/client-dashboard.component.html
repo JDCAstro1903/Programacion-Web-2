@@ -292,17 +292,26 @@
 
         <!-- Lista de servicios contratados -->
         <div class="contracted-services-container" *ngIf="!hasNoContractedServices()">
-          <div *ngFor="let service of contractedServices" class="service-card contracted">
-            <h3 class="service-title">{{ service.title }}</h3>
+          <div *ngFor="let service of contractedServices" class="service-card contracted" [class.service-cancelled]="service.status === 'cancelled'">
+            <div class="service-header-section">
+              <h3 class="service-title">{{ service.title }}</h3>
+              
+              <!-- Estado del servicio -->
+              <div class="status-badge" [ngClass]="{
+                'status-confirmed': service.status === 'confirmed',
+                'status-pending': service.status === 'pending',
+                'status-completed': service.status === 'completed',
+                'status-cancelled': service.status === 'cancelled',
+                'status-in-progress': service.status === 'in_progress'
+              }">
+                <span class="status-dot"></span>
+                <span class="status-text">{{ getStatusText(service.status) }}</span>
+              </div>
+            </div>
             
             <div class="service-content">
               <!-- Información del servicio -->
               <div class="service-info">
-                <div class="status-badge">
-                  <span class="status-label">Estado:</span>
-                  <span class="status-value finished">{{ service.status }}</span>
-                </div>
-                
                 <div class="service-details">
                   <p><strong>Hora y fecha:</strong> {{ formatContractedServiceDate(service) }}</p>
                   <p><strong>Indicaciones:</strong></p>
@@ -310,8 +319,8 @@
                 </div>
               </div>
 
-              <!-- Información de la nanny -->
-              <div class="nanny-info">
+              <!-- Información de la nanny (oculta si está cancelado) -->
+              <div class="nanny-info" *ngIf="service.status !== 'cancelled'">
                 <div class="nanny-card">
                   <div class="nanny-avatar">
                     <img [src]="service.nanny?.profile_image || 'assets/logo.png'" [alt]="service.nanny?.name || 'Nanny'">
@@ -324,16 +333,25 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Mensaje de servicio cancelado -->
+              <div class="cancelled-message" *ngIf="service.status === 'cancelled'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p>Este servicio ha sido cancelado. No puedes realizar acciones sobre él.</p>
+              </div>
             </div>
 
             <!-- Acciones del servicio contratado -->
-            <div class="service-actions">
+            <div class="service-actions" *ngIf="service.status !== 'cancelled'">
               <!-- Botón para calificar -->
               <button 
                 class="action-btn rate-btn" 
-                *ngIf="!service.isRated && !service.showRating"
+                *ngIf="!service.isRated && !service.showRating && service.status === 'completed'"
                 (click)="rateService(service.id)">
-                Calificar
+                ⭐ Calificar
               </button>
 
               <!-- Sistema de calificación con estrellas -->
@@ -373,15 +391,13 @@
               </div>
 
               <!-- Botón para ver datos bancarios específicos de la nanny -->
-              <div class="service-actions">
-                <button class="bank-details-btn" (click)="openBankDetailsModal(service.nanny?.id)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                  Ver Datos Bancarios de {{ service.nanny?.name }}
-                </button>
-              </div>
+              <button class="bank-details-btn" (click)="openBankDetailsModal(service.nanny?.id)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Ver Datos Bancarios
+              </button>
             </div>
           </div>
         </div>
@@ -824,33 +840,20 @@
                       </select>
                     </div>
 
-                    <!-- Selector de número de nannys -->
-                    <div class="selection-item">
-                      <div class="selection-header">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#6b7280" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 7.5V8.5C15 9.1 14.6 9.5 14 9.5S13 9.1 13 8.5V7L12 6.5L11 7V8.5C11 9.1 10.6 9.5 10 9.5S9 9.1 9 8.5V7.5L3 7V9C3 10.1 3.9 11 5 11V19H19V11C20.1 11 21 10.1 21 9Z"/>
-                        </svg>
-                        <span>Número de nannys</span>
-                      </div>
-                      <select class="selection-select" 
-                              [value]="selectedNannys" 
-                              (change)="onNannysChange($event)">
-                        <option *ngFor="let num of getNannysOptions()" [value]="num">
-                          {{ num }} {{ num === 1 ? 'nanny' : 'nannys' }}
-                        </option>
-                      </select>
-                    </div>
                   </div>
 
-                  <!-- Alerta de recomendación -->
-                  <div class="nanny-recommendation-alert" *ngIf="shouldShowNannyRecommendation()">
-                    <div class="alert-icon">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5zM11 14h2v2h-2v-2zm0-6h2v4h-2V8z"/>
-                      </svg>
-                    </div>
-                    <div class="alert-content">
-                      <p><strong>Recomendación:</strong> Para 3 o más niños, se recomienda contratar 2 o más nannys para garantizar la mejor atención y seguridad.</p>
+                  <!-- Información sobre asignación de nanny -->
+                  <div class="nanny-assignment-info" style="margin-top: 1.5rem; background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem; border-radius: 8px;">
+                    <div style="display: flex; gap: 12px;">
+                      <div style="flex-shrink: 0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="#3b82f6" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p style="margin: 0 0 8px 0; font-weight: 600; color: #1e40af; font-size: 0.9rem;">¿Cómo funciona la asignación?</p>
+                        <p style="margin: 0; color: #1e40af; font-size: 0.85rem; line-height: 1.5;">Todas las nannys disponibles recibirán una notificación sobre tu servicio. La primera en aceptar será asignada automáticamente. Te notificaremos cuando esto suceda.</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -918,22 +921,21 @@
                     <p><strong>Horario de salida:</strong> {{ selectedEndTime }}</p>
                     <p><strong>Duración:</strong> {{ calculateDuration() }}</p>
                     <p><strong>Niños:</strong> {{ selectedChildren }} {{ selectedChildren === 1 ? 'niño' : 'niños' }}</p>
-                    <p><strong>Nannys:</strong> {{ selectedNannys }} {{ selectedNannys === 1 ? 'nanny' : 'nannys' }}</p>
                   </div>
                   <div class="no-reservation" *ngIf="!hasValidReservation()">
-                    <p>aquí se mostrará el servicio, fecha(s), horarios, niños y nannys</p>
+                    <p>aquí se mostrará el servicio, fecha(s), horarios y niños</p>
                   </div>
                   
                   <div class="action-buttons">
                     <button class="confirm-btn" 
                             [disabled]="!hasValidReservation()"
                             (click)="confirmReservation()">
-                      ✓ Confirmar
+                      Confirmar
                     </button>
                     <button class="cancel-btn" 
                             [disabled]="!hasValidReservation()"
                             (click)="cancelReservation()">
-                      ✗ Cancelar
+                      Cancelar
                     </button>
                   </div>
                 </div>
@@ -1609,6 +1611,23 @@
               </div>
             </form>
           </div>
+        </div>
+      </div>
+
+      <!-- Vista de Notificaciones -->
+      <div *ngIf="currentView === 'notifications'" class="notifications-view">
+        <div class="content-header">
+          <h2>📬 Mis Notificaciones</h2>
+          <p>Revisa todas tus notificaciones y acciones pendientes</p>
+        </div>
+
+        <div class="notifications-container">
+          <app-notifications-panel
+            title="Notificaciones"
+            [showHeader]="false"
+            [showFilters]="true"
+            (notificationClicked)="handleNotificationPanelClick($event)">
+          </app-notifications-panel>
         </div>
       </div>
 

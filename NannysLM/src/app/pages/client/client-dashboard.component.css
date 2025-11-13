@@ -2519,6 +2519,54 @@
   color: #dc2626;
 }
 
+.status-badge.status-in-progress {
+  background: #bfdbfe;
+  color: #1e40af;
+}
+
+/* Estilos para servicios cancelados */
+.service-card.service-cancelled {
+  opacity: 0.75;
+  border: 2px solid #fca5a5;
+  background: linear-gradient(135deg, #fef2f2 0%, #fef9f9 100%);
+}
+
+.service-card.service-cancelled .service-title {
+  text-decoration: line-through;
+  color: #991b1b;
+}
+
+.service-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cancelled-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 16px;
+  color: #991b1b;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.cancelled-message svg {
+  flex-shrink: 0;
+  color: #dc2626;
+}
+
+.cancelled-message p {
+  margin: 0;
+  font-weight: 500;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
@@ -6301,4 +6349,41 @@
 .modal-btn-close:hover {
   background: #e5e7eb;
   border-color: #9ca3af;
+}
+
+/* ============ VISTA DE NOTIFICACIONES ============ */
+
+.notifications-view {
+  padding: 2rem;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin: 0;
+}
+
+.notifications-container {
+  padding: 1.5rem;
+  background-color: #fafbfc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .notifications-view {
+    padding: 1rem;
+  }
+  
+  .notifications-container {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .notifications-view {
+    padding: 0.75rem;
+  }
+  
+  .notifications-container {
+    padding: 0.75rem;
+  }
 }

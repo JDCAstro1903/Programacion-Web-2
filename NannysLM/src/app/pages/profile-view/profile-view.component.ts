@@ -48,6 +48,7 @@ export class ProfileViewComponent implements OnInit {
   confirmPassword = '';
   isChangingPassword = false;
 
+
   // Para modal de resultados (contraseña)
   showPasswordModal = false;
   passwordModalType: 'loading' | 'success' | 'error' | 'validation' = 'loading';
