@@ -46,6 +46,10 @@ export class NannyDashboardComponent implements OnInit {
   // Estado del modal de logout
   showLogoutModal: boolean = false;
 
+  // Estado del modal de cliente
+  showClientModal: boolean = false;
+  selectedClient: any = null;
+
   // Notificaciones
   notifications: Notification[] = [];
   unreadNotificationsCount: number = 0;
@@ -258,13 +262,28 @@ export class NannyDashboardComponent implements OnInit {
   }
 
   viewClientProfile(clientName: string) {
-    console.log('Ver perfil del cliente:', clientName);
-    // Aquí se puede implementar la navegación al perfil del cliente
+    const service = this.services.upcoming.find(s => s.client === clientName) || 
+                   this.services.past.find(s => s.client === clientName);
+    
+    if (service) {
+      this.selectedClient = service;
+      this.showClientModal = true;
+      console.log('Abriendo modal del cliente:', clientName, service);
+    }
+  }
+
+  closeClientModal() {
+    this.showClientModal = false;
+    this.selectedClient = null;
   }
 
   getMoreInfo(serviceId: number) {
-    console.log('Más información del servicio:', serviceId);
-    // Aquí se puede implementar la vista detallada del servicio
+    const service = this.services.upcoming.find(s => s.id === serviceId);
+    
+    if (service) {
+      console.log('Navegando a detalles del servicio:', serviceId);
+      this.router.navigate(['/nanny/service-details', serviceId]);
+    }
   }
 
   getRatingStars(rating: number): string {

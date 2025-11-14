@@ -99,7 +99,15 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.initializeCurrentUser();
     this.loadDashboardData();
+  }
+
+  private initializeCurrentUser() {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.currentUser.name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Administrador';
+    }
   }
 
   private loadDashboardData() {
@@ -324,7 +332,7 @@ export class AdminDashboardComponent implements OnInit {
 
   // Usuario actual (temporal)
   currentUser = {
-    name: 'Usuario 1',
+    name: 'Administrador',
     role: 'administrador',
     avatar: '/assets/logo.png'
   };

@@ -20,6 +20,9 @@ router.put('/:id', ServiceController.updateService);
 // Aceptar un servicio (para nannys)
 router.post('/:serviceId/accept', ServiceController.acceptService);
 
+// Completar un servicio (marcar como finalizado)
+router.put('/:serviceId/complete', ServiceController.completeService);
+
 // Eliminar/cancelar un servicio
 router.delete('/:id', ServiceController.deleteService);
 

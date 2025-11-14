@@ -84,8 +84,11 @@
           <div class="overview-card next-service">
             <div class="card-header">
               <div class="card-icon services">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19ZM7 10H9V12H7V10ZM11 10H13V12H11V10ZM15 10H17V12H15V10Z"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
               </div>
               <div class="card-title">
@@ -118,8 +121,8 @@
           <div class="overview-card rating-summary">
             <div class="card-header">
               <div class="card-icon rating">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 1L15.09 10H24L17 15L19.09 24L12 19L5 24L7 15L0 10H8.91L12 1Z"/>
                 </svg>
               </div>
               <div class="card-title">
@@ -145,9 +148,9 @@
           <div class="overview-card services-summary">
             <div class="card-header">
               <div class="card-icon completed">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" fill="none"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="16 12 12 8 8 12"/>
                 </svg>
               </div>
               <div class="card-title">
@@ -394,6 +397,66 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Modal de cliente -->
+  <div *ngIf="showClientModal && selectedClient" class="client-modal-overlay" (click)="closeClientModal()">
+    <div class="client-modal-content" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="modal-header-client">
+        <h2>Perfil del Cliente</h2>
+        <button class="modal-close-btn" (click)="closeClientModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido -->
+      <div class="modal-body-client">
+        <!-- Cliente -->
+        <div class="client-info-section">
+          <div class="section-title">Cliente</div>
+          <div class="info-value">{{ selectedClient.client }}</div>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="client-info-section">
+          <div class="section-title">Ubicación</div>
+          <div class="info-value">{{ selectedClient.location }}</div>
+        </div>
+
+        <!-- Fecha -->
+        <div class="client-info-section">
+          <div class="section-title">Fecha del Servicio</div>
+          <div class="info-value">{{ selectedClient.dateDisplay }} • {{ selectedClient.time }}</div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="client-info-section" *ngIf="selectedClient.instructions">
+          <div class="section-title">Instrucciones Especiales</div>
+          <div class="info-value info-text">{{ selectedClient.instructions }}</div>
+        </div>
+
+        <!-- Calificación -->
+        <div class="client-info-section" *ngIf="selectedClient.rating">
+          <div class="section-title">Calificación Recibida</div>
+          <div class="rating-display-modal">
+            <div class="rating-stars-modal">
+              <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= selectedClient.rating" class="star-modal" width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <span class="rating-text-modal">{{ getRatingText(selectedClient.rating) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer-client">
+        <button class="btn-close-modal" (click)="closeClientModal()">Cerrar</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de logout reutilizable -->

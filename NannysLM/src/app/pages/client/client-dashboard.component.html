@@ -294,7 +294,10 @@
         <div class="contracted-services-container" *ngIf="!hasNoContractedServices()">
           <div *ngFor="let service of contractedServices" class="service-card contracted" [class.service-cancelled]="service.status === 'cancelled'">
             <div class="service-header-section">
-              <h3 class="service-title">{{ service.title }}</h3>
+              <div class="service-header-left">
+                <h3 class="service-title">{{ service.title || service.service_type_name }}</h3>
+                <p class="service-type">{{ service.service_type_name }}</p>
+              </div>
               
               <!-- Estado del servicio -->
               <div class="status-badge" [ngClass]="{
@@ -312,26 +315,59 @@
             <div class="service-content">
               <!-- Información del servicio -->
               <div class="service-info">
-                <div class="service-details">
-                  <p><strong>Hora y fecha:</strong> {{ formatContractedServiceDate(service) }}</p>
-                  <p><strong>Indicaciones:</strong></p>
-                  <p class="service-instructions">{{ service.special_instructions || service.instructions }}</p>
+                <div class="service-details-grid">
+                  <div class="detail-item">
+                    <label>Fecha de Inicio</label>
+                    <p>{{ service.start_date ? (service.start_date | date: 'dd/MM/yyyy') : 'No especificada' }}</p>
+                  </div>
+                  <div class="detail-item" *ngIf="service.end_date">
+                    <label>Fecha de Fin</label>
+                    <p>{{ service.end_date ? (service.end_date | date: 'dd/MM/yyyy') : 'No especificada' }}</p>
+                  </div>
+                  <div class="detail-item">
+                    <label>Horario</label>
+                    <p>{{ service.start_time }} - {{ service.end_time }}</p>
+                  </div>
+                  <div class="detail-item">
+                    <label>Duración</label>
+                    <p>{{ service.total_hours }} horas</p>
+                  </div>
+                  <div class="detail-item" *ngIf="service.number_of_children">
+                    <label>Número de Niños</label>
+                    <p>{{ service.number_of_children }}</p>
+                  </div>
+                  <div class="detail-item">
+                    <label>Monto Total</label>
+                    <p class="amount">${{ service.total_amount | number: '1.2-2' }} MXN</p>
+                  </div>
+                </div>
+                
+                <div class="service-address" *ngIf="service.address">
+                  <label>Ubicación</label>
+                  <p>{{ service.address }}</p>
                 </div>
               </div>
 
               <!-- Información de la nanny (oculta si está cancelado) -->
-              <div class="nanny-info" *ngIf="service.status !== 'cancelled'">
+              <div class="nanny-info" *ngIf="service.status !== 'cancelled' && service.nanny_id">
                 <div class="nanny-card">
                   <div class="nanny-avatar">
-                    <img [src]="service.nanny?.profile_image || 'assets/logo.png'" [alt]="service.nanny?.name || 'Nanny'">
+                    <img [src]="service.nanny_profile_image" [alt]="service.nanny_full_name" (error)="$event.target.src='assets/logo.png'">
                   </div>
                   <div class="nanny-details">
-                    <p class="nanny-assigned">Nanny asignada: {{ service.nanny?.name || 'No asignada' }}</p>
+                    <p class="nanny-label">Nanny Asignada</p>
+                    <p class="nanny-name">{{ service.nanny_full_name }}</p>
                     <button class="view-profile-btn" (click)="viewNannyProfile()">
-                      Ver perfil
+                      Ver perfil completo
                     </button>
                   </div>
                 </div>
+              </div>
+
+              <!-- Instrucciones especiales -->
+              <div class="special-instructions" *ngIf="service.special_instructions">
+                <label>Instrucciones Especiales</label>
+                <p>{{ service.special_instructions }}</p>
               </div>
 
               <!-- Mensaje de servicio cancelado -->
@@ -350,7 +386,7 @@
               <button 
                 class="action-btn rate-btn" 
                 *ngIf="!service.isRated && !service.showRating && service.status === 'completed'"
-                (click)="rateService(service.id)">
+                (click)="rateService(service.id); $event.stopPropagation()">
                 ⭐ Calificar
               </button>
 
@@ -369,7 +405,7 @@
                   </span>
                 </div>
                 <div class="rating-actions">
-                  <button class="cancel-rating-btn" (click)="cancelRating(service.id)">
+                  <button class="cancel-rating-btn" (click)="cancelRating(service.id); $event.stopPropagation()">
                     Cancelar
                   </button>
                 </div>
@@ -391,7 +427,7 @@
               </div>
 
               <!-- Botón para ver datos bancarios específicos de la nanny -->
-              <button class="bank-details-btn" (click)="openBankDetailsModal(service.nanny?.id)">
+              <button class="bank-details-btn" (click)="openBankDetailsModal(service.nanny?.id); $event.stopPropagation()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
                   <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
@@ -454,8 +490,21 @@
                     <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
                   <div class="detail-content">
-                    <span class="detail-label">Fecha</span>
+                    <span class="detail-label">{{ selectedService.end_date ? 'Fecha de Inicio' : 'Fecha' }}</span>
                     <span class="detail-value">{{ formatDate(selectedService.start_date) }}</span>
+                  </div>
+                </div>
+
+                <div class="detail-item" *ngIf="selectedService.end_date">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <div class="detail-content">
+                    <span class="detail-label">Fecha de Fin</span>
+                    <span class="detail-value">{{ formatDate(selectedService.end_date) }}</span>
                   </div>
                 </div>
 
@@ -669,7 +718,13 @@
                   <p class="service-date">{{ formatContractedServiceDate(service) }}</p>
                 </div>
                 <div class="service-status">
-                  <span class="status-badge completed">{{ service.status }}</span>
+                  <span class="status-badge" [ngClass]="{
+                    'status-confirmed': service.status === 'confirmed',
+                    'status-pending': service.status === 'pending',
+                    'status-completed': service.status === 'completed',
+                    'status-cancelled': service.status === 'cancelled',
+                    'status-in-progress': service.status === 'in_progress'
+                  }">{{ getStatusText(service.status) }}</span>
                 </div>
               </div>
 
@@ -696,8 +751,8 @@
                     <span class="rating-text">{{ getRatingText(service.rating.rating || 0) }}</span>
                   </div>
 
-                  <div *ngIf="!service.isRated && !service.showRating" class="rating-action">
-                    <button class="rate-btn" (click)="rateService(service.id)">
+                  <div *ngIf="!service.isRated && !service.showRating && service.status === 'completed'" class="rating-action">
+                    <button class="rate-btn" (click)="rateService(service.id); $event.stopPropagation()">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                       </svg>
@@ -920,6 +975,7 @@
                     <p><strong>Horario de llegada:</strong> {{ selectedStartTime }}</p>
                     <p><strong>Horario de salida:</strong> {{ selectedEndTime }}</p>
                     <p><strong>Duración:</strong> {{ calculateDuration() }}</p>
+                    <p><strong>Horas totales:</strong> {{ calculateTotalHoursDecimal() }} horas</p>
                     <p><strong>Niños:</strong> {{ selectedChildren }} {{ selectedChildren === 1 ? 'niño' : 'niños' }}</p>
                   </div>
                   <div class="no-reservation" *ngIf="!hasValidReservation()">

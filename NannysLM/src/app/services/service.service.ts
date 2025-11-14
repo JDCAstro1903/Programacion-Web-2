@@ -207,4 +207,12 @@ export class ServiceService {
   acceptService(serviceId: number, nannyId: number): Observable<ApiResponse<any>> {
     return this.http.post<ApiResponse<any>>(`${this.apiUrl}/${serviceId}/accept`, { nanny_id: nannyId });
   }
+
+  /**
+   * Completar un servicio (marcar como finalizado)
+   * @param serviceId - ID del servicio a completar
+   */
+  completeService(serviceId: number): Observable<ApiResponse<any>> {
+    return this.http.put<ApiResponse<any>>(`${this.apiUrl}/${serviceId}/complete`, {});
+  }
 }

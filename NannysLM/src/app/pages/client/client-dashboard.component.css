@@ -6387,3 +6387,267 @@
     padding: 0.75rem;
   }
 }
+
+/* Estilos mejorados para servicios contratados */
+.service-header-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.service-header-left {
+  flex: 1;
+}
+
+.service-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+}
+
+.service-type {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Grid de detalles del servicio */
+.service-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-item label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.detail-item p {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0;
+}
+
+.detail-item p.amount {
+  font-size: 1.1rem;
+  color: #e31b7e;
+  font-weight: 700;
+}
+
+/* Dirección del servicio */
+.service-address {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+}
+
+.service-address label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e40af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.service-address p {
+  font-size: 0.95rem;
+  color: #1e3a8a;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Instrucciones especiales */
+.special-instructions {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+}
+
+.special-instructions label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.special-instructions p {
+  font-size: 0.95rem;
+  color: #78350f;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Información de la nanny mejorada */
+.nanny-info {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #fef2f2 0%, #fef9f3 100%);
+  border: 2px solid #fce7f3;
+  border-radius: 12px;
+}
+
+.nanny-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nanny-avatar {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 3px solid #e31b7e;
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.2);
+}
+
+.nanny-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nanny-details {
+  flex: 1;
+}
+
+.nanny-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 0.5rem 0;
+}
+
+.nanny-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.75rem 0;
+}
+
+.view-profile-btn {
+  padding: 0.6rem 1.2rem;
+  background: #e31b7e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-profile-btn:hover {
+  background: #c01568;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.3);
+}
+
+/* Mensaje de servicio cancelado */
+.cancelled-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+  color: #dc2626;
+}
+
+.cancelled-message svg {
+  flex-shrink: 0;
+}
+
+.cancelled-message p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Status badges mejorados */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-confirmed .status-dot,
+.status-in-progress .status-dot {
+  background: #10b981;
+}
+
+.status-confirmed,
+.status-in-progress {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.status-pending .status-dot {
+  background: #f59e0b;
+}
+
+.status-pending {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.status-completed .status-dot {
+  background: #3b82f6;
+}
+
+.status-completed {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.status-cancelled .status-dot {
+  background: #dc2626;
+}
+
+.status-cancelled {
+  background: #fef2f2;
+  color: #991b1b;
+}

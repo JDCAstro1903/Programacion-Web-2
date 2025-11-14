@@ -489,23 +489,46 @@ class ClientController {
       // Enviar email según el estado
       const clientName = `${client.first_name} ${client.last_name}`.trim();
       let emailResult;
+      let notificationMessage;
+      let notificationType;
 
       if (status === 'approved') {
         emailResult = await sendVerificationApprovedEmail(client.email, clientName);
+        notificationMessage = '¡Tu cuenta ha sido verificada exitosamente! Ahora puedes acceder a todos los servicios de NannysLM.';
+        notificationType = 'success';
         console.log('✓ Email de verificación aprobada enviado a:', client.email);
       } else {
         emailResult = await sendVerificationRejectedEmail(client.email, clientName);
+        notificationMessage = 'Tu solicitud de verificación ha sido rechazada. Por favor, revisa tu correo para más información y reintenta.';
+        notificationType = 'warning';
         console.log('✗ Email de verificación rechazada enviado a:', client.email);
+      }
+
+      // Crear notificación en la base de datos
+      const notificationTitle = status === 'approved' ? '¡Cuenta Verificada!' : 'Verificación Rechazada';
+      const createNotificationQuery = `
+        INSERT INTO notifications (user_id, title, message, type, is_read, action_url, related_id, related_type, created_at, read_at)
+        VALUES (?, ?, ?, ?, 0, NULL, ?, 'client', NOW(), NULL)
+      `;
+
+      const notificationResult = await executeQuery(createNotificationQuery, [client.id, notificationTitle, notificationMessage, notificationType, clientId]);
+
+      if (!notificationResult.success) {
+        console.error('Error al crear notificación:', notificationResult.error);
+        // No lanzar error, continuar de todas formas
+      } else {
+        console.log('✓ Notificación creada para el cliente:', client.id);
       }
 
       res.status(200).json({
         success: true,
-        message: `Cliente verificación ${status === 'approved' ? 'aprobada' : 'rechazada'} correctamente. Email enviado a ${client.email}`,
+        message: `Cliente verificación ${status === 'approved' ? 'aprobada' : 'rechazada'} correctamente. Email y notificación enviados a ${client.email}`,
         data: {
           clientId,
           verificationStatus,
           emailSent: emailResult.success,
-          emailStatus: emailResult.message
+          emailStatus: emailResult.message,
+          notificationSent: notificationResult.success
         }
       });
 

@@ -28,7 +28,7 @@
         <button class="back-btn" (click)="declineService()">Volver al Dashboard</button>
       </div>
 
-      <!-- Success State -->
+      <!-- Success State - Aceptación -->
       <div *ngIf="acceptSuccess" class="success-container">
         <div class="success-icon">
           <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -41,8 +41,21 @@
         <p class="redirect-message">Redirigiendo al dashboard...</p>
       </div>
 
+      <!-- Success State - Completación -->
+      <div *ngIf="completeSuccess" class="success-container">
+        <div class="success-icon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" fill="#10b981" opacity="0.2"/>
+            <path d="M9 12L11 14L15 10" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>¡Servicio finalizado correctamente! ✨</h2>
+        <p>El servicio ha sido marcado como completado. Gracias por tu trabajo.</p>
+        <p class="redirect-message">Redirigiendo al dashboard...</p>
+      </div>
+
       <!-- Service Details -->
-      <div *ngIf="service && !isLoading && !acceptSuccess" class="service-details-container">
+      <div *ngIf="service && !isLoading && !acceptSuccess && !completeSuccess" class="service-details-container">
         <!-- Header del servicio -->
         <div class="service-header">
           <button class="back-button" (click)="declineService()">
@@ -204,7 +217,7 @@
           </div>
         </div>
 
-        <!-- Botones de acción -->
+        <!-- Botones de acción para pendientes -->
         <div class="actions-section" *ngIf="service.status === 'pending' && !service.nanny_id && !isAccepting">
           <button class="action-btn decline" (click)="declineService()">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -221,10 +234,67 @@
           </button>
         </div>
 
-        <!-- Estado procesando -->
+        <!-- Botones de acción para confirmados -->
+        <div class="actions-section" *ngIf="service.status === 'confirmed' && !isCompleting">
+          <button class="action-btn decline" (click)="declineService()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Volver
+          </button>
+          
+          <button class="action-btn accept" (click)="openCompleteModal()" [disabled]="isCompleting">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Finalizar Servicio
+          </button>
+        </div>
+
+        <!-- Estado procesando aceptación -->
         <div *ngIf="isAccepting" class="processing-overlay">
           <div class="spinner"></div>
           <p>Procesando tu aceptación...</p>
+        </div>
+
+        <!-- Estado procesando completación -->
+        <div *ngIf="isCompleting" class="processing-overlay">
+          <div class="spinner"></div>
+          <p>Finalizando el servicio...</p>
+        </div>
+
+        <!-- Modal de confirmación para completar servicio -->
+        <div *ngIf="showCompleteModal" class="modal-overlay" (click)="closeCompleteModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>¿Finalizar Servicio?</h2>
+              <button class="close-btn" (click)="closeCompleteModal()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="modal-body">
+              <p>Al finalizar este servicio, no podrás hacer cambios posteriores. Asegúrate de que has completado todas las tareas.</p>
+              
+              <div *ngIf="completeError" class="error-message">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p>{{ completeError }}</p>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="action-btn decline" (click)="closeCompleteModal()">
+                Cancelar
+              </button>
+              <button class="action-btn accept" (click)="completeService()" [disabled]="isCompleting">
+                {{ isCompleting ? 'Finalizando...' : 'Confirmar' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </main>

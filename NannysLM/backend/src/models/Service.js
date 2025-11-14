@@ -102,26 +102,97 @@ class Service {
   }
 
   /**
-   * Calcula el total de horas entre dos tiempos
+   * Calcula el total de horas entre dos tiempos y dos fechas (considerando multi-día)
    */
-  static calculateTotalHours(startTime, endTime) {
+  static calculateTotalHours(startTime, endTime, startDate = null, endDate = null) {
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
     
-    let hours = endHour - startHour;
-    let minutes = endMin - startMin;
+    const startMinFraction = startMin / 60;
+    const endMinFraction = endMin / 60;
     
-    // Manejar el caso de que el servicio cruce la medianoche
-    if (hours < 0) {
-      hours += 24;
+    // Si no hay endDate o es el mismo día, calcular solo para un día
+    if (!endDate || startDate === endDate) {
+      let hours = endHour - startHour;
+      let minutes = endMin - startMin;
+      
+      // Manejar el caso de que el servicio cruce la medianoche
+      if (hours < 0) {
+        hours += 24;
+      }
+      
+      if (minutes < 0) {
+        hours -= 1;
+        minutes += 60;
+      }
+      
+      return hours + (minutes / 60);
     }
     
-    if (minutes < 0) {
-      hours -= 1;
-      minutes += 60;
+    // Multi-día: calcular primer día + días completos + último día
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const numberOfDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      
+      if (numberOfDays <= 1) {
+        // Si es el mismo día, calcular normal
+        let hours = endHour - startHour;
+        let minutes = endMin - startMin;
+        
+        if (hours < 0) {
+          hours += 24;
+        }
+        
+        if (minutes < 0) {
+          hours -= 1;
+          minutes += 60;
+        }
+        
+        return hours + (minutes / 60);
+      }
+      
+      // Fórmula de tres partes:
+      // Primer día: 24 - startHour - (startMin/60)
+      const firstDayHours = 24 - startHour - startMinFraction;
+      
+      // Últmo día: endHour + (endMin/60)
+      const lastDayHours = endHour + endMinFraction;
+      
+      // Días completos en medio: (numberOfDays - 1) * 24
+      const middleDaysCount = numberOfDays - 1;
+      const middleDaysHours = middleDaysCount * 24;
+      
+      const totalHours = firstDayHours + middleDaysHours + lastDayHours;
+      
+      console.log('📊 Cálculo multi-día:', {
+        startDate,
+        endDate,
+        numberOfDays,
+        firstDayHours: parseFloat(firstDayHours.toFixed(2)),
+        middleDaysHours,
+        lastDayHours: parseFloat(lastDayHours.toFixed(2)),
+        totalHours: parseFloat(totalHours.toFixed(2))
+      });
+      
+      return totalHours;
+    } catch (error) {
+      console.error('Error en cálculo multi-día, revertiendo a cálculo simple:', error);
+      
+      let hours = endHour - startHour;
+      let minutes = endMin - startMin;
+      
+      if (hours < 0) {
+        hours += 24;
+      }
+      
+      if (minutes < 0) {
+        hours -= 1;
+        minutes += 60;
+      }
+      
+      return hours + (minutes / 60);
     }
-    
-    return hours + (minutes / 60);
   }
 
   /**
@@ -304,8 +375,8 @@ class Service {
         normalized: { normalizedStartTime, normalizedEndTime } 
       });
 
-      // Calcular horas totales (necesario para mostrar info al cliente)
-      const totalHours = this.calculateTotalHours(normalizedStartTime, normalizedEndTime);
+      // Calcular horas totales (considerando fechas para multi-día)
+      const totalHours = this.calculateTotalHours(normalizedStartTime, normalizedEndTime, start_date, end_date);
 
       // Crear el servicio SIN nanny_id y con estado 'pending'
       const insertQuery = `

@@ -200,6 +200,49 @@ class ServiceController {
       return res.status(500).json({ success: false, error: error.message });
     }
   }
+
+  /**
+   * Completar un servicio (marcarlo como finalizado)
+   */
+  static async completeService(req, res) {
+    try {
+      const serviceId = req.params.serviceId;
+
+      if (!serviceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere el ID del servicio'
+        });
+      }
+
+      // Actualizar estado del servicio a 'completed'
+      const updateQuery = `
+        UPDATE services 
+        SET status = 'completed', completed_at = NOW()
+        WHERE id = ?
+      `;
+
+      const result = await executeQuery(updateQuery, [serviceId]);
+
+      if (!result.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error al completar el servicio'
+        });
+      }
+
+      console.log(`✓ Servicio ${serviceId} marcado como completado`);
+
+      return res.json({
+        success: true,
+        message: 'Servicio completado exitosamente',
+        data: { serviceId, status: 'completed' }
+      });
+    } catch (error) {
+      console.error('Error completing service:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
 }
 
 module.exports = ServiceController;

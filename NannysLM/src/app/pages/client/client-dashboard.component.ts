@@ -13,6 +13,16 @@ import { NotificationService } from '../../services/notification.service';
 import { ServiceService, ServiceData } from '../../services/service.service';
 import { BankDetailsService, BankDetail } from '../../services/bank-details.service';
 
+// Interfaz mejorada para servicios del cliente con información de nanny
+interface ClientServiceComplete extends ServiceData {
+  showRating?: boolean;
+  tempRating?: number;
+  isRated?: boolean;
+  nanny_profile_image?: string;
+  nanny_full_name?: string;
+  service_type_name?: string; // Nombre legible del tipo de servicio
+}
+
 // Interfaz para definir la estructura de un servicio del cliente (legacy)
 interface ClientService {
   id: number;
@@ -32,6 +42,10 @@ interface ExtendedClientService extends ClientServiceData {
   isRated?: boolean;
   instructions?: string; // Para compatibilidad con template legacy
   service?: { name: string }; // Para compatibilidad con template legacy
+  service_type_name?: string; // Nombre legible del tipo de servicio
+  nanny_id?: number;
+  nanny_profile_image?: string;
+  nanny_full_name?: string;
 }
 
 // Interfaces para datos del perfil
@@ -638,14 +652,115 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     console.log(`📋 Cargando servicios del cliente para userId: ${this.currentUserId}`);
     this.clientApiService.getClientServices(this.currentUserId).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client services:', response);
+        console.log('✅ Respuesta client services completa:', response);
         if (response.success) {
-          this.contractedServices = response.data.map((service: ClientServiceData) => ({
-            ...service,
-            showRating: false,
-            tempRating: 0,
-            isRated: service.rating.given
-          }));
+          this.contractedServices = response.data.map((service: any) => {
+            // Construir nombre completo de la nanny
+            const nanny_full_name = service.nanny ? 
+              `${service.nanny.first_name || ''} ${service.nanny.last_name || ''}`.trim() : 
+              '';
+            
+            // Construir URL de la imagen de la nanny
+            let nanny_profile_image = '/assets/logo.png';
+            if (service.nanny?.profile_image) {
+              const img = service.nanny.profile_image;
+              if (img.startsWith('http')) {
+                nanny_profile_image = img;
+              } else if (img.startsWith('/uploads/')) {
+                nanny_profile_image = `http://localhost:8000${img}`;
+              } else {
+                nanny_profile_image = `http://localhost:8000/uploads/${img}`;
+              }
+            }
+            
+            // Obtener nombre legible del tipo de servicio
+            const service_type_name = this.getServiceTypeName(service.service_type);
+            
+            // Procesar el servicio con fechas parseadas correctamente
+            const processedService: any = {
+              ...service,
+              nanny_full_name,
+              nanny_profile_image,
+              service_type_name,
+              showRating: false,
+              tempRating: 0,
+              isRated: service.rating?.given || false
+            };
+            
+            // Convertir strings de fecha a Date objects para Angular date pipe
+            if (service.start_date) {
+              try {
+                if (typeof service.start_date === 'string') {
+                  // Puede venir como 'YYYY-MM-DD' o 'YYYY-MM-DDTHH:MM:SS.sssZ'
+                  const dateStr = service.start_date.split('T')[0]; // Tomar solo la parte de fecha
+                  const parts = dateStr.split('-');
+                  if (parts.length === 3) {
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // Mes en JavaScript es 0-indexed
+                    const day = parseInt(parts[2]);
+                    processedService.start_date = new Date(year, month, day);
+                    console.log('✅ start_date parseada:', processedService.start_date, 'desde:', service.start_date);
+                  } else {
+                    console.warn('⚠️ Formato de start_date no reconocido:', service.start_date);
+                    processedService.start_date = null;
+                  }
+                } else if (service.start_date instanceof Date) {
+                  processedService.start_date = new Date(service.start_date);
+                  console.log('✅ start_date ya es Date:', processedService.start_date);
+                } else {
+                  console.warn('⚠️ start_date tipo desconocido:', typeof service.start_date, service.start_date);
+                  processedService.start_date = null;
+                }
+              } catch (e) {
+                console.error('❌ Error parseando start_date:', service.start_date, e);
+                processedService.start_date = null;
+              }
+            } else {
+              console.warn('⚠️ start_date es null/undefined para servicio:', service.id);
+              processedService.start_date = null;
+            }
+            
+            if (service.end_date) {
+              try {
+                if (typeof service.end_date === 'string') {
+                  // Puede venir como 'YYYY-MM-DD' o 'YYYY-MM-DDTHH:MM:SS.sssZ'
+                  const dateStr = service.end_date.split('T')[0]; // Tomar solo la parte de fecha
+                  const parts = dateStr.split('-');
+                  if (parts.length === 3) {
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // Mes en JavaScript es 0-indexed
+                    const day = parseInt(parts[2]);
+                    processedService.end_date = new Date(year, month, day);
+                    console.log('✅ end_date parseada:', processedService.end_date, 'desde:', service.end_date);
+                  } else {
+                    console.warn('⚠️ Formato de end_date no reconocido:', service.end_date);
+                    processedService.end_date = null;
+                  }
+                } else if (service.end_date instanceof Date) {
+                  processedService.end_date = new Date(service.end_date);
+                  console.log('✅ end_date ya es Date:', processedService.end_date);
+                } else {
+                  console.warn('⚠️ end_date tipo desconocido:', typeof service.end_date, service.end_date);
+                  processedService.end_date = null;
+                }
+              } catch (e) {
+                console.error('❌ Error parseando end_date:', service.end_date, e);
+                processedService.end_date = null;
+              }
+            }
+            
+            console.log('📅 Servicio procesado:', {
+              title: processedService.title,
+              start_date_original: service.start_date,
+              start_date_parseada: processedService.start_date,
+              start_time: processedService.start_time,
+              end_time: processedService.end_time,
+              total_hours: processedService.total_hours
+            });
+            
+            return processedService as ClientServiceComplete;
+          });
+          console.log('✅ Servicios contratados procesados:', this.contractedServices);
         }
         this.isLoadingServices = false;
       },
@@ -1074,24 +1189,141 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     const [startHour, startMin] = this.selectedStartTime.split(':').map(Number);
     const [endHour, endMin] = this.selectedEndTime.split(':').map(Number);
     
-    let hours = endHour - startHour;
-    let minutes = endMin - startMin;
-    
-    // Si la hora de fin es menor, significa que cruza medianoche
-    if (hours < 0) {
-      hours += 24;
+    // Si no hay rango de fechas, es un solo día
+    if (!this.selectedDate || !this.selectedEndDate) {
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      if (minutesPerDay === 0) {
+        return `${hoursPerDay} hora${hoursPerDay !== 1 ? 's' : ''}`;
+      }
+      
+      return `${hoursPerDay}h ${minutesPerDay}min`;
     }
     
-    if (minutes < 0) {
-      hours -= 1;
-      minutes += 60;
+    // Calcular con rango de fechas
+    const startDateObj = new Date(this.selectedDate);
+    const endDateObj = new Date(this.selectedEndDate);
+    const numberOfDays = Math.floor((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (numberOfDays === 0) {
+      // Mismo día
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      return `${hoursPerDay}h ${minutesPerDay}min`;
     }
     
-    if (minutes === 0) {
-      return `${hours} hora${hours !== 1 ? 's' : ''}`;
+    // Múltiples días
+    const firstDayHours = 24 - startHour - (startMin / 60);
+    const lastDayHours = endHour + (endMin / 60);
+    const middleDays = numberOfDays - 1;
+    
+    const firstDayHoursInt = Math.floor(firstDayHours);
+    const firstDayMins = Math.round((firstDayHours - firstDayHoursInt) * 60);
+    
+    const lastDayHoursInt = Math.floor(lastDayHours);
+    const lastDayMins = Math.round((lastDayHours - lastDayHoursInt) * 60);
+    
+    let result = `Día 1: ${startHour}:${String(startMin).padStart(2, '0')} a 24:00 (${firstDayHoursInt}h${firstDayMins > 0 ? ` ${firstDayMins}min` : ''})`;
+    
+    if (middleDays > 0) {
+      result += ` + ${middleDays} día${middleDays > 1 ? 's' : ''} completo${middleDays > 1 ? 's' : ''} (${middleDays * 24}h)`;
     }
     
-    return `${hours}h ${minutes}min`;
+    result += ` + Día ${numberOfDays + 1}: 00:00 a ${endHour}:${String(endMin).padStart(2, '0')} (${lastDayHoursInt}h${lastDayMins > 0 ? ` ${lastDayMins}min` : ''})`;
+    
+    return result;
+  }
+
+  /**
+   * Calcula el total de horas en formato decimal para cálculos de cobro
+   * Fórmula correcta: 
+   * - Primer día: 24 - hora_inicio - minutos_inicio/60
+   * - Días intermedios: (número de días - 1) × 24
+   * - Último día: hora_fin + minutos_fin/60
+   */
+  calculateTotalHoursDecimal(): number {
+    if (!this.selectedStartTime || !this.selectedEndTime) return 0;
+    
+    const [startHour, startMin] = this.selectedStartTime.split(':').map(Number);
+    const [endHour, endMin] = this.selectedEndTime.split(':').map(Number);
+    
+    const startMinFraction = startMin / 60;
+    const endMinFraction = endMin / 60;
+    
+    // Si no hay rango de fechas, calcular solo para un día
+    if (!this.selectedDate || !this.selectedEndDate) {
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      return Math.round((hoursPerDay + (minutesPerDay / 60)) * 100) / 100;
+    }
+    
+    // Calcular con rango de fechas
+    const startDateObj = new Date(this.selectedDate);
+    const endDateObj = new Date(this.selectedEndDate);
+    const numberOfDays = Math.floor((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (numberOfDays === 0) {
+      // Mismo día
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      return Math.round((hoursPerDay + (minutesPerDay / 60)) * 100) / 100;
+    }
+    
+    // Múltiples días - Cálculo correcto
+    // Primer día: desde hora_inicio hasta las 24:00
+    const firstDayHours = 24 - startHour - startMinFraction;
+    
+    // Últmo día: desde las 00:00 hasta hora_fin
+    const lastDayHours = endHour + endMinFraction;
+    
+    // Días completos en el medio (24 horas cada uno)
+    const middleDaysCount = numberOfDays - 1;
+    const middleDaysHours = middleDaysCount * 24;
+    
+    // Total
+    const totalHours = firstDayHours + middleDaysHours + lastDayHours;
+    
+    return Math.round(totalHours * 100) / 100; // Redondear a 2 decimales
   }
 
   selectServiceType(serviceType: string) {
@@ -1138,17 +1370,54 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     return `${startDate} - ${endDate} (${daysDiff} días)`;
   }
 
-  formatDate(date: Date | string): string {
-    // Convertir string a Date si es necesario
-    const dateObj = typeof date === 'string' ? new Date(date + 'T00:00:00') : date;
-    
-    const day = dateObj.getDate();
-    const monthNames = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    const month = monthNames[dateObj.getMonth()];
-    return `${day} de ${month}`;
+  formatDate(date: Date | string | null | undefined): string {
+    // Validar que la fecha exista
+    if (!date) {
+      console.warn('⚠️ formatDate recibió fecha null/undefined');
+      return 'Fecha no disponible';
+    }
+
+    try {
+      let dateObj: Date;
+      
+      if (typeof date === 'string') {
+        // Manejar formato 'YYYY-MM-DD' o 'YYYY-MM-DDTHH:MM:SS'
+        const dateStr = date.split('T')[0]; // Tomar solo la parte de fecha
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[0]);
+          const month = parseInt(parts[1]) - 1; // Mes 0-indexed
+          const day = parseInt(parts[2]);
+          dateObj = new Date(year, month, day);
+        } else {
+          console.error('❌ Formato de fecha string inválido:', date);
+          return 'Formato inválido';
+        }
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        console.error('❌ Tipo de fecha no soportado:', typeof date, date);
+        return 'Tipo inválido';
+      }
+
+      // Validar que el Date object sea válido
+      if (isNaN(dateObj.getTime())) {
+        console.error('❌ Date object inválido:', dateObj);
+        return 'Fecha inválida';
+      }
+
+      const day = dateObj.getDate();
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      const month = monthNames[dateObj.getMonth()];
+      
+      return `${day} de ${month}`;
+    } catch (error) {
+      console.error('❌ Error en formatDate:', error, 'fecha:', date);
+      return 'Error al formatear';
+    }
   }
 
   getAvailableTimesForService(): string[] {
@@ -1693,6 +1962,24 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       case 5: return 'Excelente';
       default: return 'Sin calificar';
     }
+  }
+
+  // Método para obtener el nombre del tipo de servicio
+  getServiceTypeName(serviceType: string): string {
+    const typeNames: { [key: string]: string } = {
+      'hourly': 'Niñeras a domicilio',
+      'daily': 'Niñeras por día',
+      'weekly': 'Niñeras por semana',
+      'overnight': 'Niñeras nocturnas',
+      'event': 'Acompañamiento a eventos',
+      'travel': 'Acompañamiento en viajes',
+      'home-care': 'Niñeras a domicilio',
+      'night-care': 'Cuidado nocturno',
+      'weekly-care': 'Niñeras por semana',
+      'event-care': 'Acompañamiento a eventos',
+      'travel-care': 'Acompañamiento en viajes'
+    };
+    return typeNames[serviceType] || serviceType;
   }
 
   // Método para verificar si no hay servicios

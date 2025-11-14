@@ -5,6 +5,12 @@ import { ServiceService, ServiceData } from '../../services/service.service';
 import { NannyService } from '../../services/nanny.service';
 import { AuthService } from '../../services/auth.service';
 
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
 @Component({
   selector: 'app-service-details',
   standalone: true,
@@ -22,6 +28,11 @@ export class ServiceDetailsComponent implements OnInit {
   isAccepting = false;
   acceptSuccess = false;
   acceptError: string | null = null;
+  
+  isCompleting = false;
+  completeSuccess = false;
+  completeError: string | null = null;
+  showCompleteModal = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -166,5 +177,62 @@ export class ServiceDetailsComponent implements OnInit {
 
   onBackClick() {
     this.declineService();
+  }
+
+  openCompleteModal() {
+    this.showCompleteModal = true;
+  }
+
+  closeCompleteModal() {
+    this.showCompleteModal = false;
+    this.completeError = null;
+  }
+
+  completeService() {
+    if (!this.serviceId) {
+      this.completeError = 'No se puede completar el servicio en este momento';
+      return;
+    }
+
+    if (!this.service) {
+      this.completeError = 'No se encontró el servicio';
+      return;
+    }
+
+    // Verificar que el servicio esté confirmado
+    if (this.service.status !== 'confirmed') {
+      this.completeError = 'Este servicio no puede ser completado en este estado';
+      return;
+    }
+
+    this.isCompleting = true;
+    this.completeError = null;
+
+    this.serviceService.completeService(this.serviceId).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.success) {
+          console.log('✅ Servicio completado exitosamente');
+          this.completeSuccess = true;
+          
+          // Actualizar el estado del servicio localmente
+          if (this.service) {
+            this.service.status = 'completed';
+          }
+          
+          // Redirigir al dashboard después de 2 segundos
+          setTimeout(() => {
+            this.router.navigate(['/nanny/dashboard']);
+          }, 2000);
+        } else {
+          this.completeError = response.message || 'No se pudo completar el servicio';
+          this.isCompleting = false;
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error completando servicio:', error);
+        this.completeError = error.error?.message || 'Error al completar el servicio';
+        this.isCompleting = false;
+      }
+    });
   }
 }
