@@ -628,7 +628,7 @@ class Service {
    */
   static async update(serviceId, updates) {
     try {
-      const allowedFields = ['title', 'description', 'start_date', 'end_date', 'start_time', 'end_time', 'status', 'special_instructions'];
+      const allowedFields = ['title', 'description', 'start_date', 'end_date', 'start_time', 'end_time', 'status', 'special_instructions', 'completed_at'];
       const fields = [];
       const values = [];
 

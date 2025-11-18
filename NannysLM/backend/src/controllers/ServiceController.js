@@ -215,17 +215,11 @@ class ServiceController {
         });
       }
 
-      // Actualizar estado del servicio a 'completed'
-      const updateQuery = `
-        UPDATE services 
-        SET status = 'completed', completed_at = NOW()
-        WHERE id = ?
-      `;
-
-      const result = await executeQuery(updateQuery, [serviceId]);
+      // Usar el modelo Service para actualizar
+      const result = await Service.update(serviceId, { status: 'completed', completed_at: new Date() });
 
       if (!result.success) {
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
           message: 'Error al completar el servicio'
         });

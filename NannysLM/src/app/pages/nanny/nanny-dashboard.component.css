@@ -11,6 +11,31 @@
   --gray-50: #f8fafc;
 }
 
+/* Estilos para el panel de notificaciones */
+app-notifications-panel {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+app-notifications-panel ::ng-deep {
+  h3 {
+    color: #1f2937;
+    font-weight: 600;
+  }
+
+  button {
+    font-weight: 500;
+    border-radius: 6px;
+  }
+
+  .notification-item {
+    border-left: 4px solid #e31b7e;
+  }
+}
+
 .nanny-layout {
   display: flex;
   flex-direction: column;
@@ -686,6 +711,34 @@
   color: #64748b;
   margin: 0;
   font-size: 0.9rem;
+}
+
+/* Vista de notificaciones */
+.notifications-view {
+  padding: 2rem 0;
+}
+
+.notifications-view .content-header {
+  margin-bottom: 2rem;
+}
+
+.notifications-view .content-header h2 {
+  font-size: 2rem;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.notifications-view .content-header p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.notifications-view app-notifications-panel {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .service-filters-modern {
@@ -1546,4 +1599,49 @@
   background: #c01568;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(227, 27, 126, 0.3);
+}
+
+/* Estilos para la imagen de perfil del cliente en el modal */
+.client-profile-image-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.client-profile-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e31b7e;
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.2);
+}
+
+.image-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #e31b7e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

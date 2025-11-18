@@ -180,8 +180,8 @@
               <div class="activity-content">
                 <div *ngFor="let payment of getRecentPayments()" class="activity-item">
                   <div class="activity-info">
-                    <span class="activity-name">{{ payment.client?.name || 'Cliente' }}</span>
-                    <span class="activity-detail">{{ formatPaymentDate(payment.paymentDate || payment.createdAt) }} • {{ payment.service?.totalHours || 0 }}h</span>
+                    <span class="activity-name">{{ payment.client_first_name }} {{ payment.client_last_name }}</span>
+                    <span class="activity-detail">{{ formatPaymentDate(payment.payment_date || payment.created_at) }} • {{ payment.service_total_hours || 0 }}h</span>
                   </div>
                   <div class="activity-amount">${{ payment.amount?.toFixed(2) || '0.00' }}</div>
                 </div>
@@ -442,13 +442,6 @@
                   <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
                 </svg>
                 Ver Perfil
-              </button>
-              <button class="nanny-action-btn primary" (click)="contactNanny(nanny.id)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 2L11 13" stroke="currentColor" stroke-width="2"/>
-                  <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2"/>
-                </svg>
-                Contactar
               </button>
             </div>
           </div>
@@ -743,6 +736,28 @@
           <h3 class="filter-title">Filtrar Pagos</h3>
           
           <div class="filters-row">
+            <button 
+              (click)="setPaymentFilter('all')" 
+              class="modern-filter-tab"
+              [class.active]="paymentFilter === 'all'">
+              <div class="filter-tab-content">
+                <div class="tab-icon all">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="tab-info">
+                  <span class="tab-title">Todos</span>
+                  <span class="tab-count">{{ getPaymentCount('all') }}</span>
+                </div>
+              </div>
+            </button>
+            
             <button 
               (click)="setPaymentFilter('verified')" 
               class="modern-filter-tab"
@@ -1048,7 +1063,7 @@
                   </div>
                   <div class="payment-amount-header">
                     <span class="amount">${{ payment.amount.toFixed(2) }}</span>
-                    <span class="payment-date">{{ formatPaymentDate(payment.paymentDate || payment.createdAt) }}</span>
+                    <span class="payment-date">{{ formatPaymentDate(payment.payment_date || payment.created_at) }}</span>
                   </div>
                 </div>
               </div>
@@ -1062,7 +1077,7 @@
                     <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>Cliente: {{ payment.client.name }}</span>
+                  <span>Cliente: {{ payment.client_first_name }} {{ payment.client_last_name }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1071,14 +1086,14 @@
                     <path d="M23 21V19C23 18.1645 22.7155 17.3541 22.2045 16.7006C21.6935 16.047 20.9877 15.5856 20.194 15.3893" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>Nanny: {{ payment.nanny.first_name }} {{ payment.nanny.last_name }}</span>
+                  <span>Nanny: {{ payment.nanny_first_name }} {{ payment.nanny_last_name }}</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                     <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ payment.service.totalHours }} horas de servicio</span>
+                  <span>{{ payment.service_total_hours }} horas de servicio</span>
                 </div>
                 <div class="detail-item">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1087,7 +1102,7 @@
                     <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
                     <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  <span>{{ payment.service.startDate }}</span>
+                  <span>{{ payment.service_start_date }}</span>
                 </div>
               </div>
             </div>
@@ -1097,44 +1112,73 @@
               <div class="payment-stats">
                 <div class="stat-item">
                   <span class="stat-label">Monto para nanny</span>
-                  <span class="stat-value">${{ payment.nannyAmount.toFixed(2) }}</span>
+                  <span class="stat-value">${{ payment.nanny_amount.toFixed(2) }}</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">Comisión</span>
-                  <span class="stat-value">${{ payment.platformFee.toFixed(2) }}</span>
+                  <span class="stat-value">${{ payment.platform_fee.toFixed(2) }}</span>
                 </div>
               </div>
               <div class="payment-actions">
-                <button class="action-btn secondary" title="Ver detalles" (click)="viewPaymentDetails(payment)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                  Ver Detalles
-                </button>
-                <button 
-                  *ngIf="paymentFilter === 'unverified'" 
-                  class="action-btn primary" 
-                  title="Verificar pago">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Verificar
-                </button>
-                <button 
-                  *ngIf="paymentFilter === 'verified'" 
-                  class="action-btn primary" 
-                  title="Generar recibo"
-                  (click)="viewReceipt(payment)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
-                    <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
-                    <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
-                    <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
-                    <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                  Recibo
-                </button>
+                <!-- Primera fila: Ver Detalles y Ver Comprobante/Recibo -->
+                <div class="actions-row">
+                  <button class="action-btn details-btn" title="Ver detalles" (click)="viewPaymentDetails(payment)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
+                      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Ver Detalles
+                  </button>
+                  
+                  <!-- Comprobante si está en processing -->
+                  <button 
+                    *ngIf="payment.payment_status === 'processing' && payment.receipt_url" 
+                    class="action-btn receipt-btn" 
+                    title="Ver comprobante"
+                    (click)="viewPaymentReceipt(payment)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                      <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Comprobante
+                  </button>
+                  
+                  <!-- Recibo si está completado -->
+                  <button 
+                    *ngIf="payment.payment_status === 'completed'" 
+                    class="action-btn receipt-btn" 
+                    title="Ver recibo"
+                    (click)="viewReceipt(payment)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                      <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Recibo
+                  </button>
+                </div>
+                
+                <!-- Segunda fila: Botones de acción (Aprobar/Rechazar) solo si está en processing -->
+                <div class="actions-row" *ngIf="payment.payment_status === 'processing'">
+                  <button 
+                    class="action-btn approve-btn" 
+                    title="Aprobar pago"
+                    (click)="approvePayment(payment)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Aprobar
+                  </button>
+                  
+                  <button 
+                    class="action-btn reject-btn" 
+                    title="Rechazar pago"
+                    (click)="rejectPayment(payment)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Rechazar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1351,6 +1395,21 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Vista Notificaciones -->
+      <div *ngIf="currentView === 'notifications'" class="notifications-view">
+        <div class="content-header">
+          <h2>📬 Notificaciones</h2>
+          <p>Panel de notificaciones administrativas</p>
+        </div>
+        
+        <app-notifications-panel 
+          [title]="''"
+          [showHeader]="false"
+          [showFilters]="true"
+          (notificationClicked)="onNotificationClick($event)">
+        </app-notifications-panel>
       </div>
     </main>
   </div>
@@ -2039,6 +2098,18 @@
 
       <!-- Footer del modal -->
       <div class="client-profile-footer-pro">
+        <!-- Botón de WhatsApp -->
+        <app-whatsapp-button 
+          *ngIf="selectedClientProfile"
+          [phoneNumber]="selectedClientProfile.phone"
+          [message]="'Hola ' + selectedClientProfile.name + ', tengo una consulta sobre tu cuenta en NannysLM'"
+          buttonText="Contactar por WhatsApp">
+        </app-whatsapp-button>
+        
+        <!-- Botón de cerrar -->
+        <button type="button" class="btn-secondary-pro" (click)="closeClientProfileModal()">
+          Cerrar
+        </button>
       </div>
     </div>
   </div>
@@ -2138,8 +2209,11 @@
             </div>
             <div class="card-content-pro rating-card">
               <div class="rating-display">
-                <span class="rating-value">{{ selectedNannyProfile.rating_average || 'N/A' }}</span>
+                <span class="rating-value">{{ (selectedNannyProfile.rating_average !== null && selectedNannyProfile.rating_average !== undefined) ? (selectedNannyProfile.rating_average | number:'1.1-1') : '0.0' }}</span>
                 <span class="rating-max">/5</span>
+                <div class="stars-row">
+                  <span *ngFor="let i of [1,2,3,4,5]" class="star" [class.filled]="i <= (selectedNannyProfile.rating_average || 0)">★</span>
+                </div>
               </div>
               <p class="rating-reviews">({{ selectedNannyProfile.total_ratings || 0 }} calificaciones)</p>
               <div class="services-stat">
@@ -2150,6 +2224,71 @@
           </div>
         </div>
 
+        <!-- Cuarta fila: Calificaciones Detalladas -->
+        <div class="profile-card-pro full-width" *ngIf="nannyRatings && nannyRatings.length > 0">
+          <div class="card-header-pro">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="13 2 13 9 20 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3>Calificaciones ({{ nannyRatings.length }})</h3>
+          </div>
+          <div class="card-content-pro">
+            <div class="ratings-list">
+              <div *ngFor="let rating of nannyRatings" class="rating-item">
+                <div class="rating-header">
+                  <div class="rater-info">
+                    <h4>{{ rating.client_first_name }} {{ rating.client_last_name }}</h4>
+                    <p class="service-title">{{ rating.service_title }}</p>
+                  </div>
+                  <div class="rating-score">
+                    <div class="rating-stars">
+                      <span *ngFor="let i of [1,2,3,4,5]" class="star-mini" [class.filled]="i <= rating.rating">★</span>
+                    </div>
+                    <span class="rating-number">{{ rating.rating }}/5</span>
+                  </div>
+                </div>
+                
+                <div class="rating-details-grid" *ngIf="rating.punctuality_rating || rating.communication_rating || rating.care_quality_rating">
+                  <div class="detail-box" *ngIf="rating.punctuality_rating">
+                    <span class="detail-label">Puntualidad</span>
+                    <span class="detail-value">{{ rating.punctuality_rating }}/5</span>
+                  </div>
+                  <div class="detail-box" *ngIf="rating.communication_rating">
+                    <span class="detail-label">Comunicación</span>
+                    <span class="detail-value">{{ rating.communication_rating }}/5</span>
+                  </div>
+                  <div class="detail-box" *ngIf="rating.care_quality_rating">
+                    <span class="detail-label">Calidad de Cuidado</span>
+                    <span class="detail-value">{{ rating.care_quality_rating }}/5</span>
+                  </div>
+                  <div class="detail-box" *ngIf="rating.would_recommend">
+                    <span class="detail-label">Recomendación</span>
+                    <span class="detail-value">✓ Sí</span>
+                  </div>
+                </div>
+
+                <div class="rating-review" *ngIf="rating.review">
+                  <p>{{ rating.review }}</p>
+                </div>
+
+                <div class="rating-date">
+                  <small>{{ rating.created_at | date:'short' }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado vacío de calificaciones -->
+        <div class="profile-card-pro full-width" *ngIf="!isLoadingNannyRatings && (!nannyRatings || nannyRatings.length === 0)">
+          <div class="card-content-pro">
+            <div class="empty-ratings-state">
+              <p>No hay calificaciones disponibles para esta nanny.</p>
+            </div>
+          </div>
+        </div>
+        
         <!-- Segunda fila: Descripción -->
         <div class="profile-card-pro full-width">
           <div class="card-header-pro">
@@ -2189,12 +2328,66 @@
             </div>
           </div>
         </div>
+
+        <!-- Cuarta fila: Estado de Actividad -->
+        <div class="profile-card-pro full-width" *ngIf="selectedNannyProfile">
+          <div class="card-header-pro">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <h3>Estado de Actividad</h3>
+          </div>
+          <div class="card-content-pro status-change-section">
+            <div class="status-display">
+              <span class="label">Estado actual:</span>
+              <span class="badge" [ngClass]="'status-' + selectedNannyProfile.status">
+                {{ getStatusText(selectedNannyProfile.status) }}
+              </span>
+            </div>
+            
+            <div class="status-buttons-row">
+              <button 
+                type="button" 
+                class="btn-status-simple btn-active"
+                (click)="changeNannyStatus(selectedNannyProfile, 'active')"
+                [disabled]="selectedNannyProfile?.status === 'active'">
+                Activa
+              </button>
+              
+              <button 
+                type="button" 
+                class="btn-status-simple btn-inactive"
+                (click)="changeNannyStatus(selectedNannyProfile, 'inactive')"
+                [disabled]="selectedNannyProfile?.status === 'inactive'">
+                Inactiva
+              </button>
+              
+              <button 
+                type="button" 
+                class="btn-status-simple btn-suspended"
+                (click)="changeNannyStatus(selectedNannyProfile, 'suspended')"
+                [disabled]="selectedNannyProfile?.status === 'suspended'">
+                Suspendida
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Footer del modal -->
       <div class="nanny-profile-footer-pro">
+        <!-- Botón de WhatsApp -->
+        <app-whatsapp-button 
+          *ngIf="selectedNannyProfile"
+          [phoneNumber]="selectedNannyProfile.phone_number"
+          [message]="'Hola ' + selectedNannyProfile.first_name + ', tengo una consulta sobre tu perfil de niñera en NannysLM'"
+          buttonText="Contactar por WhatsApp">
+        </app-whatsapp-button>
+        
+        <!-- Botón de cerrar -->
         <button type="button" class="btn-secondary-pro" (click)="closeNannyProfileModal()">
-          Cerrar Perfil
+          Cerrar
         </button>
       </div>
     </div>
@@ -2322,17 +2515,17 @@
             <div class="card-content-pro">
               <div class="exp-item">
                 <span class="exp-label">Nombre</span>
-                <span class="exp-value">{{ selectedPaymentDetails.client?.name || 'No especificado' }}</span>
+                <span class="exp-value">{{ selectedPaymentDetails.client_first_name }} {{ selectedPaymentDetails.client_last_name }}</span>
               </div>
               <div class="exp-item">
                 <span class="exp-label">Email</span>
-                <a [href]="'mailto:' + selectedPaymentDetails.client?.email" class="exp-value link">
-                  {{ selectedPaymentDetails.client?.email || 'No disponible' }}
+                <a [href]="'mailto:' + selectedPaymentDetails.client_email" class="exp-value link">
+                  {{ selectedPaymentDetails.client_email || 'No disponible' }}
                 </a>
               </div>
               <div class="exp-item">
                 <span class="exp-label">Teléfono</span>
-                <span class="exp-value">{{ selectedPaymentDetails.client?.phone || 'No disponible' }}</span>
+                <span class="exp-value">{{ selectedPaymentDetails.client_phone || 'No disponible' }}</span>
               </div>
             </div>
           </div>
@@ -2349,17 +2542,17 @@
             <div class="card-content-pro">
               <div class="exp-item">
                 <span class="exp-label">Nombre</span>
-                <span class="exp-value">{{ selectedPaymentDetails.nanny?.first_name }} {{ selectedPaymentDetails.nanny?.last_name }}</span>
+                <span class="exp-value">{{ selectedPaymentDetails.nanny_first_name }} {{ selectedPaymentDetails.nanny_last_name }}</span>
               </div>
               <div class="exp-item">
                 <span class="exp-label">Email</span>
-                <a [href]="'mailto:' + selectedPaymentDetails.nanny?.email" class="exp-value link">
-                  {{ selectedPaymentDetails.nanny?.email || 'No disponible' }}
+                <a [href]="'mailto:' + selectedPaymentDetails.nanny_email" class="exp-value link">
+                  {{ selectedPaymentDetails.nanny_email || 'No disponible' }}
                 </a>
               </div>
               <div class="exp-item">
                 <span class="exp-label">Teléfono</span>
-                <span class="exp-value">{{ selectedPaymentDetails.nanny?.phone_number || 'No disponible' }}</span>
+                <span class="exp-value">{{ selectedPaymentDetails.nanny_phone || 'No disponible' }}</span>
               </div>
             </div>
           </div>
@@ -2377,15 +2570,15 @@
           <div class="card-content-pro service-details">
             <div class="detail-row">
               <span class="detail-label">Horas de Servicio</span>
-              <span class="detail-value">{{ selectedPaymentDetails.service?.totalHours || 0 }} horas</span>
+              <span class="detail-value">{{ selectedPaymentDetails.service_total_hours || 0 }} horas</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Fecha de Inicio</span>
-              <span class="detail-value">{{ formatPaymentDate(selectedPaymentDetails.service?.startDate) }}</span>
+              <span class="detail-value">{{ formatPaymentDate(selectedPaymentDetails.service_start_date) }}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Fecha de Fin</span>
-              <span class="detail-value">{{ formatPaymentDate(selectedPaymentDetails.service?.endDate) }}</span>
+              <span class="detail-value">{{ formatPaymentDate(selectedPaymentDetails.service_end_date) }}</span>
             </div>
           </div>
         </div>
@@ -2403,19 +2596,19 @@
             <div class="financial-grid">
               <div class="financial-item">
                 <span class="financial-label">Monto Total</span>
-                <span class="financial-value total">${{ selectedPaymentDetails.amount?.toFixed(2) || '0.00' }}</span>
+                <span class="financial-value total">${{ (+selectedPaymentDetails.amount || 0).toFixed(2) }}</span>
               </div>
               <div class="financial-item">
                 <span class="financial-label">Monto para Nanny</span>
-                <span class="financial-value nanny">€{{ selectedPaymentDetails.nannyAmount?.toFixed(2) || '0.00' }}</span>
+                <span class="financial-value nanny">€{{ (+selectedPaymentDetails.nanny_amount || 0).toFixed(2) }}</span>
               </div>
               <div class="financial-item">
                 <span class="financial-label">Comisión</span>
-                <span class="financial-value commission">${{ selectedPaymentDetails.platformFee?.toFixed(2) || '0.00' }}</span>
+                <span class="financial-value commission">${{ (+selectedPaymentDetails.platform_fee || 0).toFixed(2) }}</span>
               </div>
               <div class="financial-item">
                 <span class="financial-label">Tarifa Horaria</span>
-                <span class="financial-value rate">${{ selectedPaymentDetails.hourlyRate?.toFixed(2) || '0.00' }}/h</span>
+                <span class="financial-value rate">${{ ((+selectedPaymentDetails.amount || 0) / (+selectedPaymentDetails.service_total_hours || 1)).toFixed(2) }}/h</span>
               </div>
             </div>
           </div>
@@ -2435,15 +2628,11 @@
           <div class="card-content-pro transaction-info">
             <div class="detail-row">
               <span class="detail-label">Fecha de Pago</span>
-              <span class="detail-value">{{ formatPaymentDate(selectedPaymentDetails.paymentDate || selectedPaymentDetails.createdAt) }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">ID de Transacción</span>
-              <span class="detail-value monospace">{{ selectedPaymentDetails.transactionId || 'N/A' }}</span>
+              <span class="detail-value">{{ formatPaymentDate(selectedPaymentDetails.payment_date || selectedPaymentDetails.created_at) }}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Método de Pago</span>
-              <span class="detail-value">{{ selectedPaymentDetails.paymentMethod || 'No especificado' }}</span>
+              <span class="detail-value">Transferencia Bancaria</span>
             </div>
           </div>
         </div>
@@ -2484,19 +2673,19 @@
           <div class="receipt-info-grid">
             <div class="receipt-info-item">
               <span class="receipt-label">Cliente:</span>
-              <span class="receipt-value">{{ selectedReceiptPayment.client?.name || 'No disponible' }}</span>
+              <span class="receipt-value">{{ selectedReceiptPayment.client_first_name }} {{ selectedReceiptPayment.client_last_name }}</span>
             </div>
             <div class="receipt-info-item">
               <span class="receipt-label">Nanny:</span>
-              <span class="receipt-value">{{ selectedReceiptPayment.nanny?.first_name }} {{ selectedReceiptPayment.nanny?.last_name }}</span>
+              <span class="receipt-value">{{ selectedReceiptPayment.nanny_first_name }} {{ selectedReceiptPayment.nanny_last_name }}</span>
             </div>
             <div class="receipt-info-item">
               <span class="receipt-label">Monto:</span>
-              <span class="receipt-value amount">${{ selectedReceiptPayment.amount?.toFixed(2) || '0.00' }}</span>
+              <span class="receipt-value amount">${{ (+selectedReceiptPayment.amount || 0).toFixed(2) }}</span>
             </div>
             <div class="receipt-info-item">
               <span class="receipt-label">Fecha de pago:</span>
-              <span class="receipt-value">{{ formatPaymentDate(selectedReceiptPayment.paymentDate || selectedReceiptPayment.createdAt) }}</span>
+              <span class="receipt-value">{{ formatPaymentDate(selectedReceiptPayment.payment_date || selectedReceiptPayment.created_at) }}</span>
             </div>
           </div>
         </div>
@@ -2506,48 +2695,26 @@
 
         <!-- Vista previa del recibo -->
         <div class="receipt-preview-section">
-          <h3>Recibo Enviado</h3>
+          <h3>Comprobante de Pago Subido</h3>
           
-          <!-- Si es imagen -->
-          <div class="receipt-image-container" *ngIf="isReceiptImage(selectedReceiptPayment)">
+          <!-- Si hay recibo -->
+          <div class="receipt-image-container" *ngIf="selectedReceiptPayment.receipt_url">
             <img 
-              [src]="getReceiptUrl(selectedReceiptPayment)" 
+              [src]="'http://localhost:8000' + selectedReceiptPayment.receipt_url" 
               alt="Recibo de transferencia bancaria" 
-              class="receipt-image">
+              class="receipt-image"
+              loading="lazy">
           </div>
           
-          <!-- Si es PDF -->
-          <div class="receipt-pdf-container" *ngIf="isReceiptPDF(selectedReceiptPayment)">
-            <div class="pdf-preview-info">
-              <div class="pdf-icon-large">
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2" fill="none"/>
-                  <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
-                </svg>
-              </div>
-              <p class="pdf-file-name">{{ selectedReceiptPayment.receiptProof || 'Documento.pdf' }}</p>
-              <a 
-                [href]="getReceiptUrl(selectedReceiptPayment)" 
-                target="_blank" 
-                class="view-full-receipt-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" stroke="currentColor" stroke-width="2"/>
-                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                </svg>
-                Abrir PDF Completo
-              </a>
-            </div>
-          </div>
-
           <!-- Si no hay recibo -->
-          <div class="receipt-empty-state" *ngIf="!selectedReceiptPayment.receiptProof">
+          <div class="receipt-empty-state" *ngIf="!selectedReceiptPayment.receipt_url">
             <div class="empty-icon">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
                 <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
               </svg>
             </div>
-            <p>No hay recibo disponible para este pago</p>
+            <p>No hay comprobante disponible para este pago</p>
           </div>
         </div>
 
@@ -2560,7 +2727,7 @@
           <div class="receipt-details-table">
             <div class="receipt-row">
               <span class="receipt-label">ID de transacción:</span>
-              <span class="receipt-value">{{ selectedReceiptPayment.transactionId || 'Pendiente' }}</span>
+              <span class="receipt-value">{{ selectedReceiptPayment.transaction_id || 'Pendiente' }}</span>
             </div>
             <div class="receipt-row">
               <span class="receipt-label">Método de pago:</span>
@@ -2585,8 +2752,10 @@
           Cerrar
         </button>
         <a 
-          [href]="getReceiptUrl(selectedReceiptPayment)" 
+          *ngIf="selectedReceiptPayment.receipt_url"
+          [href]="'http://localhost:8000' + selectedReceiptPayment.receipt_url" 
           target="_blank"
+          download
           class="btn-primary-pro">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

@@ -2,16 +2,19 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { HeaderComponent, HeaderConfig, Notification } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
 import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
+import { WhatsappButtonComponent } from '../../shared/components/whatsapp-button/whatsapp-button.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
 import { ClientService as ClientApiService, ClientInfo, ClientServiceData, ClientPayment, ClientStats } from '../../services/client.service';
 import { NotificationService } from '../../services/notification.service';
 import { ServiceService, ServiceData } from '../../services/service.service';
 import { BankDetailsService, BankDetail } from '../../services/bank-details.service';
+import { PaymentService, Payment } from '../../services/payment.service';
 
 // Interfaz mejorada para servicios del cliente con información de nanny
 interface ClientServiceComplete extends ServiceData {
@@ -46,6 +49,9 @@ interface ExtendedClientService extends ClientServiceData {
   nanny_id?: number;
   nanny_profile_image?: string;
   nanny_full_name?: string;
+  nanny_phone?: string;
+  nanny_email?: string;
+  paymentInitiated?: boolean; // Indica si hay un pago en progreso
 }
 
 // Interfaces para datos del perfil
@@ -82,7 +88,7 @@ interface ClientProfileData {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent, WhatsappButtonComponent],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.css'
 })
@@ -112,6 +118,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   serviceModalMessage: string = '';
   serviceModalErrors: string[] = [];
 
+  // Estado del modal de perfil de niñera
+  private nannyProfileSubject = new BehaviorSubject<any>(null);
+  showNannyProfileModal$ = this.nannyProfileSubject.asObservable();
+
   // Datos bancarios activos para mostrar en el modal
   currentBankData: any = null;
 
@@ -122,9 +132,13 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Datos dinámicos del cliente
   clientInfo: ClientInfo | null = null;
   contractedServices: ExtendedClientService[] = [];
-  clientPayments: ClientPayment[] = [];
+  clientPayments: Payment[] = [];
   clientStats: ClientStats | null = null;
   notifications: Notification[] = [];
+  
+  // Filtros de pagos
+  selectedPaymentStatus: string = '';
+  sortPaymentsBy: string = 'recent';
   
   // Estado para ver detalles de servicio
   selectedService: any = null;
@@ -416,7 +430,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     private clientApiService: ClientApiService,
     private notificationService: NotificationService,
     private serviceService: ServiceService,
-    private bankDetailsService: BankDetailsService
+    private bankDetailsService: BankDetailsService,
+    private paymentService: PaymentService
   ) {
     // Configurar sidebar específico para cliente con tema rosa
     this.sidebarConfig = {
@@ -661,7 +676,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               '';
             
             // Construir URL de la imagen de la nanny
-            let nanny_profile_image = '/assets/logo.png';
+            let nanny_profile_image = 'assets/logo.png';
             if (service.nanny?.profile_image) {
               const img = service.nanny.profile_image;
               if (img.startsWith('http')) {
@@ -681,10 +696,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               ...service,
               nanny_full_name,
               nanny_profile_image,
+              nanny_phone: service.nanny?.phone_number,
+              nanny_email: service.nanny?.email,
               service_type_name,
               showRating: false,
               tempRating: 0,
-              isRated: service.rating?.given || false
+              isRated: (service.rating?.rating && service.rating.rating > 0) ? true : false
             };
             
             // Convertir strings de fecha a Date objects para Angular date pipe
@@ -758,6 +775,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               total_hours: processedService.total_hours
             });
             
+            // Agregar propiedad para control de pago
+            processedService.paymentInitiated = false;
+            
             return processedService as ClientServiceComplete;
           });
           console.log('✅ Servicios contratados procesados:', this.contractedServices);
@@ -773,11 +793,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientPayments() {
     this.isLoadingPayments = true;
-    console.log(`📋 Cargando pagos del cliente para userId: ${this.currentUserId}`);
-    this.clientApiService.getClientPayments(this.currentUserId).subscribe({
+    console.log(`💳 Cargando pagos del cliente...`);
+    this.paymentService.getClientPayments().subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client payments:', response);
-        if (response.success) {
+        console.log('✅ Pagos del cliente cargados:', response.data);
+        if (response.success && response.data) {
           this.clientPayments = response.data;
         }
         this.isLoadingPayments = false;
@@ -855,17 +875,63 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Transformar datos del servicio para la vista
   private transformServiceData(serviceData: any): any {
-    return {
+    console.log('📋 transformServiceData - Datos recibidos:', serviceData);
+    console.log('📋 Buscando phone_number en:', {
+      nanny_phone: serviceData.nanny_phone,
+      nanny_phone_number: serviceData.nanny_phone_number,
+      'nanny?.phone': serviceData.nanny?.phone,
+      'nanny?.phone_number': serviceData.nanny?.phone_number,
+      user_phone: serviceData.user_phone,
+      user_phone_number: serviceData.user_phone_number
+    });
+    
+    // Construir URL de la imagen correctamente
+    let nanny_profile_image = 'assets/logo.png';
+    if (serviceData.nanny_profile_image) {
+      const img = serviceData.nanny_profile_image;
+      if (img.startsWith('http')) {
+        nanny_profile_image = img;
+      } else if (img.startsWith('/uploads/')) {
+        nanny_profile_image = `http://localhost:8000${img}`;
+      } else {
+        nanny_profile_image = `http://localhost:8000/uploads/${img}`;
+      }
+    }
+
+    // Intentar obtener email del nanny - puede venir en diferentes formatos
+    const nannyEmail = serviceData.nanny_email || 
+                       serviceData.nanny?.email || 
+                       serviceData.user?.email ||
+                       serviceData.user_email ||
+                       '';
+
+    // Intentar obtener phone del nanny - el backend retorna como 'nanny_phone'
+    const nannyPhoneNumber = serviceData.nanny_phone || 
+                            serviceData.nanny_phone_number || 
+                            serviceData.nanny?.phone_number ||
+                            serviceData.nanny?.phone ||
+                            serviceData.user?.phone_number ||
+                            serviceData.user_phone ||
+                            serviceData.user_phone_number ||
+                            '';
+
+    const result = {
       ...serviceData,
       nanny: serviceData.nanny_id ? {
         id: serviceData.nanny_id,
         name: `${serviceData.nanny_first_name || ''} ${serviceData.nanny_last_name || ''}`.trim(),
         first_name: serviceData.nanny_first_name,
         last_name: serviceData.nanny_last_name,
-        profile_image: serviceData.nanny_profile_image || null,
+        profile_image: nanny_profile_image,
+        phone_number: nannyPhoneNumber,
+        email: nannyEmail,
         rating: parseFloat(serviceData.nanny_rating) || 0
       } : null
     };
+
+    console.log('📋 transformServiceData - Phone encontrado:', nannyPhoneNumber);
+    console.log('📋 transformServiceData - Objeto nanny construido:', result.nanny);
+    return result;
   }
 
   // Ver detalles de un servicio existente
@@ -953,9 +1019,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.rateService(this.selectedService.id);
   }
 
-  // Abrir modal de cancelación
-  openCancelModal() {
-    if (!this.selectedService) return;
+  // Confirmar cancelación de servicio
+  confirmCancelService() {
+    if (!this.selectedService) {
+      console.error('❌ No hay servicio seleccionado');
+      return;
+    }
     
     const confirmCancel = confirm(
       `¿Estás seguro de que deseas cancelar el servicio "${this.selectedService.title}"?\n\n` +
@@ -965,6 +1034,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     if (confirmCancel) {
       this.cancelServiceById(this.selectedService.id);
     }
+  }
+
+  // Abrir modal de cancelación (Legacy - mantener por compatibilidad)
+  openCancelModal() {
+    this.confirmCancelService();
   }
 
   // Cancelar servicio por ID
@@ -987,11 +1061,59 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Ver perfil de la niñera
-  viewNannyProfile(nannyId?: number) {
-    console.log('Ver perfil de niñera:', nannyId);
-    // TODO: Implementar navegación al perfil de la niñera
-    alert('Visualización de perfil de niñera próximamente disponible');
+  // Método helper para abrir perfil desde servicio
+  openNannyProfile(service: any) {
+    if (!service) {
+      console.error('❌ Error: No se pasó servicio');
+      return;
+    }
+
+    const nannyData = {
+      name: service.nanny_full_name || service.nanny?.first_name || 'Sin nombre',
+      profile_image: service.nanny_profile_image || service.nanny?.profile_image || 'assets/logo.png',
+      phone_number: service.nanny_phone || service.nanny?.phone_number || service.nanny?.phone || '',
+      email: service.nanny_email || service.nanny?.email || '',
+      rating: service.nanny?.rating || 0,
+      reviews_count: service.nanny?.reviews_count || 0,
+      bio: service.nanny?.bio || '',
+      experience: service.nanny?.experience || '',
+      specialties: service.nanny?.specialties || []
+    };
+
+    console.log('👧 Abriendo perfil desde servicio:', nannyData);
+    console.log('👧 Phone number extraído:', nannyData.phone_number);
+    this.showNannyProfileModal(nannyData);
+  }
+
+  // Ver perfil de la niñera - Abre el modal
+  showNannyProfileModal(nanny: any) {
+    if (!nanny) {
+      console.error('❌ Error: No se pasó información de niñera');
+      return;
+    }
+    
+    // Normalizar el objeto nanny para asegurar que tiene todas las propiedades
+    const normalizedNanny = {
+      name: nanny.name || nanny.first_name || 'Sin nombre',
+      profile_image: nanny.profile_image || nanny.nanny_profile_image || 'assets/logo.png',
+      phone_number: nanny.phone_number || nanny.phone || nanny.nanny_phone || '',
+      email: nanny.email || nanny.nanny_email || '',
+      rating: nanny.rating || 0,
+      reviews_count: nanny.reviews_count || 0,
+      bio: nanny.bio || '',
+      experience: nanny.experience || '',
+      specialties: nanny.specialties || []
+    };
+    
+    console.log('👧 Abriendo perfil de niñera:', normalizedNanny);
+    console.log('👧 Teléfono encontrado:', normalizedNanny.phone_number);
+    this.nannyProfileSubject.next(normalizedNanny);
+  }
+
+  // Cerrar modal de perfil de niñera
+  closeNannyProfileModal() {
+    console.log('👧 Cerrando modal de niñera');
+    this.nannyProfileSubject.next(null);
   }
 
   // Actualizar indicaciones del servicio (método legacy - mantener por compatibilidad)
@@ -1908,18 +2030,49 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Establecer calificación con estrellas
   setRating(serviceId: number, rating: number) {
+    if (rating === 0) return; // No permitir enviar sin seleccionar
+
     const service = this.contractedServices.find(s => s.id === serviceId);
-    if (service) {
-      service.rating = {
-        given: true,
-        rating: rating,
-        review: service.rating.review
-      };
-      service.isRated = true;
-      service.showRating = false;
-      service.tempRating = 0;
-      console.log(`Servicio ${serviceId} calificado con ${rating} estrellas`);
-    }
+    if (!service) return;
+
+    // Enviar la calificación al backend
+    const ratingData = {
+      service_id: serviceId,
+      rating: rating,
+      review: '', // El usuario podría agregar una reseña más adelante
+      punctuality_rating: rating,
+      communication_rating: rating,
+      care_quality_rating: rating,
+      would_recommend: rating >= 4
+    };
+
+    this.clientApiService.rateService(ratingData).subscribe({
+      next: (response) => {
+        console.log('✓ Calificación enviada:', response);
+        
+        // Actualizar la interfaz
+        service.rating = {
+          given: true,
+          rating: rating
+        };
+        service.isRated = true;
+        service.showRating = false;
+        service.tempRating = 0;
+        
+        // Mostrar mensaje de éxito
+        this.showServiceModal = true;
+        this.serviceModalType = 'success';
+        this.serviceModalTitle = '✓ Calificación guardada';
+        this.serviceModalMessage = `Gracias por calificar este servicio con ${rating} ${rating === 1 ? 'estrella' : 'estrellas'}`;
+      },
+      error: (error) => {
+        console.error('❌ Error al calificar:', error);
+        this.showServiceModal = true;
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al calificar';
+        this.serviceModalMessage = 'No pudimos guardar tu calificación. Por favor intenta de nuevo.';
+      }
+    });
   }
 
   // Cancelar calificación
@@ -2105,13 +2258,13 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   get paymentsList() {
     return this.clientPayments.map(payment => ({
       id: payment.id,
-      session: payment.service_title,
+      session: payment.title || 'Servicio',
       amount: payment.amount.toFixed(2),
       status: payment.payment_status === 'completed' ? 'pagado' : 
               payment.payment_status === 'pending' ? 'Sin verificar' : 
               payment.payment_status,
-      date: new Date(payment.service_date),
-      nanny: payment.nanny?.name || 'No asignada',
+      date: new Date(payment.start_date || new Date()),
+      nanny: payment.nanny_first_name ? `${payment.nanny_first_name} ${payment.nanny_last_name}` : 'No asignada',
       receiptUrl: payment.receipt_url
     }));
   }
@@ -2167,32 +2320,259 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLInputElement;
     if (target.files && target.files.length > 0) {
       const file = target.files[0];
-      console.log('Comprobante seleccionado:', file.name);
-      // Aquí se implementaría la lógica para subir el comprobante
-      alert(`Comprobante "${file.name}" subido exitosamente. Será verificado en las próximas 24 horas.`);
+      const paymentId = (target as any).dataset.paymentId;
+      
+      console.log('🧾 Comprobante seleccionado:', file.name);
+      console.log('💳 ID de pago:', paymentId);
+      
+      if (paymentId) {
+        // Si viene de openUploadReceiptModal, hacer upload
+        this.uploadPaymentReceipt(parseInt(paymentId), file);
+      } else {
+        // Mostrar error
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error';
+        this.serviceModalMessage = 'No se pudo asociar el comprobante al pago. Por favor intenta de nuevo.';
+      }
+      
+      // Limpiar el input
+      target.value = '';
+      (target as any).dataset.paymentId = '';
     }
   }
 
+  /**
+   * Crear pago para un servicio completado
+   */
+  createPaymentForService(serviceId: number) {
+    console.log('💰 Crear pago para servicio:', serviceId);
+    
+    this.showServiceModal = true;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = 'Inicializando Pago';
+    this.serviceModalMessage = 'Preparando el pago para este servicio...';
+
+    this.paymentService.initializePayment(serviceId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          console.log('✅ Pago creado:', response.data);
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = 'Pago Inicializado';
+          this.serviceModalMessage = `Pago de $${response.data.amount} creado. Por favor, realiza la transferencia bancaria y sube el comprobante.`;
+          
+          // Esperar 2 segundos y luego mostrar modal para subir comprobante
+          setTimeout(() => {
+            this.openUploadReceiptModal(response.data.paymentId);
+          }, 2000);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error al crear pago:', error);
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al Crear Pago';
+        this.serviceModalMessage = error.error?.message || 'Hubo un error al crear el pago';
+      }
+    });
+  }
+
+  /**
+   * Abrir modal para subir comprobante de pago
+   */
+  openUploadReceiptModal(paymentId: number) {
+    console.log('📤 Abriendo modal para subir comprobante de pago:', paymentId);
+    
+    // Aquí podrías mostrar un modal específico para subir el comprobante
+    // Por ahora, simularemos haciendo clic en el input de archivo
+    const fileInput = document.getElementById('receiptUpload') as HTMLInputElement;
+    if (fileInput) {
+      // Guardamos el paymentId para usarlo cuando se seleccione el archivo
+      (fileInput as any).dataset.paymentId = paymentId;
+      fileInput.click();
+    }
+  }
+
+  /**
+   * Subir comprobante de pago
+   */
+  uploadPaymentReceipt(paymentId: number, file: File) {
+    console.log('📄 Subiendo comprobante para pago:', paymentId);
+    
+    this.showServiceModal = true;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = 'Subiendo Comprobante';
+    this.serviceModalMessage = `Subiendo ${file.name}...`;
+
+    this.paymentService.uploadPaymentReceipt(paymentId, file).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('✅ Comprobante subido exitosamente:', response.data);
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = 'Comprobante Subido';
+          this.serviceModalMessage = 'Tu comprobante ha sido recibido. El administrador lo verificará pronto.';
+          
+          // Recargar pagos
+          this.loadClientPayments();
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error al subir comprobante:', error);
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al Subir Comprobante';
+        this.serviceModalMessage = error.error?.message || 'Error al subir el comprobante';
+      }
+    });
+  }
+
+  /**
+   * Cargar pagos del cliente
+   */
   getPaymentStatusClass(status: string): string {
     return status === 'pagado' ? 'status-paid' : 'status-pending';
   }
 
   // Métodos para el apartado de pagos mejorado
+
+  /**
+   * Contar pagos completados
+   */
+  getCompletedPaymentsCount(): number {
+    return this.clientPayments?.filter(p => p.payment_status === 'completed').length || 0;
+  }
+
+  /**
+   * Contar pagos pendientes
+   */
+  getPendingPaymentsCount(): number {
+    return this.clientPayments?.filter(p => p.payment_status === 'pending').length || 0;
+  }
+
+  /**
+   * Contar pagos en procesamiento
+   */
+  getProcessingPaymentsCount(): number {
+    return this.clientPayments?.filter(p => p.payment_status === 'processing').length || 0;
+  }
+
+  /**
+   * Obtener cantidad de pagos completados (legacy)
+   */
   getPaidPaymentsCount(): number {
     return this.paymentsList.filter(payment => payment.status === 'pagado').length;
   }
 
-  getPendingPaymentsCount(): number {
-    return this.paymentsList.filter(payment => payment.status !== 'pagado').length;
+  /**
+   * Formatear estado del pago
+   */
+  formatPaymentStatus(status: string): string {
+    const statusMap: any = {
+      'pending': 'Pendiente de Pago',
+      'processing': 'En Verificación',
+      'completed': 'Pago Completado',
+      'failed': 'Pago Rechazado',
+      'pagado': 'Pagado'
+    };
+    return statusMap[status] || status;
   }
 
-  // Nuevos métodos que usan clientPayments (datos reales del API)
-  getCompletedPaymentsCount(): number {
-    return this.clientPayments?.filter(payment => payment.payment_status === 'completed').length || 0;
+  /**
+   * Filtrar pagos según estado y ordenamiento
+   */
+  getFilteredPayments(): any[] {
+    if (!this.clientPayments) return [];
+    
+    let filtered = [...this.clientPayments];
+    
+    // Filtrar por estado si se selecciona uno
+    if (this.selectedPaymentStatus && this.selectedPaymentStatus !== '') {
+      filtered = filtered.filter(p => p.payment_status === this.selectedPaymentStatus);
+    }
+    
+    // Ordenar por fecha
+    if (this.sortPaymentsBy === 'oldest') {
+      filtered.sort((a, b) => {
+        const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
+        const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
+        return dateA - dateB;
+      });
+    } else {
+      filtered.sort((a, b) => {
+        const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
+        const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
+    
+    return filtered;
   }
 
-  getPendingPaymentsCountFromArray(): number {
-    return this.clientPayments?.filter(payment => payment.payment_status !== 'completed').length || 0;
+  /**
+   * Expandir/contraer tarjeta de pago
+   */
+  expandedPayments: Set<number> = new Set();
+
+  togglePaymentExpanded(paymentId: number) {
+    if (this.expandedPayments.has(paymentId)) {
+      this.expandedPayments.delete(paymentId);
+    } else {
+      this.expandedPayments.add(paymentId);
+    }
+  }
+
+  isPaymentExpanded(paymentId: number): boolean {
+    return this.expandedPayments.has(paymentId);
+  }
+
+  /**
+   * Obtener URL correcta del comprobante con manejo de rutas
+   */
+  getProperReceiptUrl(receiptUrl: string): string {
+    if (!receiptUrl) return '';
+    
+    // Si ya tiene protocolo, devolverlo como está
+    if (receiptUrl.startsWith('http://') || receiptUrl.startsWith('https://')) {
+      return receiptUrl;
+    }
+    
+    // Si empieza con /uploads, agregar el localhost:8000
+    if (receiptUrl.startsWith('/uploads/')) {
+      return `http://localhost:8000${receiptUrl}`;
+    }
+    
+    // Si no, asumir que va en /uploads/
+    return `http://localhost:8000/uploads/${receiptUrl}`;
+  }
+
+  /**
+   * Manejar error de carga de imagen del comprobante
+   */
+  onReceiptImageError(event: any, paymentId: number) {
+    console.error(`❌ Error cargando imagen del comprobante para pago ${paymentId}:`, event);
+    // Aquí puedes agregar lógica para mostrar un ícono de error
+  }
+
+  /**
+   * Verificar si el archivo es imagen
+   */
+  isImageReceipt(url: string): boolean {
+    if (!url) return false;
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const ext = url.split('.').pop()?.toLowerCase() || '';
+    return imageExtensions.includes(ext);
+  }
+
+  /**
+   * Verificar si el archivo es PDF
+   */
+  isPdfReceipt(url: string): boolean {
+    if (!url) return false;
+    return url.toLowerCase().endsWith('.pdf');
+  }
+
+  /**
+   * Trackby para ngFor de pagos
+   */
+  trackByPayment(index: number, payment: any): number {
+    return payment.id;
   }
 
   getTotalAmount(): string {
@@ -2200,10 +2580,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       .filter(payment => payment.status === 'pagado')
       .reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
     return total.toFixed(2);
-  }
-
-  trackByPayment(index: number, payment: any): any {
-    return payment.id;
   }
 
   getPaymentIconClass(status: string): string {

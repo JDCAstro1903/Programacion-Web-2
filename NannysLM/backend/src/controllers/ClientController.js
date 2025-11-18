@@ -541,15 +541,152 @@ class ClientController {
       });
     }
   }
+
+  /**
+   * Calificar un servicio
+   */
+  static async rateService(req, res) {
+    try {
+      const userId = req.user.id;
+      const { service_id, rating, review, punctuality_rating, communication_rating, care_quality_rating, would_recommend } = req.body;
+
+      console.log('🔍 Datos de calificación recibidos:', { userId, service_id, rating });
+
+      // Validar datos requeridos
+      if (!service_id || !rating) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere service_id y rating'
+        });
+      }
+
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'La calificación debe estar entre 1 y 5'
+        });
+      }
+
+      // Obtener información del servicio
+      const serviceQuery = 'SELECT * FROM services WHERE id = ?';
+      console.log('🔍 Buscando servicio con query:', serviceQuery, 'params:', [service_id]);
+      
+      const serviceResult = await executeQuery(serviceQuery, [service_id]);
+
+      console.log('🔍 Resultado de búsqueda de servicio:', serviceResult);
+
+      if (!serviceResult.success || serviceResult.data.length === 0) {
+        console.log('❌ Servicio no encontrado. Success:', serviceResult.success, 'Data length:', serviceResult.data?.length);
+        return res.status(404).json({
+          success: false,
+          message: 'Servicio no encontrado'
+        });
+      }
+
+      const service = serviceResult.data[0];
+
+      console.log('✓ Servicio encontrado:', service);
+
+      // Obtener el client_id del usuario actual
+      const clientQuery = 'SELECT id FROM clients WHERE user_id = ?';
+      const clientResult = await executeQuery(clientQuery, [userId]);
+
+      if (!clientResult.success || clientResult.data.length === 0) {
+        console.log('❌ Cliente no encontrado para el usuario:', userId);
+        return res.status(404).json({
+          success: false,
+          message: 'No se encontró un perfil de cliente asociado a tu cuenta'
+        });
+      }
+
+      const userClientId = clientResult.data[0].id;
+      console.log('✓ Client ID del usuario:', userClientId, 'Service client_id:', service.client_id);
+
+      // Verificar que el cliente sea el propietario del servicio
+      if (service.client_id !== userClientId) {
+        console.log('❌ Cliente no autorizado. Service client_id:', service.client_id, 'User client_id:', userClientId);
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para calificar este servicio'
+        });
+      }
+
+      // Verificar que el servicio esté completado
+      if (service.status !== 'completed') {
+        return res.status(400).json({
+          success: false,
+          message: 'Solo se pueden calificar servicios completados'
+        });
+      }
+
+      // Verificar que no exista una calificación previa
+      const existingRatingQuery = 'SELECT id FROM ratings WHERE service_id = ? AND client_id = ?';
+      const existingRating = await executeQuery(existingRatingQuery, [service_id, userClientId]);
+
+      if (existingRating.success && existingRating.data.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Este servicio ya ha sido calificado'
+        });
+      }
+
+      // Crear la calificación
+      const insertQuery = `
+        INSERT INTO ratings (
+          service_id, 
+          client_id, 
+          nanny_id, 
+          rating, 
+          review, 
+          punctuality_rating, 
+          communication_rating, 
+          care_quality_rating, 
+          would_recommend, 
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      `;
+
+      const values = [
+        service_id,
+        userClientId,
+        service.nanny_id,
+        rating,
+        review || null,
+        punctuality_rating || rating,
+        communication_rating || rating,
+        care_quality_rating || rating,
+        would_recommend !== undefined ? would_recommend : (rating >= 4)
+      ];
+
+      const insertResult = await executeQuery(insertQuery, values);
+
+      if (!insertResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error al guardar la calificación'
+        });
+      }
+
+      console.log(`✓ Calificación creada para servicio ${service_id} por cliente ${userClientId}`);
+
+      return res.json({
+        success: true,
+        message: 'Calificación guardada exitosamente',
+        data: {
+          rating_id: insertResult.insertId,
+          service_id,
+          rating
+        }
+      });
+    } catch (error) {
+      console.error('Error creating rating:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
-// ...existing code...
-
-module.exports = {
-  updateClientProfile: ClientController.updateClientProfile,
-  getClientInfo: ClientController.getClientInfo,
-  getClientServices: ClientController.getClientServices,
-  getClientPayments: ClientController.getClientPayments,
-  getClientStats: ClientController.getClientStats,
-  verifyClient: ClientController.verifyClient
-};
+module.exports = ClientController;

@@ -9,6 +9,8 @@ import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { Notification } from '../../shared/components/header/header.component';
 import { NannyService } from '../../services/nanny.service';
+import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
+import { ClientService } from '../../services/client.service';
 
 // Interfaz para definir la estructura de un servicio
 interface Service {
@@ -21,12 +23,13 @@ interface Service {
   instructions: string;
   status: 'upcoming' | 'completed';
   rating?: number; // Opcional, solo para servicios completados
+  client_user_id?: number; // ID del usuario cliente para obtener su perfil
 }
 
 @Component({
   selector: 'app-nanny-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
+  imports: [CommonModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent],
   templateUrl: './nanny-dashboard.component.html',
   styleUrl: './nanny-dashboard.component.css'
 })
@@ -49,6 +52,7 @@ export class NannyDashboardComponent implements OnInit {
   // Estado del modal de cliente
   showClientModal: boolean = false;
   selectedClient: any = null;
+  isLoadingClientData: boolean = false;
 
   // Notificaciones
   notifications: Notification[] = [];
@@ -97,7 +101,8 @@ export class NannyDashboardComponent implements OnInit {
     private router: Router,
     private authService: AuthService,
     private notificationService: NotificationService,
-    private nannyService: NannyService
+    private nannyService: NannyService,
+    private clientService: ClientService
   ) {
     // Configurar sidebar específico para nanny con tema rosa como el admin
     this.sidebarConfig = {
@@ -112,6 +117,11 @@ export class NannyDashboardComponent implements OnInit {
           id: 'services',
           label: 'Servicios',
           icon: 'calendar'
+        },
+        {
+          id: 'notificaciones',
+          label: 'Notificaciones',
+          icon: 'bell'
         }
       ]
     };
@@ -266,10 +276,75 @@ export class NannyDashboardComponent implements OnInit {
                    this.services.past.find(s => s.client === clientName);
     
     if (service) {
-      this.selectedClient = service;
+      // Inicializar con datos del servicio
+      this.selectedClient = { ...service };
       this.showClientModal = true;
       console.log('Abriendo modal del cliente:', clientName, service);
+      
+      // Cargar datos completos del cliente incluyendo la imagen de perfil
+      this.loadClientProfileImage(clientName);
     }
+  }
+
+  private loadClientProfileImage(clientName: string) {
+    // Buscar el servicio que contiene información del cliente
+    const service = this.services.upcoming.find(s => s.client === clientName) || 
+                   this.services.past.find(s => s.client === clientName);
+    
+    if (!service || !service.client_user_id) {
+      console.warn('⚠️ No se encontró información del cliente');
+      this.isLoadingClientData = false;
+      return;
+    }
+
+    // Mostrar que estamos cargando
+    this.isLoadingClientData = true;
+    console.log('🔍 Cargando información del cliente, user_id:', service.client_user_id);
+
+    // Cargar información completa del cliente incluyendo la imagen de perfil
+    this.clientService.getClientInfo(service.client_user_id).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          console.log('✅ Información del cliente cargada:', response.data);
+          
+          // Actualizar el cliente seleccionado con los datos completos incluyendo la imagen
+          this.selectedClient = {
+            ...this.selectedClient,
+            profileImage: this.getClientProfileImageUrl(response.data.profile_image),
+            phone: response.data.phone_number,
+            email: response.data.email,
+            emergencyContact: response.data.emergency_contact_name,
+            emergencyPhone: response.data.emergency_contact_phone
+          };
+          
+          console.log('📸 Imagen de perfil del cliente:', this.selectedClient.profileImage);
+        }
+        this.isLoadingClientData = false;
+      },
+      error: (error) => {
+        console.error('❌ Error cargando información del cliente:', error);
+        this.isLoadingClientData = false;
+      }
+    });
+  }
+
+  private getClientProfileImageUrl(profileImage?: string): string {
+    if (!profileImage) {
+      return '/assets/logo.png';
+    }
+
+    // Si la imagen ya es una URL completa, usarla tal como está
+    if (profileImage.startsWith('http')) {
+      return profileImage;
+    }
+
+    // Si ya incluye /uploads/, solo agregar el host
+    if (profileImage.startsWith('/uploads/')) {
+      return `http://localhost:8000${profileImage}`;
+    }
+
+    // Si es solo el nombre del archivo, construir la URL completa
+    return `http://localhost:8000/uploads/${profileImage}`;
   }
 
   closeClientModal() {
@@ -403,7 +478,8 @@ export class NannyDashboardComponent implements OnInit {
               location: service.address || 'Sin dirección',
               instructions: service.special_instructions || 'Sin instrucciones especiales',
               status: (serviceStatus === 'completed' || serviceDate < today) ? 'completed' : 'upcoming',
-              rating: service.rating || undefined
+              rating: service.rating || undefined,
+              client_user_id: service.client_user_id || undefined
             };
 
             console.log(`📝 Servicio formateado:`, {
@@ -533,5 +609,11 @@ export class NannyDashboardComponent implements OnInit {
         console.error('❌ Error marcando todas como leídas:', error);
       }
     });
+  }
+
+  // Manejo de error en la imagen de perfil del cliente
+  onProfileImageError(event: any) {
+    console.warn('⚠️ Error cargando imagen de perfil del cliente');
+    event.target.src = '/assets/logo.png';
   }
 }

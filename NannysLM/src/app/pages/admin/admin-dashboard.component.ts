@@ -5,16 +5,19 @@ import { Router, RouterModule } from '@angular/router';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
+import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
+import { WhatsappButtonComponent } from '../../shared/components/whatsapp-button/whatsapp-button.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
 import { DashboardService, DashboardStats, Nanny, Client } from '../../services/dashboard.service';
 import { BankDetailsService } from '../../services/bank-details.service';
 import { NannyService } from '../../services/nanny.service';
+import { PaymentService } from '../../services/payment.service';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent, WhatsappButtonComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css'
 })
@@ -54,7 +57,8 @@ export class AdminDashboardComponent implements OnInit {
     private authService: AuthService,
     private dashboardService: DashboardService,
     private bankDetailsService: BankDetailsService,
-    private nannyService: NannyService
+    private nannyService: NannyService,
+    private paymentService: PaymentService
   ) {
     this.sidebarConfig = this.userConfigService.getSidebarConfig('admin');
     
@@ -230,7 +234,7 @@ export class AdminDashboardComponent implements OnInit {
   // Estados de filtro para las nannys
   nannyFilter: string = 'active';
   clientFilter: string = 'all'; // Cambiado de 'verified' a 'all' para mostrar todos los clientes por defecto
-  paymentFilter: string = 'verified';
+  paymentFilter: string = 'all'; // Mostrar todos los pagos por defecto
   paymentDateFilter: string = 'all';
   
   // Términos de búsqueda
@@ -315,6 +319,8 @@ export class AdminDashboardComponent implements OnInit {
   // Estados para perfil de nanny
   showNannyProfileModal: boolean = false;
   selectedNannyProfile: any = null;
+  nannyRatings: any[] = [];
+  isLoadingNannyRatings: boolean = false;
 
   // Estados para modal de resultado de verificación
   showVerificationResultModal: boolean = false;
@@ -358,6 +364,12 @@ export class AdminDashboardComponent implements OnInit {
 
   onHeaderProfileClick() {
     console.log('Navegando a perfil...');
+  }
+
+  onNotificationClick(notification: any) {
+    console.log('🔔 Notificación clickeada en admin:', notification);
+    // Aquí puedes manejar el clic en la notificación si es necesario
+    // Por ejemplo, navegar a una sección específica o abrir un modal
   }
 
   setNannyFilter(filter: string) {
@@ -475,9 +487,11 @@ export class AdminDashboardComponent implements OnInit {
     
     // Filtrar por estado de verificación
     if (this.paymentFilter === 'verified') {
-      payments = payments.filter((payment: any) => payment.paymentStatus === 'completed');
+      payments = payments.filter((payment: any) => payment.payment_status === 'completed');
     } else if (this.paymentFilter === 'unverified') {
-      payments = payments.filter((payment: any) => payment.paymentStatus === 'pending');
+      payments = payments.filter((payment: any) => payment.payment_status === 'pending');
+    } else if (this.paymentFilter === 'processing') {
+      payments = payments.filter((payment: any) => payment.payment_status === 'processing');
     }
     
     // Aplicar filtro de fecha
@@ -486,8 +500,8 @@ export class AdminDashboardComponent implements OnInit {
       const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
       payments = payments.filter((payment: any) => {
-        if (!payment.paymentDate && !payment.createdAt) return false;
-        const paymentDate = new Date(payment.paymentDate || payment.createdAt);
+        if (!payment.payment_date && !payment.created_at) return false;
+        const paymentDate = new Date(payment.payment_date || payment.created_at);
         
         switch(this.paymentDateFilter) {
           case 'today':
@@ -526,9 +540,10 @@ export class AdminDashboardComponent implements OnInit {
     if (this.paymentSearchTerm.trim()) {
       const searchLower = this.paymentSearchTerm.toLowerCase();
       payments = payments.filter(payment => 
-        (payment.client?.name?.toLowerCase().includes(searchLower) ||
-         payment.nanny?.first_name?.toLowerCase().includes(searchLower) ||
-         payment.nanny?.last_name?.toLowerCase().includes(searchLower) ||
+        (payment.client_first_name?.toLowerCase().includes(searchLower) ||
+         payment.client_last_name?.toLowerCase().includes(searchLower) ||
+         payment.nanny_first_name?.toLowerCase().includes(searchLower) ||
+         payment.nanny_last_name?.toLowerCase().includes(searchLower) ||
          payment.amount?.toString().includes(searchLower) ||
          payment.id?.toString().includes(searchLower))
       );
@@ -548,7 +563,7 @@ export class AdminDashboardComponent implements OnInit {
       return [];
     }
     return [...this.paymentsData]
-      .sort((a, b) => new Date(b.paymentDate || b.createdAt).getTime() - new Date(a.paymentDate || a.createdAt).getTime())
+      .sort((a, b) => new Date(b.payment_date || b.created_at).getTime() - new Date(a.payment_date || a.created_at).getTime())
       .slice(0, 3);
   }
 
@@ -590,9 +605,11 @@ export class AdminDashboardComponent implements OnInit {
   getPaymentCount(type: string): number {
     switch(type) {
       case 'verified': 
-        return this.paymentsData.filter((payment: any) => payment.paymentStatus === 'completed').length;
+        return this.paymentsData.filter((payment: any) => payment.payment_status === 'completed').length;
       case 'unverified': 
-        return this.paymentsData.filter((payment: any) => payment.paymentStatus === 'pending').length;
+        return this.paymentsData.filter((payment: any) => payment.payment_status === 'pending').length;
+      case 'processing':
+        return this.paymentsData.filter((payment: any) => payment.payment_status === 'processing').length;
       default: 
         return this.paymentsData.length;
     }
@@ -1035,12 +1052,14 @@ export class AdminDashboardComponent implements OnInit {
 
   // Métodos para pagos
   getPaymentStatusFromData(payment: any): string {
-    // Determinar el estado basado en paymentStatus
-    if (payment.paymentStatus === 'completed') {
+    // Determinar el estado basado en payment_status
+    if (payment.payment_status === 'completed') {
       return 'verified';
-    } else if (payment.paymentStatus === 'pending' || payment.paymentStatus === 'processing') {
+    } else if (payment.payment_status === 'pending') {
       return 'unverified';
-    } else if (payment.paymentStatus === 'failed' || payment.paymentStatus === 'refunded') {
+    } else if (payment.payment_status === 'processing') {
+      return 'processing';
+    } else if (payment.payment_status === 'failed' || payment.payment_status === 'refunded') {
       return 'cancelled';
     }
     return 'unverified'; // default
@@ -1050,6 +1069,7 @@ export class AdminDashboardComponent implements OnInit {
     switch (status) {
       case 'verified': return 'Completado';
       case 'unverified': return 'Pendiente';
+      case 'processing': return 'En Revisión';
       default: return '';
     }
   }
@@ -1065,7 +1085,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   getTotalRevenue(): number {
-    const completedPayments = this.paymentsData.filter((payment: any) => payment.paymentStatus === 'completed');
+    const completedPayments = this.paymentsData.filter((payment: any) => payment.payment_status === 'completed');
     return completedPayments.reduce((total: number, payment: any) => total + (payment.amount || 0), 0);
   }
 
@@ -1074,9 +1094,9 @@ export class AdminDashboardComponent implements OnInit {
     const currentYear = new Date().getFullYear();
     
     const monthlyPayments = this.paymentsData.filter((payment: any) => {
-      if (payment.paymentStatus !== 'completed' || !payment.paymentDate) return false;
+      if (payment.payment_status !== 'completed' || !payment.payment_date) return false;
       
-      const paymentDate = new Date(payment.paymentDate);
+      const paymentDate = new Date(payment.payment_date);
       return paymentDate.getMonth() === currentMonth && 
              paymentDate.getFullYear() === currentYear;
     });
@@ -1101,6 +1121,9 @@ export class AdminDashboardComponent implements OnInit {
     if (nanny) {
       this.selectedNannyProfile = nanny;
       this.showNannyProfileModal = true;
+      
+      // Cargar las calificaciones de la nanny
+      this.loadNannyRatings(nannyId);
     } else {
       alert('No se encontró la información de esta nanny');
     }
@@ -1109,11 +1132,81 @@ export class AdminDashboardComponent implements OnInit {
   closeNannyProfileModal() {
     this.showNannyProfileModal = false;
     this.selectedNannyProfile = null;
+    this.nannyRatings = [];
+  }
+
+  loadNannyRatings(nannyId: number) {
+    this.isLoadingNannyRatings = true;
+    this.nannyService.getNannyRatings(nannyId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.nannyRatings = response.data || [];
+          console.log(`⭐ Se cargaron ${this.nannyRatings.length} ratings para nanny ${nannyId}`, this.nannyRatings);
+        } else {
+          this.nannyRatings = [];
+        }
+        this.isLoadingNannyRatings = false;
+      },
+      error: (error) => {
+        console.error('Error cargando ratings:', error);
+        this.nannyRatings = [];
+        this.isLoadingNannyRatings = false;
+      }
+    });
   }
 
   contactNanny(nannyId: number) {
     console.log('Contactar nanny:', nannyId);
     // Aquí podrías implementar la funcionalidad de contacto
+  }
+
+  /**
+   * Cambiar estado de la nanny (active/inactive/suspended)
+   */
+  changeNannyStatus(nanny: any, newStatus: 'active' | 'inactive' | 'suspended') {
+    if (!nanny || !nanny.id) {
+      console.error('❌ Nanny inválida');
+      return;
+    }
+
+    const currentStatus = nanny.status;
+    if (currentStatus === newStatus) {
+      console.log('⚠️ El status ya es:', newStatus);
+      return;
+    }
+
+    console.log(`🔄 Cambiando estado de nanny ${nanny.id} de ${currentStatus} a ${newStatus}...`);
+
+    // Llamar a servicio para actualizar el status
+    this.nannyService.updateNannyStatus(nanny.id, newStatus).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          // Actualizar localmente
+          nanny.status = newStatus;
+          if (this.selectedNannyProfile) {
+            this.selectedNannyProfile.status = newStatus;
+          }
+
+          // Recargar datos
+          this.loadNannys();
+
+          console.log(`✅ Status actualizado a: ${newStatus}`);
+          this.openVerificationResultModal(
+            'success',
+            'Estado Actualizado',
+            `El estado de la nanny ha sido cambiado a: ${this.getStatusText(newStatus)}`
+          );
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error al cambiar status:', error);
+        this.openVerificationResultModal(
+          'error',
+          'Error',
+          'No se pudo actualizar el estado de la nanny'
+        );
+      }
+    });
   }
 
   // Funciones del calendario
@@ -1488,6 +1581,26 @@ export class AdminDashboardComponent implements OnInit {
 
   // Obtener URL completa del recibo de transferencia
   getReceiptUrl(payment: any): string {
+    // Intentar con receipt_url primero (nuevo sistema de pagos)
+    if (payment?.receipt_url) {
+      const receiptUrl = payment.receipt_url;
+      
+      // Si ya es una URL completa, devolverla
+      if (receiptUrl.startsWith('http')) {
+        return receiptUrl;
+      }
+      
+      // Si es una ruta relativa, construir la URL completa
+      if (receiptUrl.startsWith('/uploads/')) {
+        return `http://localhost:8000${receiptUrl}`;
+      }
+      
+      // Si es solo el nombre del archivo
+      const baseUrl = 'http://localhost:8000/uploads/receipts';
+      return `${baseUrl}/${receiptUrl}`;
+    }
+    
+    // Fallback a receiptProof para compatibilidad
     if (!payment?.receiptProof) {
       return '';
     }
@@ -1506,19 +1619,135 @@ export class AdminDashboardComponent implements OnInit {
 
   // Verificar si el recibo es una imagen
   isReceiptImage(payment: any): boolean {
-    if (!payment?.receiptProof) {
+    const url = payment?.receipt_url || payment?.receiptProof;
+    
+    if (!url) {
       return false;
     }
+    
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    const extension = payment.receiptProof.split('.').pop().toLowerCase();
+    const extension = url.split('.').pop()?.toLowerCase() || '';
     return imageExtensions.includes(extension);
   }
 
   // Verificar si el recibo es un PDF
   isReceiptPDF(payment: any): boolean {
-    if (!payment?.receiptProof) {
+    const url = payment?.receipt_url || payment?.receiptProof;
+    
+    if (!url) {
       return false;
     }
-    return payment.receiptProof.toLowerCase().endsWith('.pdf');
+    
+    return url.toLowerCase().endsWith('.pdf');
+  }
+
+  /**
+   * Ver comprobante de pago (imagen o PDF)
+   */
+  viewPaymentReceipt(payment: any) {
+    if (!payment.receipt_url) {
+      console.warn('⚠️ No hay comprobante disponible para este pago');
+      return;
+    }
+    
+    console.log('📄 Mostrando comprobante de pago:', payment.receipt_url);
+    this.selectedReceiptPayment = payment;
+    this.showReceiptModal = true;
+  }
+
+  /**
+   * Aprobar un pago después de verificar el comprobante
+   */
+  approvePayment(payment: any) {
+    if (!this.paymentService) {
+      console.error('❌ PaymentService no está disponible');
+      return;
+    }
+
+    console.log('✅ Aprobando pago:', payment.id);
+    
+    // Llamar al servicio para verificar el pago
+    this.paymentService.verifyPayment(payment.id, 'approve', 'Comprobante verificado correctamente').subscribe({
+      next: (response: any) => {
+        console.log('✅ Pago aprobado:', response);
+        
+        // Mostrar modal de éxito
+        alert('✅ Pago aprobado exitosamente. La niñera recibirá el monto correspondiente.');
+        
+        // Recargar los pagos
+        this.loadPayments();
+      },
+      error: (error: any) => {
+        console.error('❌ Error al aprobar pago:', error);
+        alert('❌ Error al aprobar el pago: ' + (error.error?.message || error.message));
+      }
+    });
+  }
+
+  /**
+   * Rechazar un pago
+   */
+  rejectPayment(payment: any) {
+    const reason = prompt('Por favor, proporciona una razón para rechazar este pago:');
+    
+    if (!reason) {
+      console.log('❌ Rechazo cancelado');
+      return;
+    }
+
+    if (!this.paymentService) {
+      console.error('❌ PaymentService no está disponible');
+      return;
+    }
+
+    console.log('❌ Rechazando pago:', payment.id);
+    
+    // Llamar al servicio para rechazar el pago
+    this.paymentService.verifyPayment(payment.id, 'reject', reason).subscribe({
+      next: (response: any) => {
+        console.log('✅ Pago rechazado:', response);
+        
+        // Mostrar modal de éxito
+        alert('❌ Pago rechazado. El cliente será notificado para enviar un nuevo comprobante.');
+        
+        // Recargar los pagos
+        this.loadPayments();
+      },
+      error: (error: any) => {
+        console.error('❌ Error al rechazar pago:', error);
+        alert('❌ Error al rechazar el pago: ' + (error.error?.message || error.message));
+      }
+    });
+  }
+
+  /**
+   * Generar recibo de pago
+   */
+  generateReceipt(payment: any) {
+    console.log('🧾 Generando recibo de pago:', payment.id);
+    
+    // Generar un recibo simple en PDF o mostrar una modal con los datos
+    const receiptText = `
+    ======================================
+    RECIBO DE PAGO
+    ======================================
+    Número de Pago: #${payment.id}
+    Fecha: ${new Date(payment.payment_date).toLocaleDateString()}
+    
+    Cliente: ${payment.client_id}
+    Niñera: ${payment.nanny_id}
+    Servicio ID: ${payment.service_id}
+    
+    Monto Total: $${payment.amount.toFixed(2)} MXN
+    Comisión Plataforma: $${payment.platform_fee.toFixed(2)} MXN
+    Monto para Niñera: $${payment.nanny_amount.toFixed(2)} MXN
+    
+    Estado: ${payment.payment_status}
+    ======================================
+    `;
+    
+    // Copiar al portapapeles o mostrar en modal
+    console.log('📋 Recibo generado:', receiptText);
+    alert(receiptText);
   }
 }

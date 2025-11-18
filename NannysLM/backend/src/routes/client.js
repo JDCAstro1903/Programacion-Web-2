@@ -43,6 +43,14 @@ router.get('/payments', verifyToken, ClientController.getClientPayments);
 router.get('/stats', verifyToken, ClientController.getClientStats);
 
 /**
+ * @route   POST /api/v1/client/rate-service
+ * @desc    Calificar un servicio
+ * @access  Private (solo clientes)
+ * @body    { service_id, rating, review, punctuality_rating, communication_rating, care_quality_rating, would_recommend }
+ */
+router.post('/rate-service', verifyToken, ClientController.rateService);
+
+/**
  * @route   PUT /api/v1/client/:id/verify
  * @desc    Verificar o rechazar cliente (Admin)
  * @access  Private (solo admin)

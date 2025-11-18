@@ -390,9 +390,71 @@ const getNannyByUserId = async (req, res) => {
     }
 };
 
+/**
+ * Actualizar estado de una nanny (PATCH /api/v1/nannys/:id/status)
+ * Estados: active, inactive, suspended
+ */
+const updateNannyStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID de nanny requerido'
+            });
+        }
+
+        if (!status || !['active', 'inactive', 'suspended'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Estado inválido. Debe ser: active, inactive o suspended'
+            });
+        }
+
+        console.log(`🔄 Actualizando status de nanny ${id} a: ${status}`);
+
+        // Actualizar en la BD
+        const updateQuery = `
+            UPDATE nannys
+            SET status = ?
+            WHERE id = ?
+        `;
+
+        const connection = await pool.getConnection();
+        const [result] = await connection.execute(updateQuery, [status, id]);
+        connection.release();
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Nanny no encontrada'
+            });
+        }
+
+        console.log(`✅ Status actualizado a: ${status}`);
+
+        return res.json({
+            success: true,
+            message: `Estado actualizado a: ${status}`,
+            data: { id, status }
+        });
+
+    } catch (error) {
+        console.error('❌ Error al actualizar status:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createNanny,
     getAllNannys,
     getNannyById,
-    getNannyByUserId
+    getNannyByUserId,
+    updateNannyStatus
 };

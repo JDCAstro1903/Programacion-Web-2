@@ -171,7 +171,7 @@
                     <span class="label">Confirmados</span>
                   </div>
                   <div class="breakdown-item pending">
-                    <span class="count">{{ getPendingPaymentsCountFromArray() }}</span>
+                    <span class="count">{{ getPendingPaymentsCount() }}</span>
                     <span class="label">Pendientes</span>
                   </div>
                 </div>
@@ -357,7 +357,7 @@
                   <div class="nanny-details">
                     <p class="nanny-label">Nanny Asignada</p>
                     <p class="nanny-name">{{ service.nanny_full_name }}</p>
-                    <button class="view-profile-btn" (click)="viewNannyProfile()">
+                    <button class="view-profile-btn" (click)="openNannyProfile(service)">
                       Ver perfil completo
                     </button>
                   </div>
@@ -434,6 +434,26 @@
                 </svg>
                 Ver Datos Bancarios
               </button>
+
+              <!-- Botón para cancelar servicio -->
+              <button class="action-btn cancel-btn" 
+                (click)="selectedService = service; confirmCancelService(); $event.stopPropagation()"
+                *ngIf="service.status === 'pending' || service.status === 'confirmed'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Cancelar Servicio
+              </button>
+            </div>
+
+            <!-- Mensaje de servicio cancelado -->
+            <div class="service-cancelled-message" *ngIf="service.status === 'cancelled'">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <p>Servicio cancelado</p>
             </div>
           </div>
         </div>
@@ -639,51 +659,49 @@
                   </div>
                   <span class="rating-value">{{ selectedService.nanny.rating }}/5</span>
                 </div>
-                <button class="view-profile-btn" (click)="viewNannyProfile(selectedService.nanny.id)">
+                <button class="view-profile-btn" (click)="showNannyProfileModal(selectedService.nanny)">
                   Ver perfil completo
                 </button>
               </div>
             </div>
 
             <!-- Tarjeta de acciones -->
-            <div class="detail-card actions-card">
+            <div class="detail-card actions-card" *ngIf="selectedService.status !== 'cancelled' && selectedService.status !== 'completed'">
               <div class="card-header">
                 <h3>Acciones</h3>
               </div>
-
-              <div class="action-buttons">
-                <button 
-                  *ngIf="selectedService.status === 'confirmed' || selectedService.status === 'pending'"
-                  class="action-btn primary"
-                  (click)="openChangeDateTime()">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                    <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              
+              <div class="actions-list">
+                <!-- Botón para cambiar fecha -->
+                <button class="action-btn change-date-btn" *ngIf="selectedService.status === 'pending' || selectedService.status === 'confirmed'">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  Cambiar fecha/hora
+                  Cambiar Fecha
                 </button>
 
-                <button 
-                  *ngIf="selectedService.status === 'completed' && !selectedService.rating?.given"
-                  class="action-btn secondary"
-                  (click)="openRatingModal()">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                <!-- Botón para cancelar -->
+                <button class="action-btn cancel-btn" (click)="confirmCancelService()" *ngIf="selectedService.status !== 'cancelled'">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
-                  Calificar servicio
+                  Cancelar Servicio
                 </button>
+              </div>
+            </div>
 
-                <button 
-                  *ngIf="selectedService.status !== 'completed' && selectedService.status !== 'cancelled'"
-                  class="action-btn danger"
-                  (click)="openCancelModal()">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                    <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
-                  Cancelar servicio
-                </button>
+            <!-- Tarjeta de servicio cancelado -->
+            <div class="detail-card cancelled-info" *ngIf="selectedService.status === 'cancelled'">
+              <div class="cancelled-message">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <p>Este servicio ha sido cancelado</p>
               </div>
             </div>
           </div>
@@ -708,8 +726,7 @@
           <!-- Lista de servicios del historial -->
           <div class="services-history-container">
             <div *ngFor="let service of contractedServices" 
-                 class="service-history-card clickable" 
-                 (click)="viewServiceDetails(service.id)">
+                 class="service-history-card">
               <!-- Header del servicio -->
               <div class="service-header">
                 <div class="service-info-left">
@@ -731,9 +748,9 @@
               <!-- Detalles del servicio -->
               <div class="service-details-row">
                 <div class="nanny-info-compact">
-                  <img [src]="service.nanny?.profile_image || 'assets/logo.png'" [alt]="service.nanny?.name || 'Nanny'" class="nanny-avatar-small">
+                  <img [src]="service.nanny_profile_image || service.nanny?.profile_image || 'assets/logo.png'" [alt]="service.nanny_full_name || service.nanny?.name || 'Nanny'" class="nanny-avatar-small">
                   <div class="nanny-details">
-                    <span class="nanny-name">{{ service.nanny?.name || 'Sin asignar' }}</span>
+                    <span class="nanny-name">{{ service.nanny_full_name || service.nanny?.name || 'Sin asignar' }}</span>
                     <span class="nanny-role">Niñera certificada</span>
                   </div>
                 </div>
@@ -762,21 +779,24 @@
 
                   <!-- Sistema de calificación activo -->
                   <div *ngIf="service.showRating" class="rating-input">
+                    <div class="rating-prompt">
+                      <span>¿Cómo fue tu experiencia?</span>
+                    </div>
                     <div class="stars-input">
                       <svg *ngFor="let star of getStarsArray()" 
                            [class.filled]="star <= (service.tempRating || 0)"
                            class="star-input" 
-                           width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                           width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
                            (click)="setRating(service.id, star)"
                            (mouseenter)="onStarHover(service.id, star)"
                            (mouseleave)="onStarLeave(service.id)">
                         <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                       </svg>
                     </div>
+                    <div class="rating-hint" *ngIf="(service.tempRating || 0) > 0">
+                      <span>{{ getRatingText(service.tempRating || 0) }}</span>
+                    </div>
                     <div class="rating-actions">
-                      <button class="save-rating-btn" (click)="setRating(service.id, service.tempRating || 0)" [disabled]="(service.tempRating || 0) === 0">
-                        Guardar
-                      </button>
                       <button class="cancel-rating-btn" (click)="cancelRating(service.id)">
                         Cancelar
                       </button>
@@ -787,16 +807,33 @@
 
               <!-- Acciones del servicio -->
               <div class="service-actions-compact">
+                <button class="action-btn view-details" (click)="viewServiceDetails(service.id)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM12.5 7H11V13L16.2 16.5L17 15.1L12.5 12.4V7Z"/>
+                  </svg>
+                  Ver detalles
+                </button>
+
                 <button class="action-btn view-details" (click)="openBankDetailsModal(service.nanny?.id)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M2 4C2 3.45 2.45 3 3 3H21C21.55 3 22 3.45 22 4V20C22 20.55 21.55 21 21 21H3C2.45 21 2 20.55 2 20V4ZM4 5V19H20V5H4ZM6 7H18V9H6V7ZM6 11H14V13H6V11ZM6 15H10V17H6V15Z"/>
                   </svg>
                   Datos bancarios
                 </button>
+
+                <!-- Botón de pago si el servicio está completado -->
+                <button *ngIf="service.status === 'completed'" 
+                        class="action-btn payment-btn" 
+                        (click)="createPaymentForService(service.id)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM16.5 11.5C16.5 14.04 14.54 16.05 12.2 16.2V17H11.8V16.2C9.46 16.05 7.5 14.04 7.5 11.5H9C9 13.16 10.34 14.5 12 14.5C13.66 14.5 15 13.16 15 11.5C15 10.17 14.2 9.03 13 8.6V5H11.5V8.6C10.3 9.03 9.5 10.17 9.5 11.5H8C8 14.04 9.96 16.05 12.3 16.2V17H12.7V16.2C15.04 16.05 17 14.04 17 11.5H15.5C15.5 12.88 14.38 14 13 14C11.62 14 10.5 12.88 10.5 11.5C10.5 10.12 11.62 9 13 9C14.38 9 15.5 10.12 15.5 11.5Z"/>
+                  </svg>
+                  Pagar servicio
+                </button>
                 
                 <div class="service-cost">
                   <span class="cost-label">Costo:</span>
-                  <span class="cost-amount">$500.00 MXN</span>
+                  <span class="cost-amount">${{ service.total_amount | number: '1.2-2' }} MXN</span>
                 </div>
               </div>
 
@@ -1079,24 +1116,6 @@
             </div>
             
             <div class="stats-grid-modern">
-              <div class="stat-card-modern confirmed">
-                <div class="stat-card-header">
-                  <div class="stat-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div class="stat-info">
-                    <span class="stat-number">{{ getPaidPaymentsCount() }}</span>
-                    <span class="stat-label">Confirmados</span>
-                  </div>
-                </div>
-                <div class="stat-progress">
-                  <div class="progress-bar confirmed" [style.width.%]="(getPaidPaymentsCount() / paymentsList.length) * 100"></div>
-                </div>
-              </div>
-
               <div class="stat-card-modern pending">
                 <div class="stat-card-header">
                   <div class="stat-icon">
@@ -1107,159 +1126,244 @@
                   </div>
                   <div class="stat-info">
                     <span class="stat-number">{{ getPendingPaymentsCount() }}</span>
-                    <span class="stat-label">En Verificación</span>
+                    <span class="stat-label">Pendientes</span>
                   </div>
-                </div>
-                <div class="stat-progress">
-                  <div class="progress-bar pending" [style.width.%]="(getPendingPaymentsCount() / paymentsList.length) * 100"></div>
                 </div>
               </div>
 
-              <div class="stat-card-modern total">
+              <div class="stat-card-modern processing">
                 <div class="stat-card-header">
                   <div class="stat-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2"/>
+                      <path d="M12 2a10 10 0 0 1 10 10v.5c0 .82-.67 1.5-1.5 1.5S19 13.32 19 12.5V12a7 7 0 0 0-14 0v.5c0 .82-.67 1.5-1.5 1.5S2 13.32 2 12.5V12a10 10 0 0 1 10-10z" stroke="currentColor" stroke-width="2"/>
                     </svg>
                   </div>
                   <div class="stat-info">
-                    <span class="stat-number">${{ getTotalAmount() }}</span>
-                    <span class="stat-label">Total Pagado</span>
+                    <span class="stat-number">{{ getProcessingPaymentsCount() }}</span>
+                    <span class="stat-label">En Verificación</span>
                   </div>
-                </div>
-                <div class="stat-badge">
-                  <span>USD</span>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Acciones rápidas modernizadas -->
-          <div class="quick-actions-section">
-            <div class="actions-header">
-              <h3>Acciones Rápidas</h3>
-              <p>Gestiona tus pagos de forma eficiente</p>
-            </div>
-            
-            <div class="actions-grid">
-              <button class="action-card bank-details" (click)="openBankDetailsModal()">
-                <div class="action-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                </div>
-                <div class="action-content">
-                  <h4>Datos Bancarios</h4>
-                  <p>Ver información para transferencias</p>
-                </div>
-                <div class="action-arrow">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-              </button>
-
-              <button class="action-card upload-receipt" (click)="triggerReceiptUpload()">
-                <div class="action-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
-                    <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
-                    <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
-                    <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
-                  </svg>
-                </div>
-                <div class="action-content">
-                  <h4>Subir Comprobante</h4>
-                  <p>Adjuntar recibo de pago</p>
-                </div>
-                <div class="action-arrow">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Lista de pagos completamente rediseñada -->
-          <div class="payments-history-section">
-            <div class="history-header">
-              <div class="header-content">
-                <h3>Historial de Transacciones</h3>
-                <p>Registro detallado de todos tus pagos</p>
-              </div>
-              <div class="header-actions">
-                <span class="total-payments">{{ paymentsList.length }} transacciones</span>
-              </div>
-            </div>
-
-            <div class="payments-list-redesigned">
-              <div *ngFor="let payment of paymentsList; trackBy: trackByPayment" class="payment-item-modern">
-                <div class="payment-left-section">
-                  <div class="payment-status-indicator" [class]="getPaymentStatusClass(payment.status)">
-                    <div class="status-dot"></div>
-                  </div>
-                  <div class="payment-main-details">
-                    <h4 class="payment-title">{{ payment.session }}</h4>
-                    <span class="payment-date">{{ getPaymentDate(payment) }}</span>
-                  </div>
-                </div>
-
-                <div class="payment-center-section">
-                  <div class="amount-display">
-                    <span class="amount-currency">$</span>
-                    <span class="amount-value">{{ payment.amount }}</span>
-                    <span class="amount-cents">USD</span>
-                  </div>
-                </div>
-
-                <div class="payment-right-section">
-                  <div class="status-badge-modern" [class]="getPaymentStatusClass(payment.status)">
-                    <span class="status-text">{{ getStatusText(payment.status) }}</span>
-                  </div>
-                  <button class="payment-action-btn" 
-                          [class.disabled]="payment.status === 'pagado'" 
-                          (click)="uploadReceiptForPayment(payment)" 
-                          [disabled]="payment.status === 'pagado'">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2"/>
-                      <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2"/>
-                      <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+              <div class="stat-card-modern completed">
+                <div class="stat-card-header">
+                  <div class="stat-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                  </button>
+                  </div>
+                  <div class="stat-info">
+                    <span class="stat-number">{{ getCompletedPaymentsCount() }}</span>
+                    <span class="stat-label">Completados</span>
+                  </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de servicios con pagos -->
+          <div class="services-payment-section">
+            <div class="section-header">
+              <h3>Servicios y Pagos</h3>
+              <p>Servicios completados que requieren pago</p>
+            </div>
+
+            <!-- Filtros de pagos -->
+            <div class="payment-filters" *ngIf="clientPayments && clientPayments.length > 0">
+              <div class="filter-group">
+                <label for="statusFilter">Filtrar por estado:</label>
+                <select id="statusFilter" [(ngModel)]="selectedPaymentStatus" class="filter-select">
+                  <option value="">Todos los estados</option>
+                  <option value="pending">Pendientes</option>
+                  <option value="processing">En Verificación</option>
+                  <option value="completed">Completados</option>
+                  <option value="failed">Fallidos</option>
+                </select>
               </div>
 
-              <!-- Estado vacío mejorado -->
-              <div class="no-payments-modern" *ngIf="paymentsList.length === 0">
-                <div class="empty-illustration">
-                  <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="#E31B7E" stroke-width="1" fill="none" opacity="0.3"/>
-                    <line x1="1" y1="10" x2="23" y2="10" stroke="#E31B7E" stroke-width="1" opacity="0.3"/>
-                    <circle cx="12" cy="14" r="3" stroke="#E31B7E" stroke-width="1" fill="none" opacity="0.5"/>
-                  </svg>
+              <div class="filter-group">
+                <label for="dateFilter">Ordenar por fecha:</label>
+                <select id="dateFilter" [(ngModel)]="sortPaymentsBy" class="filter-select">
+                  <option value="recent">Más Reciente</option>
+                  <option value="oldest">Más Antiguo</option>
+                </select>
+              </div>
+
+              <div class="filter-info">
+                Mostrando {{ getFilteredPayments().length }} de {{ clientPayments.length }} servicios
+              </div>
+            </div>
+
+            <!-- Si hay servicios que pagar -->
+            <div class="payment-services-grid" *ngIf="getFilteredPayments() && getFilteredPayments().length > 0">
+              <div *ngFor="let payment of getFilteredPayments()" class="payment-service-card">
+                <!-- Header del pago (Desplegable) -->
+                <div class="payment-card-header" 
+                     (click)="togglePaymentExpanded(payment.id)"
+                     [class.expanded]="isPaymentExpanded(payment.id)"
+                     role="button"
+                     tabindex="0">
+                  <div class="payment-header-left">
+                    <div class="toggle-arrow">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                    <div class="header-info">
+                      <h3 class="service-title">{{ payment.service?.title || 'Servicio' }}</h3>
+                      <span class="payment-id">#{{ payment.id }} - {{ payment.start_date | date: 'dd/MM/yyyy' }}</span>
+                    </div>
+                  </div>
+                  <span class="payment-status-badge" [ngClass]="'status-' + payment.payment_status">
+                    {{ formatPaymentStatus(payment.payment_status) }}
+                  </span>
                 </div>
-                <div class="empty-content">
-                  <h3>No hay pagos registrados</h3>
-                  <p>Cuando realices tu primer pago, aparecerá aquí con toda la información detallada.</p>
-                  <button class="start-payment-btn" (click)="triggerReceiptUpload()">
-                    Subir primer comprobante
-                  </button>
+
+                <!-- Contenido desplegable -->
+                <div class="payment-content" *ngIf="isPaymentExpanded(payment.id)">
+                  <!-- Fila 1: Información de la nanny -->
+                  <div class="info-row nanny-info">
+                    <div class="info-item">
+                      <span class="info-label">Niñera:</span>
+                      <span class="info-value">{{ payment.nanny_first_name }} {{ payment.nanny_last_name }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Tipo de servicio:</span>
+                      <span class="info-value">{{ payment.service?.name || 'No especificado' }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Fila 2: Fechas y horas -->
+                  <div class="info-row dates-info">
+                    <div class="info-item">
+                      <span class="info-label">Horario:</span>
+                      <span class="info-value">{{ payment.start_time }} - {{ payment.end_time }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Monto Total:</span>
+                      <span class="info-value amount">{{ payment.amount | currency }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Detalles del pago -->
+                  <div class="payment-details">
+                    <div class="detail-item">
+                      <span class="detail-label">Comisión plataforma:</span>
+                      <span class="detail-value">{{ payment.platform_fee | currency }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Para la niñera:</span>
+                      <span class="detail-value">{{ payment.nanny_amount | currency }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Preview del comprobante si existe -->
+                  <div class="receipt-preview-section" *ngIf="payment.receipt_url && payment.payment_status !== 'pending'">
+                    <div class="receipt-header">
+                      <h4>Comprobante de Pago</h4>
+                    </div>
+                    <div class="receipt-preview">
+                      <!-- Si es imagen -->
+                      <div class="receipt-image" *ngIf="isImageReceipt(payment.receipt_url)">
+                        <img [src]="getProperReceiptUrl(payment.receipt_url)" 
+                             alt="Comprobante" 
+                             class="receipt-thumbnail"
+                             (error)="onReceiptImageError($event, payment.id)">
+                      </div>
+                      <!-- Si es PDF -->
+                      <div class="receipt-pdf" *ngIf="isPdfReceipt(payment.receipt_url)">
+                        <div class="pdf-icon">
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2"/>
+                            <polyline points="13,2 13,9 20,9" stroke="currentColor" stroke-width="2"/>
+                          </svg>
+                        </div>
+                        <a [href]="getProperReceiptUrl(payment.receipt_url)" target="_blank" class="pdf-link">
+                          <span class="pdf-name">Descargar Comprobante (PDF)</span>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6" stroke="currentColor" stroke-width="2"/>
+                            <polyline points="15 3 21 3 21 9" stroke="currentColor" stroke-width="2"/>
+                            <line x1="10" y1="14" x2="21" y2="3" stroke="currentColor" stroke-width="2"/>
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Acciones según estado -->
+                  <div class="payment-actions">
+                    <!-- Si está pendiente, mostrar botón de subir -->
+                    <button *ngIf="payment.payment_status === 'pending'" 
+                            class="action-btn upload-btn"
+                            (click)="openUploadReceiptModal(payment.id)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2"/>
+                        <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      Subir Comprobante
+                    </button>
+
+                    <!-- Si está en procesamiento, mostrar estado -->
+                    <div *ngIf="payment.payment_status === 'processing'" class="status-message processing">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      En verificación por el administrador
+                    </div>
+
+                    <!-- Si está completado, mostrar confirmación -->
+                    <div *ngIf="payment.payment_status === 'completed'" class="status-message completed">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 12l2 2 4-4m7-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0z" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      Pago completado
+                    </div>
+
+                    <!-- Si falló, mostrar botón de reintentar -->
+                    <button *ngIf="payment.payment_status === 'failed'" 
+                            class="action-btn retry-btn"
+                            (click)="openUploadReceiptModal(payment.id)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="2"/>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2"/>
+                      </svg>
+                      Reintentar
+                    </button>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Si no hay pagos con los filtros aplicados -->
+            <div class="no-payments-state" *ngIf="(!getFilteredPayments() || getFilteredPayments().length === 0) && clientPayments && clientPayments.length > 0">
+              <div class="empty-icon">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="#e5e7eb" stroke-width="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10" stroke="#e5e7eb" stroke-width="2"/>
+                  <circle cx="12" cy="14" r="2" fill="#e5e7eb"/>
+                </svg>
+              </div>
+              <h3>No hay servicios que coincidan con los filtros</h3>
+              <p>Intenta cambiar los filtros para ver otros servicios.</p>
+            </div>
+
+            <!-- Si no hay pagos en absoluto -->
+            <div class="no-payments-state" *ngIf="!clientPayments || clientPayments.length === 0">
+              <div class="empty-icon">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke="#e5e7eb" stroke-width="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10" stroke="#e5e7eb" stroke-width="2"/>
+                  <circle cx="12" cy="14" r="2" fill="#e5e7eb"/>
+                </svg>
+              </div>
+              <h3>No hay servicios pendientes de pago</h3>
+              <p>Cuando completes un servicio, aparecerá aquí para gestionar el pago.</p>
             </div>
           </div>
         </div>
-
-        <!-- Input oculto para subir archivos -->
-        <input 
-          type="file" 
-          id="receiptUpload" 
-          (change)="onReceiptSelected($event)"
-          accept="image/*,.pdf"
-          hidden>
       </div>
 
       <!-- Modal de Datos Bancarios -->
@@ -1736,6 +1840,100 @@
     </div>
   </div>
 
+  <!-- Modal de perfil de niñera -->
+  <div class="nanny-profile-modal" *ngIf="showNannyProfileModal$ | async as nanny" (click)="closeNannyProfileModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="modal-header">
+        <button class="close-btn" (click)="closeNannyProfileModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <h2>Perfil de Niñera</h2>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <!-- Avatar y Info básica -->
+        <div class="profile-header">
+          <div class="profile-avatar">
+            <img [src]="nanny.profile_image || 'assets/logo.png'" 
+                 [alt]="nanny.name" 
+                 (error)="$event.target.src='assets/logo.png'">
+          </div>
+          <div class="profile-info">
+            <h3>{{ nanny.name }}</h3>
+            <div class="profile-rating" *ngIf="nanny.rating">
+              <div class="stars">
+                <svg *ngFor="let star of [1,2,3,4,5]" 
+                     [class.filled]="star <= nanny.rating"
+                     width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                </svg>
+              </div>
+              <span>{{ nanny.rating }}/5 ({{ nanny.reviews_count || 0 }} calificaciones)</span>
+            </div>
+            <div *ngIf="!nanny.rating" class="profile-rating">
+              <span class="no-rating">Sin calificaciones aún</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos de contacto -->
+        <div class="profile-section">
+          <h4>Información de Contacto</h4>
+          <div class="contact-info">
+            <div class="info-item" *ngIf="nanny.email">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M2 6l10 8 10-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span>{{ nanny.email }}</span>
+            </div>
+            <div class="info-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              <span *ngIf="nanny.phone_number || nanny.phone">{{ nanny.phone_number || nanny.phone }}</span>
+              <span *ngIf="!nanny.phone_number && !nanny.phone" class="no-data">No disponible</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Especialidades -->
+        <div class="profile-section" *ngIf="nanny.specialties && nanny.specialties.length > 0">
+          <h4>Especialidades</h4>
+          <div class="specialties">
+            <span *ngFor="let specialty of nanny.specialties" class="specialty-tag">{{ specialty }}</span>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="profile-section" *ngIf="nanny.bio">
+          <h4>Acerca de</h4>
+          <p>{{ nanny.bio }}</p>
+        </div>
+
+        <!-- Experiencia -->
+        <div class="profile-section" *ngIf="nanny.experience">
+          <h4>Experiencia</h4>
+          <p>{{ nanny.experience }}</p>
+        </div>
+      </div>
+
+      <!-- Footer con botón de contacto -->
+      <div class="modal-footer">
+        <app-whatsapp-button 
+          [phoneNumber]="nanny.phone_number || nanny.phone || ''"
+          [message]="'Hola ' + nanny.name + ', ví tu perfil en NannysLM y me gustaría contactarte para hablar sobre los servicios de cuidado infantil.'"
+          [buttonText]="'Contactar por WhatsApp'">
+        </app-whatsapp-button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de logout reutilizable -->
   <app-logout-modal 
     [isVisible]="showLogoutModal"
@@ -1745,4 +1943,13 @@
     (onCancel)="closeLogoutModal()"
     (onConfirm)="confirmLogout()">
   </app-logout-modal>
+
+  <!-- Input de archivo oculto para comprobante de pago -->
+  <input #receiptUpload
+         type="file"
+         id="receiptUpload"
+         accept=".jpg,.jpeg,.png,.gif,.pdf"
+         style="display:none"
+         (change)="onReceiptSelected($event)"
+         aria-label="Seleccionar comprobante de pago">
 </div>

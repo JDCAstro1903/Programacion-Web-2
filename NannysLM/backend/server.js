@@ -22,6 +22,7 @@ const paymentRoutes = require('./src/routes/payment');
 const bankDetailsRoutes = require('./src/routes/bankDetails');
 const notificationRoutes = require('./src/routes/notifications');
 const nannyRoutes = require('./src/routes/nannys');
+const userRoutes = require('./src/routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -98,21 +99,43 @@ app.use('/api/', limiter);
 // MIDDLEWARES DE CONFIGURACIÓN
 // ===============================================
 // CORS - permitir requests desde el frontend
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+const corsOptions = {
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            'http://localhost:4200',
+            'http://localhost:3000',
+            'http://127.0.0.1:4200',
+            process.env.FRONTEND_URL
+        ];
+        
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS policy violation'), false);
+        }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    maxAge: 86400 // 24 horas
-}));
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Request-Method', 'Access-Control-Request-Headers'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range', 'Content-Length'],
+    maxAge: 86400, // 24 horas
+    optionsSuccessStatus: 200
+};
 
-// Manejar preflight requests
-app.options('*', cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Parsing de JSON y URL-encoded
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Configurar express-fileupload para manejar subidas de archivos
+const fileUpload = require('express-fileupload');
+app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB máximo
+    useTempFiles: true,
+    tempFileDir: '/tmp/'
+}));
 
 // Logging de requests en desarrollo
 if (process.env.NODE_ENV === 'development') {
@@ -162,16 +185,19 @@ app.get('/api/info', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/profile', profileRoutes);
-app.use('/api/v1/client', clientRoutes);
 app.use('/api/v1/services', serviceRoutes);
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/bank-details', bankDetailsRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/nannys', nannyRoutes);
+app.use('/api/v1/users', userRoutes);
 
 // Importar y usar rutas para datos específicos del cliente
 const clientDataRoutes = require('./src/routes/clientData');
 app.use('/api/v1/client', clientDataRoutes);
+
+// Cargar rutas del cliente (después de clientData para que tenga prioridad)
+app.use('/api/v1/client', clientRoutes);
 
 // ===============================================
 // RUTAS BÁSICAS TEMPORALES

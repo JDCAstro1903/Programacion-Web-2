@@ -396,6 +396,21 @@
           </div>
         </div>
       </div>
+
+      <!-- Vista Notificaciones -->
+      <div *ngIf="currentView === 'notificaciones'" class="notifications-view">
+        <div class="content-header">
+          <h2>📬 Notificaciones</h2>
+          <p>Gestiona tus notificaciones y actualizaciones</p>
+        </div>
+        
+        <app-notifications-panel 
+          [title]="''"
+          [showHeader]="false"
+          [showFilters]="true"
+          (notificationClicked)="handleNotificationClick($event)">
+        </app-notifications-panel>
+      </div>
     </main>
   </div>
 
@@ -414,10 +429,33 @@
 
       <!-- Contenido -->
       <div class="modal-body-client">
+        <!-- Imagen de perfil del cliente -->
+        <div class="client-profile-image-section" *ngIf="selectedClient.profileImage">
+          <img [src]="selectedClient.profileImage" 
+               alt="{{ selectedClient.client }}" 
+               class="client-profile-image"
+               (error)="onProfileImageError($event)">
+          <div *ngIf="isLoadingClientData" class="image-loading-overlay">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
         <!-- Cliente -->
         <div class="client-info-section">
           <div class="section-title">Cliente</div>
           <div class="info-value">{{ selectedClient.client }}</div>
+        </div>
+
+        <!-- Email (si está disponible) -->
+        <div class="client-info-section" *ngIf="selectedClient.email">
+          <div class="section-title">Email</div>
+          <div class="info-value">{{ selectedClient.email }}</div>
+        </div>
+
+        <!-- Teléfono (si está disponible) -->
+        <div class="client-info-section" *ngIf="selectedClient.phone">
+          <div class="section-title">Teléfono</div>
+          <div class="info-value">{{ selectedClient.phone }}</div>
         </div>
 
         <!-- Ubicación -->
@@ -436,6 +474,13 @@
         <div class="client-info-section" *ngIf="selectedClient.instructions">
           <div class="section-title">Instrucciones Especiales</div>
           <div class="info-value info-text">{{ selectedClient.instructions }}</div>
+        </div>
+
+        <!-- Contacto de emergencia (si está disponible) -->
+        <div class="client-info-section" *ngIf="selectedClient.emergencyContact">
+          <div class="section-title">Contacto de Emergencia</div>
+          <div class="info-value">{{ selectedClient.emergencyContact }}</div>
+          <div class="info-value" *ngIf="selectedClient.emergencyPhone">{{ selectedClient.emergencyPhone }}</div>
         </div>
 
         <!-- Calificación -->

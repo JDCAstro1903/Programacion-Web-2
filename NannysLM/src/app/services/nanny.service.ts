@@ -76,4 +76,21 @@ export class NannyService {
     console.log(`📋 Obteniendo nanny por user_id ${userId}`);
     return this.http.get<NannyResponse>(`${this.apiUrl}/user/${userId}`);
   }
+
+  /**
+   * Obtener calificaciones de una nanny
+   */
+  getNannyRatings(nannyId: number): Observable<any> {
+    const ratingsUrl = 'http://localhost:8000/api/v1/ratings';
+    console.log(`⭐ Obteniendo ratings de la nanny ${nannyId}`);
+    return this.http.get<any>(`${ratingsUrl}?nannyId=${nannyId}`);
+  }
+
+  /**
+   * Cambiar el estado de una nanny
+   */
+  updateNannyStatus(nannyId: number, status: 'active' | 'inactive' | 'suspended'): Observable<NannyResponse> {
+    console.log(`🔄 Actualizando status de nanny ${nannyId} a: ${status}`);
+    return this.http.patch<NannyResponse>(`${this.apiUrl}/${nannyId}/status`, { status });
+  }
 }
