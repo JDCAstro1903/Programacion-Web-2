@@ -1171,27 +1171,65 @@
 
             <!-- Filtros de pagos -->
             <div class="payment-filters" *ngIf="clientPayments && clientPayments.length > 0">
-              <div class="filter-group">
-                <label for="statusFilter">Filtrar por estado:</label>
-                <select id="statusFilter" [(ngModel)]="selectedPaymentStatus" class="filter-select">
-                  <option value="">Todos los estados</option>
-                  <option value="pending">Pendientes</option>
-                  <option value="processing">En Verificación</option>
-                  <option value="completed">Completados</option>
-                  <option value="failed">Fallidos</option>
-                </select>
+              <div class="filters-label">Filtrar Pagos</div>
+              
+              <div class="filter-buttons-group">
+                <button class="filter-btn" 
+                        [class.active]="selectedPaymentStatus === ''"
+                        (click)="selectedPaymentStatus = ''">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                    <circle cx="19" cy="12" r="1" fill="currentColor"/>
+                    <circle cx="5" cy="12" r="1" fill="currentColor"/>
+                  </svg>
+                  Todos <span class="count">{{ clientPayments.length }}</span>
+                </button>
+
+                <button class="filter-btn" 
+                        [class.active]="selectedPaymentStatus === 'completed'"
+                        (click)="selectedPaymentStatus = 'completed'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Completados <span class="count">{{ getCompletedPaymentsCount() }}</span>
+                </button>
+
+                <button class="filter-btn" 
+                        [class.active]="selectedPaymentStatus === 'pending'"
+                        (click)="selectedPaymentStatus = 'pending'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Pendientes <span class="count">{{ getPendingPaymentsCount() }}</span>
+                </button>
+
+                <button class="filter-btn" 
+                        [class.active]="selectedPaymentStatus === 'processing'"
+                        (click)="selectedPaymentStatus = 'processing'">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2v6m0 4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  En Verificación <span class="count">{{ getProcessingPaymentsCount() }}</span>
+                </button>
               </div>
 
-              <div class="filter-group">
-                <label for="dateFilter">Ordenar por fecha:</label>
-                <select id="dateFilter" [(ngModel)]="sortPaymentsBy" class="filter-select">
+              <div class="filter-group sort-filter">
+                <label for="dateFilter">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  Filtros por Fecha
+                </label>
+                <select id="dateFilter" [(ngModel)]="sortPaymentsBy" class="date-select">
                   <option value="recent">Más Reciente</option>
                   <option value="oldest">Más Antiguo</option>
                 </select>
-              </div>
-
-              <div class="filter-info">
-                Mostrando {{ getFilteredPayments().length }} de {{ clientPayments.length }} servicios
               </div>
             </div>
 
@@ -1366,11 +1404,14 @@
         </div>
       </div>
 
-      <!-- Modal de Datos Bancarios -->
+      <!-- Modal de Datos Bancarios - Estilo Admin -->
       <div class="bank-modal-overlay" *ngIf="showBankDetailsModal" (click)="showBankDetailsModal = false">
         <div class="bank-modal-content" (click)="$event.stopPropagation()">
-          <div class="modal-header">
-            <h3>Datos Bancarios para Transferencia</h3>
+          <div class="modal-header-modern">
+            <div>
+              <h3>💳 Datos Bancarios</h3>
+              <p>Información para tu transferencia bancaria</p>
+            </div>
             <button class="close-btn" (click)="showBankDetailsModal = false">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -1386,152 +1427,93 @@
           </div>
 
           <!-- Contenido del modal (solo se muestra cuando no está cargando) -->
-          <div *ngIf="!isLoadingBankData">
-            <!-- Tarjeta bancaria simulada -->
-            <div class="bank-card">
-              <div class="card-background">
-                <div class="card-pattern"></div>
-                <div class="card-content">
-                  <div class="card-header">
-                    <div class="bank-logo">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                        <path d="M2 17l10 5 10-5"/>
-                        <path d="M2 12l10 5 10-5"/>
-                      </svg>
-                    </div>
-                    <div class="card-type">
-                      <span>{{ currentBankData?.banco || 'BANCO NACIONAL' }}</span>
-                    </div>
+          <div *ngIf="!isLoadingBankData" class="bank-modal-body">
+            <!-- Tarjeta bancaria moderna -->
+            <div class="modern-bank-card-modal">
+              <!-- Header de la tarjeta -->
+              <div class="bank-card-header-modern">
+                <div class="bank-logo-section">
+                  <div class="bank-logo-modern">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
+                      <polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2"/>
+                    </svg>
                   </div>
+                  <div class="bank-name-section">
+                    <h4>{{ currentBankData?.banco || 'Banco Nacional' }}</h4>
+                    <span class="account-type-badge-modern">🏦 {{ currentBankData?.tipo_cuenta === 'ahorro' ? 'Cuenta de Ahorro' : 'Cuenta Corriente' }}</span>
+                  </div>
+                </div>
+              </div>
 
-                  <div class="card-number">
-                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(0, 4) }}</span>
-                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(4, 8) }}</span>
-                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(8, 12) }}</span>
-                    <span class="number-group">{{ (currentBankData?.numero_cuenta || '1234567890123456').slice(12, 16) }}</span>
+              <!-- Detalles de la cuenta -->
+              <div class="bank-card-details-modern">
+                <div class="detail-row-modern">
+                  <div class="detail-label-modern">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                      <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Titular de Cuenta
                   </div>
+                  <div class="detail-value-modern">{{ currentBankData?.nombre_titular || 'NannysLM Servicios S.A.' }}</div>
+                </div>
 
-                  <div class="card-info">
-                    <div class="card-holder">
-                      <span class="label">TITULAR</span>
-                      <span class="value">{{ (currentBankData?.nombre_titular || 'NANNYS LM SERVICIOS').toUpperCase() }}</span>
-                    </div>
-                    <div class="card-expiry">
-                      <span class="label">VIGENCIA</span>
-                      <span class="value">12/28</span>
-                    </div>
+                <div class="detail-row-modern">
+                  <div class="detail-label-modern">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                      <line x1="2" y1="10" x2="22" y2="10" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Número de Cuenta
                   </div>
+                  <div class="detail-value-modern font-mono">{{ currentBankData?.numero_cuenta || '****-****-****-3456' }}</div>
+                </div>
 
-                  <div class="chip">
-                    <div class="chip-lines"></div>
+                <div class="detail-row-modern" *ngIf="currentBankData?.clabe">
+                  <div class="detail-label-modern">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    CLABE Interbancaria
                   </div>
+                  <div class="detail-value-modern font-mono">{{ currentBankData?.clabe }}</div>
                 </div>
               </div>
             </div>
 
-            <!-- Detalles adicionales -->
-            <div class="bank-details-grid">
-            <div class="detail-item">
-              <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                  <path d="M2 17l10 5 10-5"/>
-                  <path d="M2 12l10 5 10-5"/>
+            <!-- Instrucciones -->
+            <div class="transfer-instructions-modern">
+              <h4>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="currentColor" stroke-width="2"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2"/>
                 </svg>
-              </div>
-              <div class="detail-info">
-                <span class="detail-label">Banco</span>
-                <span class="detail-value">{{ currentBankData?.banco || 'Banco Nacional de Desarrollo' }}</span>
-              </div>
-            </div>
-
-            <div class="detail-item">
-              <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <div class="detail-info">
-                <span class="detail-label">Titular</span>
-                <span class="detail-value">{{ currentBankData?.nombre_titular || 'NannysLM Servicios S.A.' }}</span>
-              </div>
-            </div>
-
-            <div class="detail-item">
-              <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-              </div>
-              <div class="detail-info">
-                <span class="detail-label">Número de Cuenta</span>
-                <span class="detail-value">{{ currentBankData?.numero_cuenta || '1234-5678-9012-3456' }}</span>
-              </div>
-            </div>
-
-            <div class="detail-item" *ngIf="currentBankData?.clabe">
-              <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
-                  <line x1="12" y1="22.08" x2="12" y2="12"/>
-                </svg>
-              </div>
-              <div class="detail-info">
-                <span class="detail-label">CLABE Interbancaria</span>
-                <span class="detail-value">{{ currentBankData.clabe }}</span>
-              </div>
-            </div>
-
-            <div class="detail-item">
-              <div class="detail-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h13a1 1 0 0 1 1 1z"/>
-                  <path d="M3 20.25A2.25 2.25 0 0 0 5.25 22.5h13.5A2.25 2.25 0 0 0 21 20.25V16.5A2.25 2.25 0 0 0 18.75 14.25H5.25A2.25 2.25 0 0 0 3 16.5z"/>
-                </svg>
-              </div>
-              <div class="detail-info">
-                <span class="detail-label">Tipo de Cuenta</span>
-                <span class="detail-value">{{ currentBankData?.tipo_cuenta === 'ahorro' ? 'Cuenta de Ahorro' : 'Cuenta Corriente' }}</span>
-              </div>
+                Pasos para la Transferencia
+              </h4>
+              <ul>
+                <li>Realiza la transferencia por el monto exacto del servicio</li>
+                <li>Incluye tu nombre completo en el concepto de pago</li>
+                <li>Guarda el comprobante de transferencia</li>
+                <li>Sube el comprobante en la sección de pagos</li>
+                <li>La verificación puede tomar hasta 24 horas</li>
+              </ul>
             </div>
           </div>
 
-          <!-- Instrucciones -->
-          <div class="transfer-instructions">
-            <h4>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#E31B7E" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              Instrucciones para la Transferencia
-            </h4>
-            <ul>
-              <li>Realiza la transferencia por el monto exacto del servicio</li>
-              <li>Incluye tu nombre completo en el concepto de pago</li>
-              <li>Guarda el comprobante de transferencia</li>
-              <li>Sube el comprobante en la sección de pagos</li>
-              <li>La verificación puede tomar hasta 24 horas</li>
-            </ul>
-          </div>
-
-          <div class="modal-actions">
-            <button class="copy-details-btn" (click)="copyBankDetailsImproved()">
+          <div class="modal-actions-modern">
+            <button class="copy-details-btn-modern" (click)="copyBankDetailsImproved()">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
               Copiar Datos
             </button>
-            <button class="close-modal-btn" (click)="showBankDetailsModal = false">
+            <button class="close-modal-btn-modern" (click)="showBankDetailsModal = false">
               Cerrar
             </button>
-          </div>
           </div>
         </div>
       </div>

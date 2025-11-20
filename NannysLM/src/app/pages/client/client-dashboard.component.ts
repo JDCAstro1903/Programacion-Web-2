@@ -3203,6 +3203,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     
     // Iniciar polling automático cada 30 segundos para actualizar notificaciones
     console.log('⏱️ Iniciando polling de notificaciones...');
-    this.notificationService.startPolling(30000);
+    this.notificationService.startPolling(300000);
   }
 }

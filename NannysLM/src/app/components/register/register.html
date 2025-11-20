@@ -195,49 +195,6 @@
           <div *ngIf="errors.address" class="error-message">{{ errors.address }}</div>
         </div>
 
-        <!-- Tipo de usuario -->
-        <div class="input-group">
-          <label>Tipo de cuenta</label>
-          <div class="radio-group">
-            <label class="radio-option">
-              <input 
-                type="radio" 
-                name="userType" 
-                value="client" 
-                [(ngModel)]="userType">
-              <span class="radio-custom"></span>
-              <div class="radio-content">
-                <strong>Cliente</strong>
-                <small>Busco cuidadora para mi familia</small>
-              </div>
-            </label>
-            <label class="radio-option">
-              <input 
-                type="radio" 
-                name="userType" 
-                value="nanny" 
-                [(ngModel)]="userType">
-              <span class="radio-custom"></span>
-              <div class="radio-content">
-                <strong>Niñera</strong>
-                <small>Ofrezco servicios de cuidado</small>
-              </div>
-            </label>
-            <label class="radio-option admin-option">
-              <input 
-                type="radio" 
-                name="userType" 
-                value="admin" 
-                [(ngModel)]="userType">
-              <span class="radio-custom"></span>
-              <div class="radio-content">
-                <strong>Administrador</strong>
-                <small>Solo para pruebas y gestión</small>
-              </div>
-            </label>
-          </div>
-        </div>
-
         <button 
           type="submit" 
           class="register-button"

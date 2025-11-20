@@ -39,7 +39,7 @@ app-notifications-panel ::ng-deep {
 .nanny-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--gray-50);
 }
@@ -137,6 +137,8 @@ app-notifications-panel ::ng-deep {
   padding: 2rem;
   overflow-y: auto;
   background: #f8fafc;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .content-header {
@@ -194,13 +196,6 @@ app-notifications-panel ::ng-deep {
   z-index: 1;
 }
 
-.hero-text h3 {
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-  line-height: 1.2;
-}
-
 .hero-text p {
   font-size: 1.1rem;
   opacity: 0.9;
@@ -211,6 +206,7 @@ app-notifications-panel ::ng-deep {
 .hero-actions {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .cta-btn {
@@ -1644,4 +1640,366 @@ app-notifications-panel ::ng-deep {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN - MOBILE
+   ======================================== */
+
+/* Tablets y dispositivos pequeños (hasta 768px) */
+@media (max-width: 768px) {
+  /* Layout en columna para móvil */
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .main-content {
+    padding: 1.25rem;
+    flex: 1;
+  }
+
+  /* Sidebar arriba en móvil */
+  app-sidebar {
+    order: -1;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  app-sidebar ::ng-deep {
+    .sidebar-container {
+      flex-direction: row;
+      height: auto;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .sidebar-items {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      width: 100%;
+      height: auto;
+    }
+
+    .sidebar-item {
+      flex: 1;
+      min-width: 100px;
+      height: auto;
+      border-right: 1px solid #e2e8f0;
+      padding: 1rem 0.75rem;
+      text-align: center;
+    }
+
+    .sidebar-item.active {
+      border-right: 1px solid #e2e8f0;
+      border-bottom: 3px solid #e31b7e;
+    }
+
+    .sidebar-item-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .sidebar-item-label {
+      font-size: 0.75rem;
+      display: block;
+    }
+  }
+
+  /* Header en móvil */
+  .nanny-header {
+    padding: 0.75rem 1rem;
+    height: 60px;
+  }
+
+  .brand-info h1 {
+    font-size: 1.2rem;
+  }
+
+  .brand-info p {
+    display: none;
+  }
+
+  /* Contenido principal ajustado */
+  .content-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .content-header p {
+    font-size: 0.95rem;
+  }
+
+  /* Tarjeta hero ajustada */
+  .welcome-hero-card {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .hero-text h3 {
+    font-size: 1.25rem;
+  }
+
+  .hero-text p {
+    font-size: 0.95rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .cta-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .hero-illustration {
+    width: 100%;
+    height: 200px;
+  }
+
+  /* Grid cards en móvil */
+  .dashboard-overview-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .overview-card {
+    padding: 1.25rem;
+  }
+
+  .card-header {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+
+  .card-title h3 {
+    font-size: 1rem;
+  }
+
+  .card-title p {
+    font-size: 0.8rem;
+  }
+
+  /* Quick access grid */
+  .quick-access-section {
+    margin: 1.5rem 0;
+  }
+
+  .quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .quick-access-item {
+    padding: 1rem;
+    min-height: 80px;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .access-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 0.5rem;
+  }
+
+  .access-content h4 {
+    font-size: 0.9rem;
+  }
+
+  .access-content p {
+    font-size: 0.75rem;
+    display: none;
+  }
+
+  .access-arrow {
+    display: none;
+  }
+
+  /* Servicios en móvil */
+  .service-card-modern {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .service-header-modern {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .service-info-left {
+    width: 100%;
+  }
+
+  .service-actions-modern {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .action-btn-modern {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  /* Filtros en móvil */
+  .service-filters-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-btn-modern {
+    width: 100%;
+    padding: 0.875rem;
+    font-size: 0.9rem;
+  }
+
+  .filter-content {
+    text-align: left;
+  }
+
+  /* Modal en móvil */
+  .client-modal-content {
+    width: 95vw;
+    max-height: 90vh;
+    margin: auto;
+  }
+
+  .modal-header-client {
+    padding: 1rem;
+  }
+
+  .modal-body-client {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .client-profile-image {
+    width: 100px;
+    height: 100px;
+  }
+
+  .section-title {
+    font-size: 0.85rem;
+  }
+
+  .info-value {
+    font-size: 0.95rem;
+  }
+
+  /* Notificaciones en móvil */
+  app-notifications-panel {
+    padding: 1rem;
+  }
+}
+
+/* Móviles pequeños (hasta 480px) */
+@media (max-width: 480px) {
+  .main-content {
+    padding: 1rem;
+  }
+
+  .nanny-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .content-header {
+    margin-bottom: 1rem;
+  }
+
+  .content-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .welcome-hero-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
+
+  .hero-text h3 {
+    font-size: 1.1rem;
+  }
+
+  .hero-text p {
+    font-size: 0.85rem;
+  }
+
+  .cta-btn {
+    padding: 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  .hero-illustration {
+    height: 150px;
+  }
+
+  .dashboard-overview-grid {
+    gap: 0.75rem;
+  }
+
+  .overview-card {
+    padding: 1rem;
+  }
+
+  .quick-access-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .quick-access-item {
+    padding: 0.75rem;
+    min-height: auto;
+  }
+
+  .section-header {
+    margin-bottom: 1rem;
+  }
+
+  .section-header h3 {
+    font-size: 1rem;
+  }
+
+  .section-header p {
+    font-size: 0.8rem;
+  }
+
+  .service-card-modern {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .client-modal-content {
+    width: 98vw;
+  }
+
+  app-sidebar ::ng-deep {
+    .sidebar-item {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .sidebar-item-label {
+      font-size: 0.7rem;
+    }
+  }
 }
