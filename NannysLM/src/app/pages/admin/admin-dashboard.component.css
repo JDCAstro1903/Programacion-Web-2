@@ -1012,37 +1012,50 @@
   box-shadow: 0 2px 8px rgba(227, 27, 126, 0.25);
 }
 
+  .nannys-stats{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin: 2rem 0 2.5rem 0;
+  padding: 2rem;
+  background: transparent;
+}
+
+
 /* Grid de estadísticas */
-.nannys-stats,
 .clients-stats,
 .payments-stats,
 .banking-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  margin-bottom: 2.5rem;
+  margin: 2rem 0 2.5rem 0;
+  padding: 2rem;
+  background: transparent;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .stat-number {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #1e293b;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #0f172a;
   line-height: 1;
+  margin-bottom: 0.75rem;
 }
 
 .stat-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .stat-card {
@@ -6485,5 +6498,867 @@ input[type="file"] {
   border-top: 1px solid #e2e8f0;
   border-radius: 0 0 12px 12px;
   text-align: center;
+}
+
+/* ============================================
+   ESTADÍSTICAS RÁPIDAS - DATOS BANCARIOS
+   ============================================ */
+
+.banking-stats-header {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin: 2rem 0 2.5rem 0;
+  padding: 2rem;
+  background: transparent;
+  border-radius: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.stat-item .stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+}
+
+.stat-item .stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .banking-stats-header {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+
+  .stat-item .stat-number {
+    font-size: 1.8rem;
+  }
+
+  .stat-item .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Estilos para estado vacío - Datos Bancarios */
+.empty-state-banking {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+.empty-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-state-banking h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 0.75rem 0;
+}
+
+.empty-state-banking p {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  margin: 0 0 2rem 0;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.empty-state-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 2rem;
+  background: linear-gradient(135deg, #e31b7e, #c7165f);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.25);
+}
+
+.empty-state-btn:hover {
+  background: linear-gradient(135deg, #c7165f, #a0124a);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(227, 27, 126, 0.35);
+}
+
+.empty-state-btn:active {
+  transform: translateY(0);
+}
+
+.empty-state-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+
+
+/* Bot\u00f3n de agregar datos bancarios */
+.add-bank-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 3.5rem;
+  background: linear-gradient(135deg, #e31b7e, #c7165f);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.25);
+}
+
+.add-bank-btn:hover {
+  background: linear-gradient(135deg, #c7165f, #a0124a);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(227, 27, 126, 0.35);
+}
+
+.add-bank-btn:active {
+  transform: translateY(0);
+}
+
+/* Grid de tarjetas bancarias */
+.modern-banking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* Tarjeta bancaria */
+.bank-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+
+.bank-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #e31b7e, #ec4899);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.bank-card:hover {
+  box-shadow: 0 8px 24px rgba(227, 27, 126, 0.15);
+  transform: translateY(-4px);
+  border-color: #e31b7e;
+}
+
+.bank-card:hover::before {
+  opacity: 1;
+}
+
+.bank-card.inactive {
+  opacity: 0.7;
+  background: #f8fafc;
+}
+
+/* Header de la tarjeta */
+.bank-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.bank-info-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.bank-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bank-icon svg {
+  color: #e31b7e;
+}
+
+.bank-name-info h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.account-type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  background: #f1f5f9;
+  color: #64748b;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.status-badge .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-badge.active {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.status-badge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Informaci\u00f3n de la nanny */
+.bank-card-nanny {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.nanny-avatar-circle {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+}
+
+.nanny-avatar-circle .status-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.nanny-avatar-circle .status-indicator.active {
+  background: #10b981;
+}
+
+.nanny-avatar-circle .status-indicator.inactive {
+  background: #ef4444;
+}
+
+.nanny-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.nanny-info h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.35rem 0;
+  line-height: 1.2;
+}
+
+.nanny-email {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 0.5rem 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nanny-status {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.nanny-status.verified {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.nanny-status.unverified {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Detalles de la cuenta */
+.bank-card-details {
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detail-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.detail-label svg {
+  color: #94a3b8;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  flex: 1;
+  word-break: break-all;
+}
+
+.detail-value.account-number,
+.detail-value.clabe-number {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  color: #475569;
+}
+
+/* Acciones de la tarjeta */
+.bank-card-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  color: #64748b;
+  flex: 1;
+  min-width: 100px;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.action-btn.edit-btn {
+  color: #0891b2;
+  border-color: #06b6d4;
+}
+
+.action-btn.edit-btn:hover {
+  background: #ecfeff;
+  border-color: #0891b2;
+}
+
+.action-btn.toggle-btn {
+  color: #f59e0b;
+  border-color: #fbbf24;
+}
+
+.action-btn.toggle-btn:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.action-btn.toggle-btn.active {
+  color: #10b981;
+  border-color: #34d399;
+}
+
+.action-btn.toggle-btn.active:hover {
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
+.action-btn.delete-btn {
+  color: #ef4444;
+  border-color: #f87171;
+}
+
+.action-btn.delete-btn:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+/* ============================================
+   MODAL PROFESIONAL - DATOS BANCARIOS
+   ============================================ */
+
+.bank-modal-pro {
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.bank-modal-pro .professional-modal-header {
+  background: linear-gradient(135deg, #e31b7e, #ec4899);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.bank-modal-pro .professional-modal-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.header-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  position: relative;
+  z-index: 1;
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.header-icon svg {
+  color: white;
+}
+
+.header-text h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: white;
+}
+
+.header-text p {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+
+.close-modal-btn-pro {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.close-modal-btn-pro:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.professional-modal-body {
+  padding: 2rem;
+  background: white;
+}
+
+/* Secciones del formulario */
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.section-title svg {
+  color: #e31b7e;
+}
+
+/* Grupos de formulario */
+.form-group-pro {
+  margin-bottom: 1.25rem;
+}
+
+.form-label-pro {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.form-label-pro svg {
+  color: #94a3b8;
+}
+
+.form-control-pro {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-control-pro:focus {
+  outline: none;
+  border-color: #e31b7e;
+  box-shadow: 0 0 0 3px rgba(227, 27, 126, 0.1);
+}
+
+.form-control-pro:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* Fila de formulario */
+.form-row-pro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Checkbox profesional */
+.checkbox-group-pro {
+  margin-top: 0.5rem;
+}
+
+.checkbox-label-pro {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.checkbox-label-pro:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.checkbox-label-pro input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.checkbox-custom {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  background: white;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.checkbox-label-pro input[type="checkbox"]:checked ~ .checkbox-custom {
+  background: #e31b7e;
+  border-color: #e31b7e;
+}
+
+.checkbox-label-pro input[type="checkbox"]:checked ~ .checkbox-custom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+}
+
+.checkbox-text {
+  flex: 1;
+}
+
+.checkbox-text strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.checkbox-text small {
+  display: block;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Footer del modal */
+.professional-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 16px 16px;
+}
+
+.btn-secondary-pro,
+.btn-primary-pro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary-pro {
+  background: white;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+
+.btn-secondary-pro:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-primary-pro {
+  background: linear-gradient(135deg, #e31b7e, #c7165f);
+  color: white;
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.25);
+}
+
+.btn-primary-pro:hover {
+  background: linear-gradient(135deg, #c7165f, #a0124a);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(227, 27, 126, 0.35);
+}
+
+.btn-primary-pro:active {
+  transform: translateY(0);
+}
+
+.btn-primary-pro:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modern-banking-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row-pro {
+    grid-template-columns: 1fr;
+  }
+
+  .bank-card-actions {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .professional-modal-footer {
+    flex-direction: column;
+  }
+
+  .btn-secondary-pro,
+  .btn-primary-pro {
+    width: 100%;
+    justify-content: center;
+  }
+
+    .nannys-stats 
+    { grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0 2rem 0;
+  }
+
+
+  /* Estadísticas responsivas - Mantener 3 columnas en horizontal */
+  .clients-stats,
+  .payments-stats,
+  .banking-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0 2rem 0;
+  }
+
+  .stat-number {
+    font-size: 1.8rem;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+  }
 }
 

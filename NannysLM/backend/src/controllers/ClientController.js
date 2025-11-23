@@ -9,6 +9,79 @@ const ClientModel = require('../models/Client');
 
 class ClientController {
   /**
+   * Obtener todos los clientes (para admin)
+   */
+  static async getAllClients(req, res) {
+    try {
+      const getAllClientsQuery = `
+        SELECT 
+          c.id,
+          c.user_id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.phone_number,
+          u.address,
+          u.is_verified,
+          u.profile_image,
+          c.emergency_contact_name,
+          c.emergency_contact_phone,
+          c.number_of_children,
+          c.special_requirements,
+          c.verification_status,
+          c.verification_date,
+          u.created_at as user_created_at,
+          c.created_at as client_since
+        FROM clients c
+        JOIN users u ON c.user_id = u.id
+        ORDER BY c.created_at DESC
+      `;
+
+      const result = await executeQuery(getAllClientsQuery);
+
+      if (result.success) {
+        const clients = result.data.map(client => ({
+          id: client.id,
+          user_id: client.user_id,
+          first_name: client.first_name,
+          last_name: client.last_name,
+          email: client.email,
+          phone_number: client.phone_number,
+          address: client.address,
+          is_verified: client.is_verified,
+          profile_image: client.profile_image,
+          emergency_contact_name: client.emergency_contact_name,
+          emergency_contact_phone: client.emergency_contact_phone,
+          number_of_children: client.number_of_children,
+          special_requirements: client.special_requirements,
+          verification_status: client.verification_status,
+          verification_date: client.verification_date,
+          created_at: client.user_created_at,
+          client_since: client.client_since
+        }));
+
+        res.status(200).json({
+          success: true,
+          data: clients,
+          count: clients.length
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Error al obtener clientes'
+        });
+      }
+    } catch (error) {
+      console.error('Error al obtener todos los clientes:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
    * Actualizar información de perfil del cliente
    */
   static async updateClientProfile(req, res) {
@@ -665,6 +738,33 @@ class ClientController {
           success: false,
           message: 'Error al guardar la calificación'
         });
+      }
+
+      // ⭐ ACTUALIZAR AUTOMÁTICAMENTE EL PROMEDIO DE LA NANNY
+      const avgQuery = `
+        SELECT 
+          AVG(rating) as avg_rating,
+          COUNT(*) as total_ratings
+        FROM ratings
+        WHERE nanny_id = ?
+      `;
+      const avgResult = await executeQuery(avgQuery, [service.nanny_id]);
+      
+      if (avgResult.success && avgResult.data && avgResult.data.length > 0) {
+        const updateQuery = `
+          UPDATE nannys 
+          SET rating_average = ?, total_ratings = ?
+          WHERE id = ?
+        `;
+        const updateResult = await executeQuery(updateQuery, [
+          avgResult.data[0].avg_rating,
+          avgResult.data[0].total_ratings,
+          service.nanny_id
+        ]);
+
+        if (updateResult.success) {
+          console.log(`✓ Rating de nanny ${service.nanny_id} actualizado: ${avgResult.data[0].avg_rating} promedio, ${avgResult.data[0].total_ratings} calificaciones`);
+        }
       }
 
       console.log(`✓ Calificación creada para servicio ${service_id} por cliente ${userClientId}`);

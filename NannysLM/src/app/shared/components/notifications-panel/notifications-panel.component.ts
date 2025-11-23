@@ -12,7 +12,7 @@ import { Notification } from '../header/header.component';
   styleUrl: './notifications-panel.component.css'
 })
 export class NotificationsPanelComponent implements OnInit {
-  @Input() title: string = '📬 Notificaciones';
+  @Input() title: string = 'Notificaciones';
   @Input() showHeader: boolean = true;
   @Input() showFilters: boolean = true;
   @Output() notificationClicked = new EventEmitter<Notification>();
@@ -32,21 +32,21 @@ export class NotificationsPanelComponent implements OnInit {
 
   loadNotifications() {
     this.isLoadingNotifications = true;
-    console.log('🔔 NotificationsPanel - Cargando notificaciones...');
+    console.log('[NotificationsPanel] Cargando notificaciones...');
     
     this.notificationService.getNotifications().subscribe({
       next: (notifications) => {
         if (notifications && Array.isArray(notifications)) {
           this.notifications = notifications;
-          console.log(`✅ NotificationsPanel - ${this.notifications.length} notificaciones cargadas`);
+          console.log(`[NotificationsPanel] ${this.notifications.length} notificaciones cargadas`);
         } else {
-          console.warn('⚠️ NotificationsPanel - Sin notificaciones');
+          console.warn('[NotificationsPanel] Sin notificaciones');
           this.notifications = [];
         }
         this.isLoadingNotifications = false;
       },
       error: (error) => {
-        console.error('❌ NotificationsPanel - Error al cargar notificaciones:', error);
+        console.error('[NotificationsPanel] Error al cargar notificaciones:', error);
         this.notifications = [];
         this.isLoadingNotifications = false;
       }
@@ -67,7 +67,7 @@ export class NotificationsPanelComponent implements OnInit {
       second: '2-digit' 
     });
     
-    console.group(`🔔 CLICK EN NOTIFICACIÓN [${timestamp}]`);
+    console.group(`[NotificationsPanel] Notificación clickeada [${timestamp}]`);
     console.log('ID:', notification.id);
     console.log('Título:', notification.title);
     console.log('Mensaje:', notification.message);
@@ -83,11 +83,11 @@ export class NotificationsPanelComponent implements OnInit {
     if (!notification.is_read) {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: () => {
-          console.log(`✅ Notificación ${notification.id} marcada como leída`);
+          console.log(`[NotificationsPanel] Notificación ${notification.id} marcada como leída`);
           notification.is_read = true;
         },
         error: (error) => {
-          console.error('❌ Error al marcar como leída:', error);
+          console.error('[NotificationsPanel] Error al marcar como leída:', error);
         }
       });
     }
@@ -104,10 +104,10 @@ export class NotificationsPanelComponent implements OnInit {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: () => {
           notification.is_read = true;
-          console.log(`✅ Notificación ${notification.id} marcada como leída`);
+          console.log(`[NotificationsPanel] Notificación ${notification.id} marcada como leída`);
         },
         error: (error) => {
-          console.error('❌ Error:', error);
+          console.error('[NotificationsPanel] Error:', error);
         }
       });
     }
@@ -117,7 +117,7 @@ export class NotificationsPanelComponent implements OnInit {
     event.stopPropagation();
     if (confirm('¿Estás seguro de que deseas eliminar esta notificación?')) {
       this.notifications = this.notifications.filter(n => n.id !== notificationId);
-      console.log(`🗑️ Notificación ${notificationId} eliminada`);
+      console.log(`[NotificationsPanel] Notificación ${notificationId} eliminada`);
     }
   }
 

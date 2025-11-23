@@ -17,6 +17,7 @@ interface UserProfile {
   is_verified: boolean;
   is_active: boolean;
   profile_image: string;
+  identification_document?: string;
   created_at?: string;
   updated_at?: string;
   last_login?: string;
@@ -38,6 +39,12 @@ export class ProfileViewComponent implements OnInit {
   profileImageFile: File | null = null;
   profileImagePreview: string | null = null; // Para preview de la imagen
   imageTimestamp: number = Date.now(); // Timestamp para evitar caché de imagen
+  
+  // Para identificación
+  selectedIdentificationName = '';
+  identificationFile: File | null = null;
+  identificationPreview: string | null = null;
+  identificationTimestamp: number = Date.now();
   
   // Para cambio de contraseña
   showCurrentPassword = false;
@@ -106,6 +113,7 @@ export class ProfileViewComponent implements OnInit {
             phone_number: userData.phone_number || '',
             address: userData.address || '',
             profile_image: userData.profile_image || '',
+            identification_document: userData.identification_document || '',
             is_active: (userData as any).is_active !== undefined ? (userData as any).is_active : true,
             is_verified: userData.is_verified || false,
             created_at: (userData as any).created_at || undefined,
@@ -554,4 +562,97 @@ export class ProfileViewComponent implements OnInit {
       minute: '2-digit'
     });
   }
+
+  onIdentificationUpload(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      // Verificar tamaño (máximo 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+      if (file.size > maxSize) {
+        alert('⚠️ El archivo es demasiado grande. El tamaño máximo es 10MB');
+        event.target.value = '';
+        return;
+      }
+
+      this.selectedIdentificationName = file.name;
+      this.identificationFile = file;
+      
+      // Crear preview del documento
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.identificationPreview = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        this.identificationPreview = null;
+      }
+      
+      console.log('📄 Documento seleccionado:', file.name, 'Tipo:', file.type, 'Tamaño:', (file.size / 1024).toFixed(2), 'KB');
+    } else {
+      alert('Por favor selecciona un archivo válido');
+      event.target.value = '';
+    }
+  }
+
+  triggerIdentificationInput() {
+    const fileInput = document.getElementById('identificationUpload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  getIdentificationUrl(): string {
+    // Si hay un preview (documento nuevo seleccionado), mostrar ese
+    if (this.identificationPreview) {
+      console.log('📄 Usando preview de documento');
+      return this.identificationPreview;
+    }
+    
+    // Si no hay identificación, retornar vacío
+    if (!this.profileData?.identification_document) {
+      console.log('⚠️ No hay documento de identificación');
+      return '';
+    }
+    
+    const docValue = this.profileData.identification_document;
+    console.log('🔍 Valor de identification_document:', docValue);
+    
+    // Si el documento ya es una URL completa
+    if (docValue.startsWith('http')) {
+      const url = `${docValue}?t=${this.identificationTimestamp}`;
+      console.log('🌐 URL completa:', url);
+      return url;
+    }
+    
+    // Si es base64, usarlo directamente
+    if (docValue.startsWith('data:')) {
+      console.log('📷 Documento base64');
+      return docValue;
+    }
+    
+    // Si empieza con /uploads/
+    if (docValue.startsWith('/uploads/')) {
+      const url = `http://localhost:8000${docValue}?t=${this.identificationTimestamp}`;
+      console.log('📁 Ruta /uploads/:', url);
+      return url;
+    }
+    
+    // Caso por defecto: agregar el prefijo completo con timestamp
+    const url = `http://localhost:8000/uploads/${docValue}?t=${this.identificationTimestamp}`;
+    console.log('📦 URL construida:', url);
+    return url;
+  }
+
+  isIdentificationImage(): boolean {
+    if (!this.profileData?.identification_document) return false;
+    const doc = this.profileData.identification_document.toLowerCase();
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(doc);
+  }
+
+  isIdentificationPdf(): boolean {
+    if (!this.profileData?.identification_document) return false;
+    return this.profileData.identification_document.toLowerCase().endsWith('.pdf');
+  }
 }
+

@@ -215,6 +215,7 @@ class ProfileController {
                         is_verified: user.is_verified,
                         is_active: user.is_active,
                         profile_image: user.profile_image,
+                        identification_document: specificProfileData?.identification_document || null,
                         created_at: user.created_at,
                         updated_at: user.updated_at,
                         last_login: user.last_login

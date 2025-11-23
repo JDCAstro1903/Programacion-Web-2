@@ -4,6 +4,13 @@ const ClientController = require('../controllers/ClientController');
 const { verifyToken } = require('../middleware/auth');
 
 /**
+ * @route   GET /api/v1/client/all
+ * @desc    Obtener todos los clientes (Admin)
+ * @access  Public (para admin dashboard)
+ */
+router.get('/all', ClientController.getAllClients);
+
+/**
  * @route   PUT /api/v1/client/profile
  * @desc    Actualizar información de perfil del cliente
  * @access  Private (solo clientes)

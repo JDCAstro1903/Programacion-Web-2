@@ -88,7 +88,16 @@ interface ClientProfileData {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent, WhatsappButtonComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    RouterModule, 
+    SidebarComponent, 
+    HeaderComponent, 
+    LogoutModalComponent, 
+    NotificationsPanelComponent, 
+    WhatsappButtonComponent
+  ],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.css'
 })
@@ -139,6 +148,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Filtros de pagos
   selectedPaymentStatus: string = '';
   sortPaymentsBy: string = 'recent';
+  showFiltersMenu: boolean = false;
   
   // Estado para ver detalles de servicio
   selectedService: any = null;
@@ -452,15 +462,15 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           label: 'Pagos',
           icon: 'dollar-sign'
         },
+         {
+          id: 'client-info',
+          label: 'Cliente',
+          icon: 'user-check'
+        },
         {
           id: 'notifications',
           label: 'Notificaciones',
           icon: 'bell'
-        },
-        {
-          id: 'client-info',
-          label: 'Información del Cliente',
-          icon: 'user-check'
         }
       ]
     };
@@ -617,6 +627,16 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
             console.log('✅ profile_image específico:', this.clientInfo.profile_image);
           } else {
             console.log('⚠️ profile_image no disponible');
+          }
+          
+          // ⭐ SINCRONIZAR is_verified con profileData para que el overlay funcione
+          if (this.clientInfo) {
+            this.profileData.is_verified = this.clientInfo.is_verified || false;
+            this.profileData.first_name = this.clientInfo.first_name;
+            this.profileData.last_name = this.clientInfo.last_name;
+            this.profileData.email = this.clientInfo.email;
+            this.profileData.profile_image = this.clientInfo.profile_image || '';
+            console.log('✅ profileData sincronizado - is_verified:', this.profileData.is_verified);
           }
           
           // Actualizar headerConfig con la información del cliente
@@ -1276,6 +1296,23 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Manejadores de eventos para los combobox de hora
+  onStartTimeChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const time = target.value;
+    if (time) {
+      this.selectStartTime(time);
+    }
+  }
+
+  onEndTimeChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const time = target.value;
+    if (time) {
+      this.selectEndTime(time);
+    }
+  }
+
   getAvailableEndTimes(): string[] {
     return this.getAvailableTimesForService();
   }
@@ -1589,6 +1626,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
     return monthNames[this.currentMonth];
+  }
+
+  getMonthYearDisplay(): string {
+    return `${this.getMonthName()} ${this.currentYear}`;
+  }
+
+  get currentMonthDays(): number[] {
+    return this.getDaysInMonth();
   }
 
   getDayNames(): string[] {

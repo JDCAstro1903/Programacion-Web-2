@@ -230,9 +230,21 @@ export class AdminDashboardComponent implements OnInit {
     this.userConfigService.updateSidebarItemCount('admin', 'payments', 0); // TODO: Implementar pagos
     this.userConfigService.updateSidebarItemCount('admin', 'datos-bancarios', this.datosBancarios.length);
   }
-
   // Estados de filtro para las nannys
   nannyFilter: string = 'active';
+  
+  // Estado para menú mobile
+  showMobileViewSelector: boolean = false;
+  
+  // Vistas disponibles para el selector mobile
+  availableViews = [
+    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'nannys', label: 'Nannys', icon: '👩‍💼' },
+    { id: 'clients', label: 'Clientes', icon: '👥' },
+    { id: 'payments', label: 'Pagos', icon: '💰' },
+    { id: 'datos-bancarios', label: 'Datos Bancarios', icon: '🏦' },
+    { id: 'notifications', label: 'Notificaciones', icon: '🔔' }
+  ];
   clientFilter: string = 'all'; // Cambiado de 'verified' a 'all' para mostrar todos los clientes por defecto
   paymentFilter: string = 'all'; // Mostrar todos los pagos por defecto
   paymentDateFilter: string = 'all';
@@ -688,12 +700,12 @@ export class AdminDashboardComponent implements OnInit {
       this.selectedBankData = {
         id: null,
         nanny_id: null,
-        nombre_titular: '',
-        banco: '',
-        numero_cuenta_completo: '',
+        account_holder_name: '',
+        bank_name: '',
+        account_number: '',
         clabe: '',
-        tipo_cuenta: 'ahorro',
-        es_activa: true
+        account_type: 'ahorro',
+        is_active: true
       };
       this.editingBankData = false;
     }

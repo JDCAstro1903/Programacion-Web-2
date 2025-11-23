@@ -3,6 +3,60 @@
   display: block;
 }
 
+/* Utilidad para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Aplicar animación a notificaciones */
+div[style*="border-left"] {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Mejora de botones para accesibilidad */
+:host ::ng-deep button {
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:host ::ng-deep button:active {
+  transform: translateY(0);
+}
+
+:host ::ng-deep button:focus-visible {
+  outline: 2px solid #e31b7e;
+  outline-offset: 2px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   :host ::ng-deep {
@@ -33,20 +87,4 @@
       gap: 0.5rem !important;
     }
   }
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-div[style*="border-left"] {
-  animation: fadeIn 0.3s ease-out;
 }

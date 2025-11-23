@@ -227,7 +227,7 @@
               </div>
             </button>
 
-            <button class="quick-access-item" (click)="triggerReceiptUpload()">
+            <button class="quick-access-item" (click)="currentView = 'payments'">
               <div class="access-icon quaternary">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -238,7 +238,7 @@
               </div>
               <div class="access-content">
                 <h4>Subir Comprobante</h4>
-                <p>Adjuntar recibo de pago</p>
+                <p>Ir a Pagos </p>
               </div>
               <div class="access-arrow">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -900,7 +900,7 @@
                       <p>{{ getSelectedServiceDescription() }}</p>
                       <div class="multiple-days-info" *ngIf="allowsMultipleDays()">
                         <p class="info-text">
-                          <strong>📅 Servicio de múltiples días:</strong> 
+                          <strong> Servicio de múltiples días:</strong> 
                           Puedes seleccionar un rango de fechas consecutivas
                         </p>
                       </div>
@@ -950,9 +950,84 @@
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Selector de horarios y confirmación -->
-              <div class="booking-section">
+            <!-- Columna derecha: Calendario -->
+            <div class="right-column">
+              <div class="calendar-section">
+                <div class="calendar-card">
+                  <div class="calendar-header">
+                    <button class="nav-btn" (click)="previousMonth()">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <polyline points="15,18 9,12 15,6"/>
+                      </svg>
+                    </button>
+                    <h3>{{ getMonthYearDisplay() }}</h3>
+                    <button class="nav-btn" (click)="nextMonth()">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <polyline points="9,18 15,12 9,6"/>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <p class="calendar-subtitle">Selecciona una fecha para tu servicio</p>
+                  
+                  <!-- Indicador de estado de selección -->
+                  <div class="selection-status" *ngIf="selectedDate">
+                    <p class="status-text">
+                      <strong>Fecha{{ selectedEndDate && selectedEndDate !== selectedDate ? 's' : '' }} seleccionada{{ selectedEndDate && selectedEndDate !== selectedDate ? 's' : '' }}:</strong>
+                      {{ getDateRangeText() }}
+                    </p>
+                  </div>
+                  
+                  <!-- Leyenda solo visible cuando se selecciona rango -->
+                  <div class="legend" *ngIf="selectedDate && selectedEndDate && selectedEndDate !== selectedDate">
+                    <div class="legend-item">
+                      <span class="legend-color start-color"></span>
+                      <span>Inicio</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color range-color"></span>
+                      <span>Rango</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-color end-color"></span>
+                      <span>Fin</span>
+                    </div>
+                  </div>
+                  
+                  <div class="calendar-grid">
+                    <div class="day-names">
+                      <div class="day-name">Dom</div>
+                      <div class="day-name">Lun</div>
+                      <div class="day-name">Mar</div>
+                      <div class="day-name">Mié</div>
+                      <div class="day-name">Jue</div>
+                      <div class="day-name">Vie</div>
+                      <div class="day-name">Sáb</div>
+                    </div>
+                    
+                    <div class="days-grid">
+                      <div *ngFor="let day of currentMonthDays" 
+                           class="day-cell"
+                           [class.empty]="day === 0"
+                           [class.selected]="isSelectedDate(day)"
+                           [class.start-date]="isStartDate(day)"
+                           [class.end-date]="isEndDate(day)"
+                           [class.in-range]="isInSelectedRange(day)"
+                           [class.past]="isPastDate(day)"
+                           [class.available]="day > 0 && !isPastDate(day)"
+                           (click)="selectDate(day)">
+                        {{ day || '' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna izquierda continuación: Selector de horarios -->
+            <div class="booking-section">
                 <!-- Selector de horario de llegada -->
                 <div class="time-selector-card">
                   <div class="time-header">
@@ -964,14 +1039,15 @@
                     <span class="time-info" *ngIf="isNightService()">🌙 Servicio nocturno</span>
                   </div>
                   
-                  <div class="time-grid" *ngIf="selectedDate && selectedServiceType">
-                    <button *ngFor="let time of getAvailableTimesForService()" 
-                            class="time-slot"
-                            [class.selected]="selectedStartTime === time"
-                            [class.night-time]="isNightService()"
-                            (click)="selectStartTime(time)">
-                      {{ time }}
-                    </button>
+                  <div class="time-input-wrapper" *ngIf="selectedDate && selectedServiceType">
+                    <select class="time-select" 
+                            [value]="selectedStartTime" 
+                            (change)="onStartTimeChange($event)">
+                      <option value="">Selecciona hora de llegada</option>
+                      <option *ngFor="let time of getAvailableTimesForService()" [value]="time">
+                        {{ time }}
+                      </option>
+                    </select>
                   </div>
                   
                   <div class="no-date-selected" *ngIf="!selectedDate || !selectedServiceType">
@@ -991,15 +1067,17 @@
                     <span class="selected-start-time">✓ Llegada: {{ selectedStartTime }}</span>
                   </div>
                   
-                  <div class="time-grid">
-                    <button *ngFor="let time of getAvailableEndTimes()" 
-                            class="time-slot"
-                            [class.selected]="selectedEndTime === time"
-                            [class.night-time]="isNightService()"
-                            [disabled]="!isValidEndTime(time)"
-                            (click)="selectEndTime(time)">
-                      {{ time }}
-                    </button>
+                  <div class="time-input-wrapper">
+                    <select class="time-select" 
+                            [value]="selectedEndTime" 
+                            (change)="onEndTimeChange($event)">
+                      <option value="">Selecciona hora de salida</option>
+                      <option *ngFor="let time of getAvailableEndTimes()" 
+                              [value]="time"
+                              [disabled]="!isValidEndTime(time)">
+                        {{ time }}
+                      </option>
+                    </select>
                   </div>
                 </div>
 
@@ -1025,6 +1103,8 @@
                             (click)="confirmReservation()">
                       Confirmar
                     </button>
+                  </div>
+                  <div class="action-buttons">
                     <button class="cancel-btn" 
                             [disabled]="!hasValidReservation()"
                             (click)="cancelReservation()">
@@ -1033,69 +1113,6 @@
                   </div>
                 </div>
               </div>
-            </div>
-
-            <!-- Columna derecha: Calendario -->
-            <div class="right-column">
-              <div class="calendar-section">
-                <div class="calendar-card">
-                  <div class="calendar-header">
-                    <button class="nav-btn" (click)="previousMonth()">‹</button>
-                    <h3>{{ getMonthName() }}</h3>
-                    <button class="nav-btn" (click)="nextMonth()">›</button>
-                  </div>
-                  
-                  <div class="calendar-subtitle">
-                    <span *ngIf="!allowsMultipleDays()">Selecciona una fecha</span>
-                    <span *ngIf="allowsMultipleDays()">Selecciona fecha de inicio y fin (días consecutivos)</span>
-                  </div>
-                  
-                  <!-- Indicador de estado de selección -->
-                  <div class="selection-status" *ngIf="allowsMultipleDays()">
-                    <span class="status-text">{{ getSelectionState() }}</span>
-                    <div class="legend" *ngIf="selectedDate">
-                      <div class="legend-item">
-                        <span class="legend-color start-color"></span>
-                        <span>Inicio</span>
-                      </div>
-                      <div class="legend-item" *ngIf="selectedEndDate">
-                        <span class="legend-color end-color"></span>
-                        <span>Fin</span>
-                      </div>
-                      <div class="legend-item" *ngIf="selectedEndDate">
-                        <span class="legend-color range-color"></span>
-                        <span>Rango</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="calendar-grid">
-                    <!-- Nombres de los días -->
-                    <div class="day-names">
-                      <div *ngFor="let dayName of getDayNames()" class="day-name">
-                        {{ dayName }}
-                      </div>
-                    </div>
-                    
-                    <!-- Días del mes -->
-                    <div class="days-grid">
-                      <div *ngFor="let day of getDaysInMonth()" 
-                           class="day-cell"
-                           [class.empty]="day === 0"
-                           [class.selected]="isSelectedDate(day)"
-                           [class.start-date]="isStartDate(day)"
-                           [class.end-date]="isEndDate(day)"
-                           [class.in-range]="isInSelectedRange(day)"
-                           [class.past]="isPastDate(day)"
-                           [class.available]="day > 0 && !isPastDate(day)"
-                           (click)="selectDate(day)">
-                        {{ day || '' }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1116,12 +1133,13 @@
             </div>
             
             <div class="stats-grid-modern">
+              <!-- Pagos Pendientes -->
               <div class="stat-card-modern pending">
                 <div class="stat-card-header">
                   <div class="stat-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                      <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                      <path d="M12 7v5l3 1.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
                   <div class="stat-info">
@@ -1131,11 +1149,14 @@
                 </div>
               </div>
 
+              <!-- Pagos en Verificación -->
               <div class="stat-card-modern processing">
                 <div class="stat-card-header">
                   <div class="stat-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2a10 10 0 0 1 10 10v.5c0 .82-.67 1.5-1.5 1.5S19 13.32 19 12.5V12a7 7 0 0 0-14 0v.5c0 .82-.67 1.5-1.5 1.5S2 13.32 2 12.5V12a10 10 0 0 1 10-10z" stroke="currentColor" stroke-width="2"/>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5"/>
+                      <path d="M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" stroke="currentColor" stroke-width="2.5"/>
+                      <circle cx="12" cy="12" r="2" fill="currentColor"/>
                     </svg>
                   </div>
                   <div class="stat-info">
@@ -1145,12 +1166,13 @@
                 </div>
               </div>
 
+              <!-- Pagos Completados -->
               <div class="stat-card-modern completed">
                 <div class="stat-card-header">
                   <div class="stat-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                      <path d="M8 12l2 2 4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
                   <div class="stat-info">
@@ -1171,51 +1193,65 @@
 
             <!-- Filtros de pagos -->
             <div class="payment-filters" *ngIf="clientPayments && clientPayments.length > 0">
-              <div class="filters-label">Filtrar Pagos</div>
+              <!-- Header con toggle para mobile -->
+              <div class="filters-header">
+                <div class="filters-label">Filtrar Pagos</div>
+                <button class="filter-toggle-btn" (click)="showFiltersMenu = !showFiltersMenu">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" [class.expanded]="showFiltersMenu">
+                    <polyline points="6 9 12 15 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
               
-              <div class="filter-buttons-group">
+              <!-- Botones de filtro (se ocultan en mobile si no está expandido) -->
+              <div class="filter-buttons-group" [class.expanded]="showFiltersMenu">
                 <button class="filter-btn" 
                         [class.active]="selectedPaymentStatus === ''"
-                        (click)="selectedPaymentStatus = ''">
+                        (click)="selectedPaymentStatus = ''; showFiltersMenu = false">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="1" fill="currentColor"/>
                     <circle cx="19" cy="12" r="1" fill="currentColor"/>
                     <circle cx="5" cy="12" r="1" fill="currentColor"/>
                   </svg>
-                  Todos <span class="count">{{ clientPayments.length }}</span>
+                  <span>Todos</span>
+                  <span class="count">{{ clientPayments.length }}</span>
                 </button>
 
                 <button class="filter-btn" 
                         [class.active]="selectedPaymentStatus === 'completed'"
-                        (click)="selectedPaymentStatus = 'completed'">
+                        (click)="selectedPaymentStatus = 'completed'; showFiltersMenu = false">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  Completados <span class="count">{{ getCompletedPaymentsCount() }}</span>
+                  <span>Completados</span>
+                  <span class="count">{{ getCompletedPaymentsCount() }}</span>
                 </button>
 
                 <button class="filter-btn" 
                         [class.active]="selectedPaymentStatus === 'pending'"
-                        (click)="selectedPaymentStatus = 'pending'">
+                        (click)="selectedPaymentStatus = 'pending'; showFiltersMenu = false">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                     <polyline points="12,6 12,12 16,14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
-                  Pendientes <span class="count">{{ getPendingPaymentsCount() }}</span>
+                  <span>Pendientes</span>
+                  <span class="count">{{ getPendingPaymentsCount() }}</span>
                 </button>
 
                 <button class="filter-btn" 
                         [class.active]="selectedPaymentStatus === 'processing'"
-                        (click)="selectedPaymentStatus = 'processing'">
+                        (click)="selectedPaymentStatus = 'processing'; showFiltersMenu = false">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2v6m0 4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                   </svg>
-                  En Verificación <span class="count">{{ getProcessingPaymentsCount() }}</span>
+                  <span>En Verificación</span>
+                  <span class="count">{{ getProcessingPaymentsCount() }}</span>
                 </button>
               </div>
 
+              <!-- Filtro por fecha (siempre visible) -->
               <div class="filter-group sort-filter">
                 <label for="dateFilter">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1759,7 +1795,7 @@
       <!-- Vista de Notificaciones -->
       <div *ngIf="currentView === 'notifications'" class="notifications-view">
         <div class="content-header">
-          <h2>📬 Mis Notificaciones</h2>
+          <h2>Mis Notificaciones</h2>
           <p>Revisa todas tus notificaciones y acciones pendientes</p>
         </div>
 

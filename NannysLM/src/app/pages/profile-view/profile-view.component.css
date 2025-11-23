@@ -962,3 +962,238 @@
     width: 100%;
   }
 }
+
+/* Estilos para Documento de Identificación */
+.identification-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.identification-display {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.identification-display:hover {
+  border-color: #e31b7e;
+  background: #fef2f8;
+}
+
+/* Preview de imagen de identificación */
+.identification-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.identification-image {
+  max-width: 100%;
+  max-height: 350px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+/* Estilos para PDF */
+.identification-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.pdf-icon {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #e31b7e 0%, #c41668 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.2);
+}
+
+.pdf-icon svg {
+  color: white;
+}
+
+.pdf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e31b7e;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: rgba(227, 27, 126, 0.1);
+  transition: all 0.3s ease;
+}
+
+.pdf-link:hover {
+  background: rgba(227, 27, 126, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Sin documento */
+.no-identification {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  color: #9ca3af;
+}
+
+.no-identification svg {
+  color: #d1d5db;
+}
+
+.no-identification p {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* Preview del nuevo documento */
+.new-identification-preview {
+  background: white;
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.new-identification-preview h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-name {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #6b7280;
+  word-break: break-word;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.file-info p {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #6b7280;
+}
+
+/* Botón de subir identificación */
+.btn-upload-identification {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: white;
+  border: 2px solid #e31b7e;
+  color: #e31b7e;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: center;
+}
+
+.btn-upload-identification:hover {
+  background: #e31b7e;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.2);
+}
+
+.btn-upload-identification:active {
+  transform: translateY(0);
+}
+
+/* Responsive para identificación */
+@media (max-width: 768px) {
+  .identification-display {
+    min-height: 200px;
+    padding: 1.5rem 1rem;
+  }
+
+  .identification-image {
+    max-height: 250px;
+  }
+
+  .pdf-icon {
+    width: 80px;
+    height: 80px;
+  }
+
+  .new-identification-preview {
+    padding: 1rem;
+  }
+
+  .preview-image {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .identification-container {
+    gap: 1rem;
+  }
+
+  .identification-display {
+    min-height: 150px;
+    padding: 1rem;
+  }
+
+  .identification-image {
+    max-height: 200px;
+  }
+
+  .pdf-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .btn-upload-identification {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .new-identification-preview {
+    padding: 0.75rem;
+  }
+
+  .preview-image {
+    max-height: 150px;
+  }
+}
+

@@ -60,7 +60,7 @@ export class NannyDashboardComponent implements OnInit {
 
   // Datos del usuario nanny
   currentUser = {
-    name: 'Usuario 1',
+    name: '',
     role: 'nanny',
     avatar: '/assets/logo.png'
   };
@@ -129,6 +129,9 @@ export class NannyDashboardComponent implements OnInit {
     // Configurar header genérico
     const currentUser = this.authService.getCurrentUser();
     const userName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : 'Niñera';
+    
+    // Actualizar currentUser.name con el nombre real
+    this.currentUser.name = userName || 'Niñera';
     
     console.log('🔍 Nanny Constructor - currentUser completo:', currentUser);
     console.log('🔍 Nanny Constructor - currentUser.profile_image:', currentUser?.profile_image);

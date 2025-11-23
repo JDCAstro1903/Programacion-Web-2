@@ -104,7 +104,7 @@
   max-width: 550px;
   margin: 20px auto;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .form-container h2 {
@@ -524,7 +524,7 @@
   text-decoration: underline;
 }
 
-/* Botón de regreso móvil - oculto por defecto */
+/* Botón de regreso móvil - oculto por defecto en desktop */
 .mobile-back-button {
   display: none;
 }
@@ -540,14 +540,36 @@
     display: none; /* Ocultar sección promocional en móvil */
   }
   
-  /* Reposicionar el botón de regreso para móvil */
-  .back-button {
-    position: fixed;
-    top: 2rem;
-    left: 1.5rem;
-    width: 44px;
-    height: 44px;
-    z-index: 100;
+  /* Ocultar botón de desktop */
+  .promo-section .back-button {
+    display: none;
+  }
+  
+  /* Mostrar botón de regreso para móvil */
+  .mobile-back-button {
+    display: flex;
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: rgba(30, 178, 229, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(30, 178, 229, 0.3);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: #1EB2E5;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+  
+  .mobile-back-button:hover {
+    background: rgba(30, 178, 229, 0.2);
+    border-color: rgba(30, 178, 229, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(30, 178, 229, 0.2);
   }
   
   .form-section {
