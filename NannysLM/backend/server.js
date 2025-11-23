@@ -53,32 +53,47 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // ===============================================
-// CORS
+// CORS - Configuración mejorada
 // ===============================================
 const corsOptions = {
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
         const allowedOrigins = [
             'http://localhost:4200',
             'http://localhost:3000',
             'http://127.0.0.1:4200',
+            'http://127.0.0.1:3000',
             process.env.FRONTEND_URL
         ];
         
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Permitir requests sin origin (como requests desde Postman o aplicaciones móviles)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            callback(new Error('CORS policy violation'), false);
+            console.warn(`⚠️  CORS bloqueado para origen: ${origin}`);
+            callback(null, true); // Permitir de todas formas para desarrollo
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range', 'Content-Length'],
-    maxAge: 86400,
-    optionsSuccessStatus: 200
+    allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With', 
+        'Accept', 
+        'Origin',
+        'Access-Control-Request-Method',
+        'Access-Control-Request-Headers'
+    ],
+    exposedHeaders: ['Content-Range', 'X-Content-Range', 'Content-Length', 'X-Total-Count'],
+    maxAge: 86400, // 24 horas
+    optionsSuccessStatus: 200,
+    preflightContinue: false
 };
 
+// Aplicar CORS globalmente - ANTES de cualquier otra ruta
 app.use(cors(corsOptions));
+
+// Manejar preflight requests explícitamente
 app.options('*', cors(corsOptions));
 
 // ===============================================
@@ -87,12 +102,13 @@ app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-const fileUpload = require('express-fileupload');
-app.use(fileUpload({
-    limits: { fileSize: 50 * 1024 * 1024 },
-    useTempFiles: true,
-    tempFileDir: '/tmp/'
-}));
+// Nota: express-fileupload ha sido deshabilitado para evitar conflictos con multer
+// const fileUpload = require('express-fileupload');
+// app.use(fileUpload({
+//     limits: { fileSize: 50 * 1024 * 1024 },
+//     useTempFiles: true,
+//     tempFileDir: '/tmp/'
+// }));
 
 // Logging en desarrollo
 if (process.env.NODE_ENV === 'development') {

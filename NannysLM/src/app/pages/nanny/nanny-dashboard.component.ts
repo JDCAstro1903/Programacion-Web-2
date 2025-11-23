@@ -509,8 +509,9 @@ export class NannyDashboardComponent implements OnInit {
           this.services.upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           this.services.past.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-          // Actualizar stats
-          this.stats.upcomingServices = this.services.upcoming.length;
+          // Actualizar stats correctamente
+          this.stats.totalServices = this.services.past.length;  // ✅ Servicios COMPLETADOS
+          this.stats.upcomingServices = this.services.upcoming.length;  // ✅ Servicios PRÓXIMOS
 
           // Establecer próximo servicio
           if (this.services.upcoming.length > 0) {
@@ -530,6 +531,8 @@ export class NannyDashboardComponent implements OnInit {
           console.log('📊 Servicios procesados:', {
             upcoming: this.services.upcoming.length,
             past: this.services.past.length,
+            totalServices: this.stats.totalServices,
+            upcomingServices: this.stats.upcomingServices,
             nextService: this.nextService
           });
         } else {

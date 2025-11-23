@@ -43,7 +43,7 @@ router.post(
   '/data',
   verifyToken,
   upload.single('identification_document'),
-  ...validateClientData,
+  validateClientData,
   upsertClientData
 );
 

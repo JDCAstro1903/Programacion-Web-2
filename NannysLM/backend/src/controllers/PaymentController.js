@@ -330,13 +330,12 @@ class PaymentController {
         try {
             const { paymentId } = req.params;
             const userId = req.user?.id;
-            const path = require('path');
-            const fs = require('fs');
+            const { executeQuery } = require('../config/database');
             
             console.log('📤 Intentando subir comprobante:');
             console.log('  - paymentId:', paymentId);
             console.log('  - userId:', userId);
-            console.log('  - req.files:', req.files ? Object.keys(req.files) : 'undefined');
+            console.log('  - req.file:', req.file ? req.file.filename : 'undefined');
             
             if (!userId) {
                 return res.status(401).json({
@@ -345,32 +344,20 @@ class PaymentController {
                 });
             }
             
-            if (!req.files || !req.files.receipt) {
-                console.log('❌ No hay archivo receipt:', {
-                    hasFiles: !!req.files,
-                    filesKeys: req.files ? Object.keys(req.files) : []
-                });
+            if (!req.file) {
+                console.log('❌ No hay archivo receipt');
                 return res.status(400).json({
                     success: false,
                     message: 'No se seleccionó ningún archivo de comprobante'
                 });
             }
 
-            const receiptFile = req.files.receipt;
             console.log('📄 Archivo recibido:', {
-                name: receiptFile.name,
-                mimetype: receiptFile.mimetype,
-                size: receiptFile.size
+                name: req.file.originalname,
+                filename: req.file.filename,
+                mimetype: req.file.mimetype,
+                size: req.file.size
             });
-            
-            const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-            
-            if (!allowedMimes.includes(receiptFile.mimetype)) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Tipo de archivo no permitido. Se permiten: JPG, PNG, GIF, WebP, PDF. Recibido: ${receiptFile.mimetype}`
-                });
-            }
 
             // Verificar que el pago existe y pertenece al cliente
             const paymentQuery = `
@@ -398,52 +385,43 @@ class PaymentController {
                 });
             }
 
-            // Generar nombre único para el archivo
-            const timestamp = Date.now();
-            const ext = receiptFile.name.split('.').pop();
-            const fileName = `receipt_${paymentId}_${timestamp}.${ext}`;
-            const uploadPath = path.join(__dirname, '../../uploads/receipts');
-
-            // Crear directorio si no existe
-            if (!fs.existsSync(uploadPath)) {
-                fs.mkdirSync(uploadPath, { recursive: true });
-            }
-
-            // Guardar archivo
-            const filePath = path.join(uploadPath, fileName);
-            await receiptFile.mv(filePath);
-
             // Actualizar registro de pago con URL del comprobante
-            const receiptUrl = `/uploads/receipts/${fileName}`;
+            // req.file.filename es el nombre único generado por multer
+            const receiptUrl = `/uploads/receipts/${req.file.filename}`;
             const updateQuery = `
                 UPDATE payments 
-                SET receipt_url = ?, payment_status = 'processing'
+                SET receipt_url = ?, payment_status = 'processing', updated_at = NOW()
                 WHERE id = ?
             `;
-
+            
             const updateResult = await executeQuery(updateQuery, [receiptUrl, paymentId]);
 
-            if (updateResult.success) {
-                console.log(`✅ Comprobante subido para pago ${paymentId}`);
-                res.json({
-                    success: true,
-                    message: 'Comprobante subido exitosamente',
-                    data: {
-                        paymentId: paymentId,
-                        receiptUrl: receiptUrl,
-                        status: 'processing'
-                    }
+            if (!updateResult.success) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error al guardar la información del comprobante'
                 });
-            } else {
-                throw new Error(updateResult.error);
             }
 
+            console.log(`✅ Comprobante subido exitosamente para pago ${paymentId}:`, receiptUrl);
+
+            return res.json({
+                success: true,
+                message: 'Comprobante subido exitosamente',
+                data: {
+                    paymentId: paymentId,
+                    receiptUrl: receiptUrl,
+                    fileName: req.file.originalname,
+                    uploadedAt: new Date()
+                }
+            });
+
         } catch (error) {
-            console.error('Error al subir comprobante:', error);
-            res.status(500).json({
+            console.error('❌ Error al subir comprobante:', error);
+            return res.status(500).json({
                 success: false,
                 message: 'Error al subir el comprobante',
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+                error: error.message
             });
         }
     }

@@ -46,6 +46,13 @@ const upload = multer({
 // const { validateCompleteClientProfile, validateCompleteNannyProfile } = require('../middleware/validation');
 
 /**
+ * @route   GET /api/v1/profile/data
+ * @desc    Obtener datos completos del perfil del usuario (usuario + cliente)
+ * @access  Public (acepta query param userId)
+ */
+router.get('/data', ProfileController.getProfileData);
+
+/**
  * @route   GET /api/v1/profile/status
  * @desc    Verificar estado del perfil del usuario
  * @access  Private (requiere token)

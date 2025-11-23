@@ -215,14 +215,49 @@ class ServiceController {
         });
       }
 
-      // Usar el modelo Service para actualizar
-      const result = await Service.update(serviceId, { status: 'completed', completed_at: new Date() });
+      // Primero obtener el servicio para saber qué nanny lo realizó
+      const getServiceQuery = `SELECT nanny_id, status FROM services WHERE id = ?`;
+      const { executeQuery } = require('../config/database');
+      const serviceResult = await executeQuery(getServiceQuery, [serviceId]);
 
-      if (!result.success) {
+      if (!serviceResult.success || serviceResult.data.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Servicio no encontrado'
+        });
+      }
+
+      const service = serviceResult.data[0];
+      const nannyId = service.nanny_id;
+
+      // Si el servicio ya estaba completado, no hacer nada
+      if (service.status === 'completed') {
+        return res.json({
+          success: true,
+          message: 'El servicio ya estaba completado'
+        });
+      }
+
+      // Actualizar el estado del servicio a completado
+      const updateServiceResult = await Service.update(serviceId, { status: 'completed', completed_at: new Date() });
+
+      if (!updateServiceResult.success) {
         return res.status(400).json({
           success: false,
           message: 'Error al completar el servicio'
         });
+      }
+
+      // Si hay una nanny asignada, incrementar su contador de servicios completados
+      if (nannyId) {
+        const incrementQuery = `
+          UPDATE nannys 
+          SET services_completed = services_completed + 1
+          WHERE id = ?
+        `;
+        
+        await executeQuery(incrementQuery, [nannyId]);
+        console.log(`✓ Contador de servicios completados incrementado para nanny ${nannyId}`);
       }
 
       console.log(`✓ Servicio ${serviceId} marcado como completado`);
@@ -230,7 +265,7 @@ class ServiceController {
       return res.json({
         success: true,
         message: 'Servicio completado exitosamente',
-        data: { serviceId, status: 'completed' }
+        data: { serviceId, status: 'completed', nannyId }
       });
     } catch (error) {
       console.error('Error completing service:', error);

@@ -1472,7 +1472,7 @@ export class AdminDashboardComponent implements OnInit {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          status: 'approved'
+          status: 'verified'
         })
       });
       
