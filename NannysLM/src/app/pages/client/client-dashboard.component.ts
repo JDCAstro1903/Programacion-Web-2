@@ -486,43 +486,29 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  ngOnInit() {
-    console.log('🎯 Iniciando ClientDashboardComponent...');
-    
+  ngOnInit() {    
     // Debug del localStorage
-    console.log('💾 LocalStorage user:', localStorage.getItem('user'));
-    console.log('💾 LocalStorage token:', localStorage.getItem('token'));
     
     // Obtener el usuario actual desde el AuthService
     const currentUser = this.authService.getCurrentUser();
-    console.log('👤 Usuario desde AuthService:', currentUser);
     
     if (currentUser && currentUser.id) {
       this.currentUserId = currentUser.id;
-      console.log('✅ Usuario actual detectado:', currentUser);
-      console.log('🔑 ID del usuario establecido:', this.currentUserId);
     } else {
-      console.warn('⚠️ No se pudo obtener el usuario actual desde AuthService');
-      console.log('🔄 Intentando cargar desde localStorage directamente...');
       
       // Intentar obtener desde localStorage directamente
       try {
         const userStr = localStorage.getItem('current_user');
         if (userStr) {
           const user = JSON.parse(userStr);
-          console.log('📋 Usuario desde localStorage:', user);
           if (user.id) {
             this.currentUserId = user.id;
-            console.log('🆔 ID obtenido desde localStorage:', this.currentUserId);
           }
         }
       } catch (error) {
-        console.error('❌ Error al parsear usuario desde localStorage:', error);
       }
     }
-    
-    console.log(`🎪 Cargando datos para usuario ID: ${this.currentUserId}`);
-    
+        
     // Actualizar headerConfig con datos del usuario
     this.updateHeaderConfigFromUser(currentUser);
     
@@ -555,14 +541,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private handleStorageChange(event: StorageEvent) {
     if (event.key === 'currentUser') {
-      console.log('🔄 Detectado cambio en currentUser, actualizando header...');
       this.loadClientInfo();
     }
   }
 
   private handleVisibilityChange() {
     if (!document.hidden) {
-      console.log('👁️ Página visible de nuevo, actualizando datos...');
       // Recargar la información del cliente cuando la página vuelva a ser visible
       this.loadClientInfo();
     }
@@ -616,17 +600,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientInfo() {
     this.isLoadingClientInfo = true;
-    console.log(`📋 Cargando información del cliente para ID: ${this.currentUserId}`);
     this.clientApiService.getClientInfo(this.currentUserId).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client info completa:', JSON.stringify(response, null, 2));
         if (response.success) {
           this.clientInfo = response.data;
-          console.log('✅ clientInfo actualizado:', JSON.stringify(this.clientInfo, null, 2));
           if (this.clientInfo && this.clientInfo.profile_image) {
-            console.log('✅ profile_image específico:', this.clientInfo.profile_image);
           } else {
-            console.log('⚠️ profile_image no disponible');
           }
           
           // ⭐ SINCRONIZAR is_verified con profileData para que el overlay funcione
@@ -636,7 +615,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
             this.profileData.last_name = this.clientInfo.last_name;
             this.profileData.email = this.clientInfo.email;
             this.profileData.profile_image = this.clientInfo.profile_image || '';
-            console.log('✅ profileData sincronizado - is_verified:', this.profileData.is_verified);
           }
           
           // Actualizar headerConfig con la información del cliente
@@ -644,21 +622,17 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
             const userName = `${this.clientInfo.first_name} ${this.clientInfo.last_name}`.trim();
             let avatarUrl = '/assets/logo.png';
             
-            console.log('🔍 Header - profile_image value:', this.clientInfo.profile_image);
             
             if (this.clientInfo.profile_image) {
               if (this.clientInfo.profile_image.startsWith('http')) {
                 avatarUrl = this.clientInfo.profile_image;
-                console.log('🌐 Header - URL completa:', avatarUrl);
               } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
                 avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
-                console.log('📁 Header - Ruta /uploads/:', avatarUrl);
               } else {
                 avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
-                console.log('📦 Header - URL construida:', avatarUrl);
               }
-            } else {
-              console.log('⚠️ Header - No hay profile_image, usando logo por defecto');
+            } else 
+              {
             }
             
             this.headerConfig = {
@@ -668,15 +642,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               userAvatar: avatarUrl,
               showProfileOption: true,
               showLogoutOption: true
-            };
-            
-            console.log('✅ Header config actualizado:', this.headerConfig);
+            }; 
           }
         }
         this.isLoadingClientInfo = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando información del cliente:', error);
         this.isLoadingClientInfo = false;
       }
     });
@@ -684,10 +655,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientServices() {
     this.isLoadingServices = true;
-    console.log(`📋 Cargando servicios del cliente para userId: ${this.currentUserId}`);
     this.clientApiService.getClientServices(this.currentUserId).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client services completa:', response);
         if (response.success) {
           this.contractedServices = response.data.map((service: any) => {
             // Construir nombre completo de la nanny
@@ -736,24 +705,18 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
                     const month = parseInt(parts[1]) - 1; // Mes en JavaScript es 0-indexed
                     const day = parseInt(parts[2]);
                     processedService.start_date = new Date(year, month, day);
-                    console.log('✅ start_date parseada:', processedService.start_date, 'desde:', service.start_date);
                   } else {
-                    console.warn('⚠️ Formato de start_date no reconocido:', service.start_date);
                     processedService.start_date = null;
                   }
                 } else if (service.start_date instanceof Date) {
                   processedService.start_date = new Date(service.start_date);
-                  console.log('✅ start_date ya es Date:', processedService.start_date);
                 } else {
-                  console.warn('⚠️ start_date tipo desconocido:', typeof service.start_date, service.start_date);
                   processedService.start_date = null;
                 }
               } catch (e) {
-                console.error('❌ Error parseando start_date:', service.start_date, e);
                 processedService.start_date = null;
               }
             } else {
-              console.warn('⚠️ start_date es null/undefined para servicio:', service.id);
               processedService.start_date = null;
             }
             
@@ -768,44 +731,29 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
                     const month = parseInt(parts[1]) - 1; // Mes en JavaScript es 0-indexed
                     const day = parseInt(parts[2]);
                     processedService.end_date = new Date(year, month, day);
-                    console.log('✅ end_date parseada:', processedService.end_date, 'desde:', service.end_date);
                   } else {
-                    console.warn('⚠️ Formato de end_date no reconocido:', service.end_date);
                     processedService.end_date = null;
                   }
                 } else if (service.end_date instanceof Date) {
                   processedService.end_date = new Date(service.end_date);
-                  console.log('✅ end_date ya es Date:', processedService.end_date);
                 } else {
-                  console.warn('⚠️ end_date tipo desconocido:', typeof service.end_date, service.end_date);
                   processedService.end_date = null;
                 }
               } catch (e) {
-                console.error('❌ Error parseando end_date:', service.end_date, e);
                 processedService.end_date = null;
               }
             }
             
-            console.log('📅 Servicio procesado:', {
-              title: processedService.title,
-              start_date_original: service.start_date,
-              start_date_parseada: processedService.start_date,
-              start_time: processedService.start_time,
-              end_time: processedService.end_time,
-              total_hours: processedService.total_hours
-            });
-            
+           
             // Agregar propiedad para control de pago
             processedService.paymentInitiated = false;
             
             return processedService as ClientServiceComplete;
           });
-          console.log('✅ Servicios contratados procesados:', this.contractedServices);
         }
         this.isLoadingServices = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando servicios:', error);
         this.isLoadingServices = false;
       }
     });
@@ -813,17 +761,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientPayments() {
     this.isLoadingPayments = true;
-    console.log(`💳 Cargando pagos del cliente...`);
     this.paymentService.getClientPayments().subscribe({
       next: (response: any) => {
-        console.log('✅ Pagos del cliente cargados:', response.data);
         if (response.success && response.data) {
           this.clientPayments = response.data;
         }
         this.isLoadingPayments = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando pagos:', error);
         this.isLoadingPayments = false;
       }
     });
@@ -831,17 +776,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientStats() {
     this.isLoadingStats = true;
-    console.log(`📋 Cargando estadísticas del cliente para userId: ${this.currentUserId}`);
     this.clientApiService.getClientStats(this.currentUserId).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client stats:', response);
         if (response.success) {
           this.clientStats = response.data;
         }
         this.isLoadingStats = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando estadísticas:', error);
         this.isLoadingStats = false;
       }
     });
@@ -895,16 +837,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Transformar datos del servicio para la vista
   private transformServiceData(serviceData: any): any {
-    console.log('📋 transformServiceData - Datos recibidos:', serviceData);
-    console.log('📋 Buscando phone_number en:', {
-      nanny_phone: serviceData.nanny_phone,
-      nanny_phone_number: serviceData.nanny_phone_number,
-      'nanny?.phone': serviceData.nanny?.phone,
-      'nanny?.phone_number': serviceData.nanny?.phone_number,
-      user_phone: serviceData.user_phone,
-      user_phone_number: serviceData.user_phone_number
-    });
-    
+
     // Construir URL de la imagen correctamente
     let nanny_profile_image = 'assets/logo.png';
     if (serviceData.nanny_profile_image) {
@@ -948,15 +881,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         rating: parseFloat(serviceData.nanny_rating) || 0
       } : null
     };
-
-    console.log('📋 transformServiceData - Phone encontrado:', nannyPhoneNumber);
-    console.log('📋 transformServiceData - Objeto nanny construido:', result.nanny);
+  
     return result;
   }
 
   // Ver detalles de un servicio existente
   viewServiceDetails(serviceId: number) {
-    console.log('Cargando detalles del servicio:', serviceId);
     
     // Hacer llamada al API para obtener los detalles completos del servicio
     this.serviceService.getServiceById(serviceId).subscribe({
@@ -966,13 +896,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           this.selectedService = this.transformServiceData(response.data);
           this.serviceInstructions = response.data.special_instructions || '';
           this.currentView = 'service-details';
-          console.log('✅ Servicio cargado y transformado:', this.selectedService);
-        } else {
-          console.error('No se encontró el servicio');
+        } 
+        else {
         }
       },
       error: (error: any) => {
-        console.error('Error cargando detalles del servicio:', error);
       }
     });
   }
@@ -995,7 +923,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   saveInstructions() {
     if (!this.selectedService) return;
 
-    console.log('Guardando indicaciones:', this.serviceInstructions);
     
     // Actualizar en el backend
     this.serviceService.updateService(this.selectedService.id, {
@@ -1005,7 +932,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         if (response.success) {
           this.selectedService.special_instructions = this.serviceInstructions;
           this.isEditingInstructions = false;
-          console.log('✅ Indicaciones guardadas correctamente');
           alert('Indicaciones actualizadas correctamente');
           
           // Recargar servicios para reflejar los cambios
@@ -1013,7 +939,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
-        console.error('❌ Error guardando indicaciones:', error);
         alert('Error al guardar las indicaciones. Por favor intenta nuevamente.');
       }
     });
@@ -1028,7 +953,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Abrir modal para cambiar fecha/hora
   openChangeDateTime() {
     // TODO: Implementar modal de cambio de fecha/hora
-    console.log('Abrir modal de cambio de fecha/hora');
     alert('Función de cambio de fecha/hora próximamente disponible');
   }
 
@@ -1042,7 +966,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Confirmar cancelación de servicio
   confirmCancelService() {
     if (!this.selectedService) {
-      console.error('❌ No hay servicio seleccionado');
       return;
     }
     
@@ -1066,7 +989,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.serviceService.deleteService(serviceId).subscribe({
       next: (response: any) => {
         if (response.success) {
-          console.log('✅ Servicio cancelado correctamente');
           alert('El servicio ha sido cancelado correctamente');
           
           // Volver a la lista y recargar servicios
@@ -1075,7 +997,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
-        console.error('❌ Error cancelando servicio:', error);
         alert('Error al cancelar el servicio. Por favor intenta nuevamente.');
       }
     });
@@ -1084,7 +1005,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Método helper para abrir perfil desde servicio
   openNannyProfile(service: any) {
     if (!service) {
-      console.error('❌ Error: No se pasó servicio');
       return;
     }
 
@@ -1100,15 +1020,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       specialties: service.nanny?.specialties || []
     };
 
-    console.log('👧 Abriendo perfil desde servicio:', nannyData);
-    console.log('👧 Phone number extraído:', nannyData.phone_number);
     this.showNannyProfileModal(nannyData);
   }
 
   // Ver perfil de la niñera - Abre el modal
   showNannyProfileModal(nanny: any) {
     if (!nanny) {
-      console.error('❌ Error: No se pasó información de niñera');
       return;
     }
     
@@ -1125,14 +1042,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       specialties: nanny.specialties || []
     };
     
-    console.log('👧 Abriendo perfil de niñera:', normalizedNanny);
-    console.log('👧 Teléfono encontrado:', normalizedNanny.phone_number);
     this.nannyProfileSubject.next(normalizedNanny);
   }
 
   // Cerrar modal de perfil de niñera
   closeNannyProfileModal() {
-    console.log('👧 Cerrando modal de niñera');
     this.nannyProfileSubject.next(null);
   }
 
@@ -1147,13 +1061,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Métodos para manejar eventos del header
   onHeaderLogout() {
-    console.log('onHeaderLogout called - Opening logout modal');
     this.openLogoutModal();
   }
 
   onHeaderProfileClick() {
     // Este método ya no es necesario porque el header navega directamente a /profile
-    console.log('onHeaderProfileClick called - Navegando a perfil...');
   }
 
   /**
@@ -1166,22 +1078,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       second: '2-digit' 
     });
     
-    console.group(`📬 CLICK EN NOTIFICACIÓN [${timestamp}]`);
-    console.log('ID:', notification.id);
-    console.log('Título:', notification.title);
-    console.log('Mensaje:', notification.message);
-    console.log('Tipo:', notification.type);
-    console.log('URL de Acción (original):', notification.action_url);
-    console.log('Leída:', notification.is_read);
-    console.log('Tipo Relacionado:', notification.related_type);
-    console.log('Objeto completo:', notification);
-    console.groupEnd();
-    
     // Marcar como leída si no está leída
     if (!notification.is_read) {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: () => {
-          console.log(`✅ Notificación ${notification.id} marcada como leída`);
           // Actualizar en la lista local
           const notif = this.notifications.find(n => n.id === notification.id);
           if (notif) {
@@ -1189,13 +1089,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           }
         },
         error: (error) => {
-          console.error('❌ Error al marcar como leída:', error);
         }
       });
     }
     
     // Navegar a la vista de notificaciones en el dashboard
-    console.log('📍 Navegando a la vista de notificaciones...');
     this.currentView = 'notifications';
   }
 
@@ -1204,7 +1102,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    * (Solo por logging/futuras acciones adicionales)
    */
   handleNotificationPanelClick(notification: Notification) {
-    console.log('✅ Notificación seleccionada desde el panel:', notification);
     // Aquí puedes agregar lógica adicional si es necesario
   }
 
@@ -1212,22 +1109,18 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    * Marcar todas las notificaciones como leídas
    */
   markAllNotificationsAsRead() {
-    console.log('📖 Marcando todas las notificaciones como leídas...');
     
     this.notificationService.markAllAsRead().subscribe({
       next: (response) => {
-        console.log(`✅ Todas las notificaciones marcadas como leídas:`, response);
         // Las notificaciones se actualizan automáticamente en el BehaviorSubject
       },
       error: (error) => {
-        console.error('❌ Error al marcar todas como leídas:', error);
       }
     });
   }
 
   // Métodos para el modal de logout
   openLogoutModal() {
-    console.log('openLogoutModal called - Setting showLogoutModal to true');
     this.showLogoutModal = true;
   }
 
@@ -1238,12 +1131,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   confirmLogout() {
     this.showLogoutModal = false;
     this.router.navigate(['/']);
-    console.log('Cliente cerró sesión');
   }
 
   // Métodos para manejar servicios (para futuras implementaciones)
   requestService() {
-    console.log('Solicitar nuevo servicio');
     // Aquí se implementaría la lógica para solicitar un servicio
   }
 
@@ -1532,7 +1423,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   formatDate(date: Date | string | null | undefined): string {
     // Validar que la fecha exista
     if (!date) {
-      console.warn('⚠️ formatDate recibió fecha null/undefined');
       return 'Fecha no disponible';
     }
 
@@ -1549,19 +1439,16 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           const day = parseInt(parts[2]);
           dateObj = new Date(year, month, day);
         } else {
-          console.error('❌ Formato de fecha string inválido:', date);
           return 'Formato inválido';
         }
       } else if (date instanceof Date) {
         dateObj = date;
       } else {
-        console.error('❌ Tipo de fecha no soportado:', typeof date, date);
         return 'Tipo inválido';
       }
 
       // Validar que el Date object sea válido
       if (isNaN(dateObj.getTime())) {
-        console.error('❌ Date object inválido:', dateObj);
         return 'Fecha inválida';
       }
 
@@ -1574,7 +1461,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       
       return `${day} de ${month}`;
     } catch (error) {
-      console.error('❌ Error en formatDate:', error, 'fecha:', date);
       return 'Error al formatear';
     }
   }
@@ -1752,7 +1638,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     // Primero intentar obtener desde clientInfo (ya cargado)
     if (this.clientInfo?.id) {
       clientId = this.clientInfo.id;
-      console.log('✅ client_id obtenido desde clientInfo:', clientId);
     } else {
       // Si clientInfo no está disponible, intentar desde localStorage
       const userStr = localStorage.getItem('current_user');
@@ -1764,11 +1649,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       try {
         const userData = JSON.parse(userStr);
         // El userData solo tiene user_id, necesitamos esperar a que clientInfo se cargue
-        console.warn('⚠️ clientInfo no disponible aún, intenta de nuevo en unos segundos');
         this.showServiceModalWithErrors('error', '❌ Información incompleta', 'Todavía se está cargando tu información. Por favor, espera unos segundos e intenta de nuevo.', ['Intenta de nuevo']);
         return;
       } catch (error) {
-        console.error('Error parsing user data:', error);
         this.showServiceModalWithErrors('error', '❌ Error al procesar datos', 'Hubo un problema procesando tu información', ['Inicia sesión nuevamente']);
         return;
       }
@@ -1800,17 +1683,15 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       address: this.clientInfo?.address || 'Dirección no proporcionada'
     };
 
-    console.log('📤 Enviando servicio al backend:', serviceData);
 
     // Llamar al servicio para crear el servicio
     this.serviceService.createService(serviceData).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          console.log('✅ Servicio creado exitosamente:', response.data);
           
           // Mostrar modal de éxito
           this.serviceModalType = 'success';
-          this.serviceModalTitle = '✅ ¡Servicio creado exitosamente!';
+          this.serviceModalTitle = ' ¡Servicio creado exitosamente!';
           this.serviceModalMessage = `Tu servicio ha sido confirmado para el ${this.formatSelectedDate()} de ${this.selectedStartTime} a ${this.selectedEndTime}.\n\nUna nanny ha sido asignada y recibirá una notificación sobre tu solicitud.`;
           this.serviceModalErrors = [];
 
@@ -1825,7 +1706,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
                     this.serviceInstructions = detailResponse.data.special_instructions || '';
                     this.currentView = 'service-details';
                     
-                    console.log('✅ Detalles del servicio cargados:', this.selectedService);
 
                     // Cerrar modal
                     this.closeServiceModal();
@@ -1835,7 +1715,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
                   }
                 },
                 error: (error) => {
-                  console.error('Error cargando detalles del servicio:', error);
                   // Aunque haya error cargando detalles, el servicio se creó exitosamente
                   this.currentView = 'services';
                   this.servicesView = 'services-history';
@@ -1855,9 +1734,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error creando servicio:', error);
         
-        let errorTitle = '❌ Error al crear servicio';
+        let errorTitle = ' Error al crear servicio';
         let errorMessage = 'Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.';
         const errorDetails: string[] = [];
         
@@ -1939,7 +1817,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    */
   loadServices() {
     if (!this.clientInfo?.id) {
-      console.warn('No se puede cargar servicios: clientInfo.id no disponible');
       return;
     }
 
@@ -1948,13 +1825,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.serviceService.getServices(this.clientInfo.id).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          console.log('✅ Servicios cargados desde API:', response.data);
           // Aquí podrías mapear los servicios a tu formato local si es necesario
           this.isLoadingServices = false;
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando servicios:', error);
         this.isLoadingServices = false;
       }
     });
@@ -2020,7 +1895,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Agregar indicaciones
   addInstructions() {
-    console.log('Indicaciones agregadas:', this.createdService?.instructions);
   }
 
   // Formatear fecha de servicio contratado
@@ -2058,13 +1932,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewContractedServices() {
-    console.log('Ver servicios contratados');
     this.currentView = 'contracted-services';
   }
 
   // Calificar servicio
   rateService(serviceId: number) {
-    console.log('Calificar servicio:', serviceId);
     // Aquí se implementaría la lógica para calificar el servicio
     const service = this.contractedServices.find(s => s.id === serviceId);
     if (service) {
@@ -2093,7 +1965,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
     this.clientApiService.rateService(ratingData).subscribe({
       next: (response) => {
-        console.log('✓ Calificación enviada:', response);
         
         // Actualizar la interfaz
         service.rating = {
@@ -2111,7 +1982,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         this.serviceModalMessage = `Gracias por calificar este servicio con ${rating} ${rating === 1 ? 'estrella' : 'estrellas'}`;
       },
       error: (error) => {
-        console.error('❌ Error al calificar:', error);
         this.showServiceModal = true;
         this.serviceModalType = 'error';
         this.serviceModalTitle = 'Error al calificar';
@@ -2192,10 +2062,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Métodos helper para datos dinámicos
   get currentUser() {
-    console.log('🔍 Header - currentUser getter llamado');
-    console.log('🔍 Header - clientInfo disponible:', !!this.clientInfo);
-    console.log('🔍 Header - profileData disponible:', !!this.profileData);
-    
+   
     // Preferir clientInfo si está disponible, sino usar profileData
     const userData = this.clientInfo || this.profileData;
     
@@ -2204,24 +2071,17 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       let avatarUrl = 'assets/logo.png';
       const profileImage = userData.profile_image || (this.profileData?.profile_image);
       
-      console.log('🖼️ Header - Profile image:', profileImage);
-      console.log('🖼️ Header - Usuario detectado:', `${userData.first_name} ${userData.last_name}`);
-      
       if (profileImage) {
         if (profileImage.startsWith('http')) {
           avatarUrl = profileImage;
-          console.log('🌐 Header - Usando URL completa:', avatarUrl);
         } else if (profileImage.startsWith('/uploads/')) {
           // Si ya incluye /uploads/, solo agregar el host
           avatarUrl = `http://localhost:8000${profileImage}`;
-          console.log('🔗 Header - URL con ruta completa:', avatarUrl);
         } else {
           // Si es solo el nombre del archivo
           avatarUrl = `http://localhost:8000/uploads/${profileImage}`;
-          console.log('🔗 Header - URL construida:', avatarUrl);
         }
       } else {
-        console.log('❌ Header - No hay profile_image');
       }
       
       return {
@@ -2237,7 +2097,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       };
     }
     
-    console.log('⚠️ Header - No hay datos de usuario, retornando valores por defecto');
     return {
       name: 'Usuario',
       role: 'Cliente',
@@ -2250,25 +2109,19 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     if (this.profileData && this.profileData.first_name) {
       // Construir URL completa de la imagen de perfil si existe
       let avatarUrl = 'assets/logo.png';
-      
-      console.log('🖼️ Profile image desde BD:', this.profileData.profile_image);
-      
+            
       if (this.profileData.profile_image) {
         // Si la imagen ya es una URL completa, usarla tal como está
         if (this.profileData.profile_image.startsWith('http')) {
           avatarUrl = this.profileData.profile_image;
-          console.log('🌐 Usando URL completa:', avatarUrl);
         } else if (this.profileData.profile_image.startsWith('/uploads/')) {
           // Si ya incluye /uploads/, solo agregar el host
           avatarUrl = `http://localhost:8000${this.profileData.profile_image}`;
-          console.log('🔗 URL con ruta completa:', avatarUrl);
         } else {
           // Si es solo el nombre del archivo
           avatarUrl = `http://localhost:8000/uploads/${this.profileData.profile_image}`;
-          console.log('🔗 URL construida:', avatarUrl);
         }
       } else {
-        console.log('❌ No hay profile_image en profileData, usando imagen por defecto');
       }
 
       return {
@@ -2367,9 +2220,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       const file = target.files[0];
       const paymentId = (target as any).dataset.paymentId;
       
-      console.log('🧾 Comprobante seleccionado:', file.name);
-      console.log('💳 ID de pago:', paymentId);
-      
       if (paymentId) {
         // Si viene de openUploadReceiptModal, hacer upload
         this.uploadPaymentReceipt(parseInt(paymentId), file);
@@ -2390,7 +2240,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    * Crear pago para un servicio completado
    */
   createPaymentForService(serviceId: number) {
-    console.log('💰 Crear pago para servicio:', serviceId);
     
     this.showServiceModal = true;
     this.serviceModalType = 'loading';
@@ -2400,7 +2249,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.paymentService.initializePayment(serviceId).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          console.log('✅ Pago creado:', response.data);
           this.serviceModalType = 'success';
           this.serviceModalTitle = 'Pago Inicializado';
           this.serviceModalMessage = `Pago de $${response.data.amount} creado. Por favor, realiza la transferencia bancaria y sube el comprobante.`;
@@ -2412,7 +2260,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error al crear pago:', error);
         this.serviceModalType = 'error';
         this.serviceModalTitle = 'Error al Crear Pago';
         this.serviceModalMessage = error.error?.message || 'Hubo un error al crear el pago';
@@ -2424,7 +2271,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    * Abrir modal para subir comprobante de pago
    */
   openUploadReceiptModal(paymentId: number) {
-    console.log('📤 Abriendo modal para subir comprobante de pago:', paymentId);
     
     // Aquí podrías mostrar un modal específico para subir el comprobante
     // Por ahora, simularemos haciendo clic en el input de archivo
@@ -2440,7 +2286,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    * Subir comprobante de pago
    */
   uploadPaymentReceipt(paymentId: number, file: File) {
-    console.log('📄 Subiendo comprobante para pago:', paymentId);
     
     this.showServiceModal = true;
     this.serviceModalType = 'loading';
@@ -2450,7 +2295,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.paymentService.uploadPaymentReceipt(paymentId, file).subscribe({
       next: (response) => {
         if (response.success) {
-          console.log('✅ Comprobante subido exitosamente:', response.data);
           this.serviceModalType = 'success';
           this.serviceModalTitle = 'Comprobante Subido';
           this.serviceModalMessage = 'Tu comprobante ha sido recibido. El administrador lo verificará pronto.';
@@ -2460,7 +2304,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error al subir comprobante:', error);
         this.serviceModalType = 'error';
         this.serviceModalTitle = 'Error al Subir Comprobante';
         this.serviceModalMessage = error.error?.message || 'Error al subir el comprobante';
@@ -2591,7 +2434,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    * Manejar error de carga de imagen del comprobante
    */
   onReceiptImageError(event: any, paymentId: number) {
-    console.error(`❌ Error cargando imagen del comprobante para pago ${paymentId}:`, event);
     // Aquí puedes agregar lógica para mostrar un ícono de error
   }
 
@@ -2649,7 +2491,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   uploadReceiptForPayment(payment: any): void {
     if (payment.status === 'pagado') return;
     
-    console.log('Subir comprobante para:', payment.session);
     this.triggerReceiptUpload();
   }
 
@@ -2686,7 +2527,6 @@ CLABE: 014320123456789012
       document.execCommand('copy');
       alert('Datos bancarios copiados al portapapeles');
     } catch (err) {
-      console.error('Error al copiar al portapapeles:', err);
       alert('No se pudieron copiar los datos. Por favor, cópialos manualmente.');
     }
     
@@ -2695,8 +2535,6 @@ CLABE: 014320123456789012
 
   // Función para abrir modal de datos bancarios con datos específicos de la nanny
   openBankDetailsModal(nannyId?: number): void {
-    console.log('🏦 Abriendo modal de datos bancarios para nanny ID:', nannyId);
-    console.log('🔍 Tipo de nannyId:', typeof nannyId, 'Valor:', nannyId);
     
     // Si no se proporciona nannyId, intentar obtener el primero disponible
     // (útil para vista general sin servicio específico)
@@ -2705,29 +2543,21 @@ CLABE: 014320123456789012
     
     this.bankDetailsService.getBankDetails().subscribe({
       next: (response) => {
-        console.log('📊 Respuesta de API completa:', response);
         
         const allBankDetails = response.data;
-        console.log('📊 Datos bancarios recibidos:', allBankDetails);
-        console.log('📊 Total de registros:', allBankDetails.length);
-        
         let nannyBankDetail;
         
         if (nannyId) {
           // Buscar datos de la nanny específica
-          console.log('🔎 Buscando nanny con ID:', nannyId);
           nannyBankDetail = allBankDetails.find((bd: any) => {
-            console.log('  Comparando:', bd.nannyId, '===', nannyId, '?', bd.nannyId === nannyId);
             return bd.nannyId === nannyId && bd.isActive;
           });
         } else {
           // Si no hay nannyId específico, tomar el primero activo
-          console.log('⚠️ No se proporcionó nannyId, buscando primer registro activo');
           nannyBankDetail = allBankDetails.find((bd: any) => bd.isActive);
         }
         
         if (nannyBankDetail) {
-          console.log('✅ Datos bancarios encontrados:', nannyBankDetail);
           
           this.currentBankData = {
             banco: nannyBankDetail.bankName,
@@ -2739,9 +2569,7 @@ CLABE: 014320123456789012
                         nannyBankDetail.accountType,
             es_activa: nannyBankDetail.isActive
           };
-          console.log('💳 Datos mapeados para mostrar:', this.currentBankData);
         } else {
-          console.warn('⚠️ No se encontraron datos bancarios' + (nannyId ? ` para nanny ID: ${nannyId}` : ' activos'));
           this.currentBankData = {
             nanny_nombre: nannyId ? 'Nanny' : 'NannysLM',
             banco: 'Información bancaria no disponible',
@@ -2757,8 +2585,7 @@ CLABE: 014320123456789012
         this.isLoadingBankData = false;
       },
       error: (error) => {
-        console.error('❌ Error al cargar datos bancarios:', error);
-        console.error('❌ Detalles del error:', error.message);
+       
         this.currentBankData = {
           nanny_nombre: 'Error',
           banco: 'Error al cargar información',
@@ -2824,7 +2651,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     
     try {
       // Obtener datos del perfil desde el backend con el ID del usuario actual
-      console.log(`🔄 Cargando datos del perfil para usuario ID: ${this.currentUserId}`);
       
       const response = await fetch(`http://localhost:8000/api/v1/profile/data?userId=${this.currentUserId}`, {
         method: 'GET',
@@ -2835,11 +2661,9 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         }
       });
 
-      console.log('📡 Respuesta del servidor:', response.status, response.statusText);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📦 Datos recibidos del servidor:', result);
         
         if (result.success) {
           // Cargar datos del usuario
@@ -2858,9 +2682,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
             updated_at: result.data.user_data.updated_at
           };
 
-          console.log('✅ Datos del perfil cargados:', this.profileData);
-          console.log('🖼️ Profile image específica:', this.profileData.profile_image);
-
           // Cargar datos específicos del cliente
           this.clientData = {
             id: result.data.client_data.id,
@@ -2874,14 +2695,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
             created_at: result.data.client_data.created_at,
             updated_at: result.data.client_data.updated_at
           };
-
-          console.log('👨‍👩‍👧‍👦 Datos del cliente cargados:', this.clientData);
-
-          console.log('✅ Datos del perfil cargados exitosamente:', { 
-            userData: this.profileData, 
-            clientData: this.clientData 
-          });
-          console.log(`👤 Usuario: ${this.profileData.first_name} ${this.profileData.last_name}`);
 
           // Sincronizar clientInfo con profileData si clientInfo no está disponible
           // Esto asegura que el getter currentUser siempre tenga datos disponibles
@@ -2904,15 +2717,12 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
               created_at: this.profileData.created_at || new Date().toISOString(),
               client_since: this.profileData.created_at || new Date().toISOString()
             } as ClientInfo;
-            console.log('🔄 clientInfo sincronizado desde profileData para el header');
           }
         }
       } else {
-        console.error('Error al cargar datos del perfil:', response.status);
         this.loadFallbackData();
       }
     } catch (error) {
-      console.error('Error de conexión al cargar perfil:', error);
       this.loadFallbackData();
     } finally {
       this.isLoadingClientData = false;
@@ -2957,8 +2767,7 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
           
           // Generar preview
           this.generateIdentificationPreview(file);
-          
-          console.log('✅ Documento de identificación seleccionado:', file.name);
+        
         } else {
           this.clientInfoErrorMessage = 'El archivo no debe superar los 10MB';
           setTimeout(() => this.clientInfoErrorMessage = '', 5000);
@@ -3008,13 +2817,11 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       const token = this.authService.getToken();
       
       if (!token) {
-        console.error('❌ No hay token disponible');
         this.clientInfoErrorMessage = 'Sesión no válida. Por favor inicia sesión nuevamente.';
         this.isLoadingClientData = false;
         return;
       }
 
-      console.log('🔐 Token disponible, realizando petición a /api/v1/client/data');
       
       const response = await fetch('http://localhost:8000/api/v1/client/data', {
         method: 'GET',
@@ -3024,11 +2831,9 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         }
       });
 
-      console.log('📡 Respuesta recibida:', response.status, response.statusText);
 
       if (response.status === 404) {
         // Cliente no tiene datos todavía, inicializar con valores vacíos
-        console.log('ℹ️ Cliente sin datos previos (404), inicializando formulario vacío');
         this.clientData = {
           verification_status: 'pending',
           identification_document: '',
@@ -3041,7 +2846,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         this.clientInfoErrorMessage = '';
       } else if (response.ok) {
         const data = await response.json();
-        console.log('✅ Datos específicos del cliente cargados:', data);
         
         if (data.success && data.data) {
           this.clientData = {
@@ -3052,22 +2856,18 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         // Limpiar el mensaje de error en caso de éxito
         this.clientInfoErrorMessage = '';
       } else if (response.status === 401) {
-        console.error('❌ Sesión expirada (401) al cargar datos del cliente');
         this.authService.forceLogout();
         this.router.navigate(['/login']);
       } else {
         // Intentar leer el mensaje de error del servidor
         try {
           const errorData = await response.json();
-          console.error('❌ Error del servidor:', errorData);
           this.clientInfoErrorMessage = errorData.message || `Error del servidor: ${response.status}`;
         } catch (e) {
-          console.error('❌ Error al cargar datos del cliente (status:', response.status, ')');
           this.clientInfoErrorMessage = `Error del servidor (${response.status}). Por favor intenta nuevamente.`;
         }
       }
     } catch (error: any) {
-      console.error('❌ Error de red o excepción al cargar datos del cliente:', error);
       this.clientInfoErrorMessage = error.message || 'Error de conexión al cargar la información del cliente';
     } finally {
       this.isLoadingClientData = false;
@@ -3129,7 +2929,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       const data = await response.json();
 
       if (response.ok && data.success) {
-        console.log('✅ Datos del cliente guardados:', data);
         this.clientInfoSuccessMessage = data.message || 'Información guardada correctamente';
         this.identificationDocumentFile = null;
         
@@ -3138,7 +2937,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         
         setTimeout(() => this.clientInfoSuccessMessage = '', 5000);
       } else if (response.status === 401) {
-        console.error('❌ Sesión expirada al guardar datos del cliente');
         this.authService.forceLogout();
         this.router.navigate(['/login']);
       } else if (response.status === 400 && data.errors) {
@@ -3148,7 +2946,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         this.clientInfoErrorMessage = data.message || 'Error al guardar la información';
       }
     } catch (error) {
-      console.error('❌ Error al guardar datos del cliente:', error);
       this.clientInfoErrorMessage = 'Error de conexión al guardar la información';
     } finally {
       this.isSavingClientData = false;
@@ -3223,13 +3020,11 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
 
   // Método para cargar notificaciones desde el backend
   private loadNotifications() {
-    console.log('📋 Cargando notificaciones...');
     
     // Obtener notificaciones del servidor
     this.notificationService.getNotifications().subscribe({
       next: (notifications) => {
         this.notifications = notifications;
-        console.log(`✅ Notificaciones cargadas: ${notifications.length} notificaciones`);
         
         // Actualizar el header config con las notificaciones
         this.headerConfig = {
@@ -3238,13 +3033,11 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         };
       },
       error: (error) => {
-        console.error('❌ Error cargando notificaciones:', error);
         this.notifications = [];
       }
     });
     
     // Iniciar polling automático cada 30 segundos para actualizar notificaciones
-    console.log('⏱️ Iniciando polling de notificaciones...');
     this.notificationService.startPolling(300000);
   }
 }
