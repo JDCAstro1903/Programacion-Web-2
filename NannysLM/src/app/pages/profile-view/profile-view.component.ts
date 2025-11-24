@@ -78,18 +78,15 @@ export class ProfileViewComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    console.log('🔍 ProfileView - ngOnInit ejecutado');
     
     // Suscribirse al usuario actual del AuthService
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.currentUser = { ...user, token: this.authService.getToken() };
-        console.log('🔍 ProfileView - Usuario actual:', this.currentUser);
       }
     });
     
     if (!this.currentUser || !this.authService.isAuthenticated()) {
-      console.warn('⚠️ ProfileView - No hay usuario logueado, redirigiendo a login');
       this.router.navigate(['/login']);
       return;
     }
@@ -99,11 +96,9 @@ export class ProfileViewComponent implements OnInit {
 
   loadProfileData() {
     this.isLoadingProfile = true;
-    console.log('🔍 ProfileView - Cargando datos del perfil...');
     
     this.profileService.checkProfileStatus().subscribe({
       next: (result) => {
-        console.log('✅ ProfileView - Datos recibidos:', result);
         
         if (result.success && result.data) {
           const userData = result.data.user_data;
@@ -121,18 +116,12 @@ export class ProfileViewComponent implements OnInit {
             last_login: (userData as any).last_login || undefined
           } as UserProfile;
           
-          console.log('📋 ProfileData completo:', this.profileData);
-          console.log('📅 created_at:', this.profileData.created_at);
-          console.log('📅 updated_at:', this.profileData.updated_at);
-          console.log('📅 last_login:', this.profileData.last_login);
-          
           // Actualizar timestamp para imágenes
           this.imageTimestamp = Date.now();
         }
         this.isLoadingProfile = false;
       },
       error: (error) => {
-        console.error('❌ ProfileView - Error:', error);
         this.isLoadingProfile = false;
         
         if (error.status === 401) {
@@ -167,7 +156,6 @@ export class ProfileViewComponent implements OnInit {
       };
       reader.readAsDataURL(file);
       
-      console.log('📷 Imagen seleccionada:', file.name, 'Tamaño:', (file.size / 1024).toFixed(2), 'KB');
     } else {
       alert('Por favor selecciona un archivo de imagen válido');
       event.target.value = '';
@@ -237,11 +225,8 @@ export class ProfileViewComponent implements OnInit {
       formData.append('profile_image', this.profileImageFile);
     }
 
-    console.log('💾 Guardando cambios del perfil...');
-
     this.profileService.updateUserProfile(formData).subscribe({
       next: (result) => {
-        console.log('✅ Perfil actualizado:', result);
         
         if (result.success) {
           // Actualizar datos locales
@@ -282,7 +267,6 @@ export class ProfileViewComponent implements OnInit {
         this.isSavingProfile = false;
       },
       error: (error) => {
-        console.error('❌ Error al guardar:', error);
         this.isSavingProfile = false;
 
         if (error.status === 400 && error.error.errors) {
@@ -354,7 +338,6 @@ export class ProfileViewComponent implements OnInit {
 
     this.profileService.changePassword(this.currentPassword, this.newPassword).subscribe({
       next: (result) => {
-        console.log('✅ Contraseña cambiada:', result);
         this.isChangingPassword = false;
 
         if (result.success) {
@@ -376,7 +359,6 @@ export class ProfileViewComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('❌ Error:', error);
         this.isChangingPassword = false;
 
         if (error.status === 400 && error.error.errors) {
@@ -487,42 +469,35 @@ export class ProfileViewComponent implements OnInit {
   getProfileImageUrl(): string {
     // Si hay un preview (imagen nueva seleccionada), mostrar ese
     if (this.profileImagePreview) {
-      console.log('🖼️ Usando preview de imagen');
       return this.profileImagePreview;
     }
     
     // Si no hay imagen de perfil, usar logo por defecto
     if (!this.profileData?.profile_image) {
-      console.log('⚠️ No hay profile_image, usando logo por defecto');
       return '/assets/logo.png';
     }
     
     const imageValue = this.profileData.profile_image;
-    console.log('🔍 Valor de profile_image:', imageValue);
     
     // Si la imagen ya es una URL completa
     if (imageValue.startsWith('http')) {
       const url = `${imageValue}?t=${this.imageTimestamp}`;
-      console.log('🌐 URL completa:', url);
       return url;
     }
     
     // Si la imagen es data:image (base64), usarla directamente
     if (imageValue.startsWith('data:image')) {
-      console.log('📷 Imagen base64');
       return imageValue;
     }
     
     // Si la imagen empieza con /uploads/
     if (imageValue.startsWith('/uploads/')) {
       const url = `http://localhost:8000${imageValue}?t=${this.imageTimestamp}`;
-      console.log('📁 Ruta /uploads/:', url);
       return url;
     }
     
     // Caso por defecto: agregar el prefijo completo con timestamp
     const url = `http://localhost:8000/uploads/${imageValue}?t=${this.imageTimestamp}`;
-    console.log('📦 URL construida:', url);
     return url;
   }
 
@@ -588,7 +563,6 @@ export class ProfileViewComponent implements OnInit {
         this.identificationPreview = null;
       }
       
-      console.log('📄 Documento seleccionado:', file.name, 'Tipo:', file.type, 'Tamaño:', (file.size / 1024).toFixed(2), 'KB');
     } else {
       alert('Por favor selecciona un archivo válido');
       event.target.value = '';
@@ -605,42 +579,35 @@ export class ProfileViewComponent implements OnInit {
   getIdentificationUrl(): string {
     // Si hay un preview (documento nuevo seleccionado), mostrar ese
     if (this.identificationPreview) {
-      console.log('📄 Usando preview de documento');
       return this.identificationPreview;
     }
     
     // Si no hay identificación, retornar vacío
     if (!this.profileData?.identification_document) {
-      console.log('⚠️ No hay documento de identificación');
       return '';
     }
     
     const docValue = this.profileData.identification_document;
-    console.log('🔍 Valor de identification_document:', docValue);
     
     // Si el documento ya es una URL completa
     if (docValue.startsWith('http')) {
       const url = `${docValue}?t=${this.identificationTimestamp}`;
-      console.log('🌐 URL completa:', url);
       return url;
     }
     
     // Si es base64, usarlo directamente
     if (docValue.startsWith('data:')) {
-      console.log('📷 Documento base64');
       return docValue;
     }
     
     // Si empieza con /uploads/
     if (docValue.startsWith('/uploads/')) {
       const url = `http://localhost:8000${docValue}?t=${this.identificationTimestamp}`;
-      console.log('📁 Ruta /uploads/:', url);
       return url;
     }
     
     // Caso por defecto: agregar el prefijo completo con timestamp
     const url = `http://localhost:8000/uploads/${docValue}?t=${this.identificationTimestamp}`;
-    console.log('📦 URL construida:', url);
     return url;
   }
 

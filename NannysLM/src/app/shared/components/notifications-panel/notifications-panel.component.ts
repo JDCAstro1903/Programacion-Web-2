@@ -32,21 +32,17 @@ export class NotificationsPanelComponent implements OnInit {
 
   loadNotifications() {
     this.isLoadingNotifications = true;
-    console.log('[NotificationsPanel] Cargando notificaciones...');
     
     this.notificationService.getNotifications().subscribe({
       next: (notifications) => {
         if (notifications && Array.isArray(notifications)) {
           this.notifications = notifications;
-          console.log(`[NotificationsPanel] ${this.notifications.length} notificaciones cargadas`);
         } else {
-          console.warn('[NotificationsPanel] Sin notificaciones');
           this.notifications = [];
         }
         this.isLoadingNotifications = false;
       },
       error: (error) => {
-        console.error('[NotificationsPanel] Error al cargar notificaciones:', error);
         this.notifications = [];
         this.isLoadingNotifications = false;
       }
@@ -67,15 +63,6 @@ export class NotificationsPanelComponent implements OnInit {
       second: '2-digit' 
     });
     
-    console.group(`[NotificationsPanel] Notificación clickeada [${timestamp}]`);
-    console.log('ID:', notification.id);
-    console.log('Título:', notification.title);
-    console.log('Mensaje:', notification.message);
-    console.log('Tipo:', notification.type);
-    console.log('URL de Acción:', notification.action_url);
-    console.log('Leída:', notification.is_read);
-    console.groupEnd();
-    
     // Emitir evento para padre
     this.notificationClicked.emit(notification);
     
@@ -83,11 +70,9 @@ export class NotificationsPanelComponent implements OnInit {
     if (!notification.is_read) {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: () => {
-          console.log(`[NotificationsPanel] Notificación ${notification.id} marcada como leída`);
           notification.is_read = true;
         },
         error: (error) => {
-          console.error('[NotificationsPanel] Error al marcar como leída:', error);
         }
       });
     }
@@ -104,10 +89,8 @@ export class NotificationsPanelComponent implements OnInit {
       this.notificationService.markAsRead(notification.id).subscribe({
         next: () => {
           notification.is_read = true;
-          console.log(`[NotificationsPanel] Notificación ${notification.id} marcada como leída`);
         },
         error: (error) => {
-          console.error('[NotificationsPanel] Error:', error);
         }
       });
     }
@@ -117,7 +100,6 @@ export class NotificationsPanelComponent implements OnInit {
     event.stopPropagation();
     if (confirm('¿Estás seguro de que deseas eliminar esta notificación?')) {
       this.notifications = this.notifications.filter(n => n.id !== notificationId);
-      console.log(`[NotificationsPanel] Notificación ${notificationId} eliminada`);
     }
   }
 

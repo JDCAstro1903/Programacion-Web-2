@@ -413,7 +413,7 @@
               </div>
               <div class="nanny-rate-info">
                 <div class="hourly-rate">
-                  <span class="rate-amount">€{{ nanny.hourly_rate || 0 }}</span>
+                  <span class="rate-amount">${{ nanny.hourly_rate || 0 }}</span>
                   <span class="rate-period">/hora</span>
                 </div>
               </div>
@@ -1255,22 +1255,7 @@
               </span>
             </div>
 
-            <!-- Información de la nanny -->
-            <div class="bank-card-nanny">
-              <div class="nanny-avatar-circle" [style.background]="getAvatarColor(datos.nanny.first_name + ' ' + datos.nanny.last_name)">
-                {{ (datos.nanny.first_name.charAt(0) || 'N') + (datos.nanny.last_name.charAt(0) || 'N') }}
-                <div class="status-indicator" [class.active]="datos.nanny.status === 'active'" [class.inactive]="datos.nanny.status !== 'active'"></div>
-              </div>
-              <div class="nanny-info">
-                <h4>{{ datos.nanny.first_name }} {{ datos.nanny.last_name }}</h4>
-                <p class="nanny-email">{{ datos.nanny.email }}</p>
-                <span class="nanny-status" [class.verified]="datos.nanny.status === 'active'" [class.unverified]="datos.nanny.status !== 'active'">
-                  {{ datos.nanny.status === 'active' ? '✓ Verificada' : '⚠ Sin verificar' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Detalles de la cuenta -->
+            <!-- Detalles de la cuenta bancaria -->
             <div class="bank-card-details">
               <div class="detail-row">
                 <div class="detail-label">
@@ -1419,8 +1404,8 @@
               </label>
               <input type="text" 
                      id="accountHolder" 
-                     [(ngModel)]="selectedBankData.account_holder_name" 
-                     name="account_holder_name" 
+                     [(ngModel)]="selectedBankData.accountHolderName" 
+                     name="accountHolderName" 
                      required
                      maxlength="150"
                      class="form-control-pro"
@@ -1448,8 +1433,8 @@
                   Banco *
                 </label>
                 <select id="bankName" 
-                        [(ngModel)]="selectedBankData.bank_name" 
-                        name="bank_name" 
+                        [(ngModel)]="selectedBankData.bankName" 
+                        name="bankName" 
                         required
                         class="form-control-pro">
                   <option value="">Seleccione un banco</option>
@@ -1473,12 +1458,13 @@
                   Tipo de Cuenta *
                 </label>
                 <select id="accountType" 
-                        [(ngModel)]="selectedBankData.account_type" 
-                        name="account_type" 
+                        [(ngModel)]="selectedBankData.accountType" 
+                        name="accountType" 
                         required
                         class="form-control-pro">
-                  <option value="ahorro">Cuenta de Ahorro</option>
-                  <option value="corriente">Cuenta Corriente</option>
+                  <option value="">Seleccione tipo de cuenta</option>
+                  <option value="checking">Cuenta Corriente</option>
+                  <option value="savings">Cuenta de Ahorro</option>
                 </select>
               </div>
             </div>
@@ -1493,8 +1479,8 @@
               </label>
               <input type="text" 
                      id="accountNumber" 
-                     [(ngModel)]="selectedBankData.account_number" 
-                     name="account_number" 
+                     [(ngModel)]="selectedBankData.accountNumber" 
+                     name="accountNumber" 
                      required
                      minlength="8"
                      maxlength="50"
@@ -1535,8 +1521,8 @@
             <div class="checkbox-group-pro">
               <label class="checkbox-label-pro">
                 <input type="checkbox" 
-                       [(ngModel)]="selectedBankData.is_active" 
-                       name="is_active">
+                       [(ngModel)]="selectedBankData.isActive" 
+                       name="isActive">
                 <span class="checkbox-custom"></span>
                 <span class="checkbox-text">
                   <strong>Cuenta activa</strong>
@@ -1718,7 +1704,7 @@
                   <span class="required-star">*</span>
                 </label>
                 <div class="input-with-prefix">
-                  <span class="input-prefix">€</span>
+                  <span class="input-prefix">$</span>
                   <input type="number" 
                          id="hourly_rate" 
                          [(ngModel)]="newNannyData.hourly_rate" 
@@ -2223,7 +2209,7 @@
               </div>
               <div class="exp-item">
                 <span class="exp-label">Tarifa Horaria</span>
-                <span class="exp-value price">€{{ selectedNannyProfile.hourly_rate }}/h</span>
+                <span class="exp-value price">${{ selectedNannyProfile.hourly_rate }}/h</span>
               </div>
             </div>
           </div>
@@ -2629,7 +2615,7 @@
               </div>
               <div class="financial-item">
                 <span class="financial-label">Monto para Nanny</span>
-                <span class="financial-value nanny">€{{ (+selectedPaymentDetails.nanny_amount || 0).toFixed(2) }}</span>
+                <span class="financial-value nanny">${{ (+selectedPaymentDetails.nanny_amount || 0).toFixed(2) }}</span>
               </div>
               <div class="financial-item">
                 <span class="financial-label">Comisión</span>

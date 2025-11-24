@@ -23,6 +23,7 @@ const notificationRoutes = require('./src/routes/notifications');
 const nannyRoutes = require('./src/routes/nannys');
 const userRoutes = require('./src/routes/users');
 const clientDataRoutes = require('./src/routes/clientData');
+const ratingRoutes = require('./src/routes/ratings');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -152,6 +153,7 @@ app.get('/api/info', (req, res) => {
             client: '/api/v1/client',
             services: '/api/v1/services',
             payments: '/api/v1/payments',
+            ratings: '/api/v1/ratings',
             nannys: '/api/v1/nannys',
             notifications: '/api/v1/notifications',
             users: '/api/v1/users',
@@ -169,6 +171,7 @@ app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/bank-details', bankDetailsRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/nannys', nannyRoutes);
+app.use('/api/v1/ratings', ratingRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/client', clientDataRoutes);
 app.use('/api/v1/client', clientRoutes);

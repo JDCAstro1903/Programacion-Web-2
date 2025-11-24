@@ -6662,7 +6662,7 @@ input[type="file"] {
 /* Grid de tarjetas bancarias */
 .modern-banking-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
 }
@@ -6671,12 +6671,14 @@ input[type="file"] {
 .bank-card {
   background: white;
   border-radius: 16px;
-  padding: 1.75rem;
+  padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   border: 1px solid #e2e8f0;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .bank-card::before {
@@ -6714,6 +6716,8 @@ input[type="file"] {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #f1f5f9;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .bank-info-section {
@@ -6721,6 +6725,7 @@ input[type="file"] {
   align-items: center;
   gap: 1rem;
   flex: 1;
+  min-width: 200px;
 }
 
 .bank-icon {
@@ -6732,18 +6737,27 @@ input[type="file"] {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  min-width: 48px;
 }
 
 .bank-icon svg {
   color: #e31b7e;
+  width: 24px;
+  height: 24px;
+}
+
+.bank-name-info {
+  min-width: 0;
+  flex: 1;
 }
 
 .bank-name-info h3 {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 0.25rem 0;
   line-height: 1.2;
+  word-break: break-word;
 }
 
 .account-type-badge {
@@ -6754,19 +6768,21 @@ input[type="file"] {
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.85rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .status-badge .status-dot {
@@ -6877,6 +6893,7 @@ input[type="file"] {
 /* Detalles de la cuenta */
 .bank-card-details {
   margin-bottom: 1.5rem;
+  flex: 1;
 }
 
 .detail-row {
@@ -6896,55 +6913,61 @@ input[type="file"] {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #64748b;
-  min-width: 140px;
+  min-width: 110px;
   flex-shrink: 0;
 }
 
 .detail-label svg {
   color: #94a3b8;
+  width: 14px;
+  height: 14px;
 }
 
 .detail-value {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #0f172a;
   flex: 1;
-  word-break: break-all;
+  word-break: break-word;
 }
 
 .detail-value.account-number,
 .detail-value.clabe-number {
   font-family: 'Courier New', monospace;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: #475569;
+  font-size: 0.8rem;
 }
 
 /* Acciones de la tarjeta */
 .bank-card-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: auto;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.75rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   background: white;
   color: #64748b;
-  flex: 1;
-  min-width: 100px;
-  justify-content: center;
+  min-height: 38px;
+  flex-wrap: wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-btn:hover {

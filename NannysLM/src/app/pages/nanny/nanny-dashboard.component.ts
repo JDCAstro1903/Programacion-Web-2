@@ -133,9 +133,7 @@ export class NannyDashboardComponent implements OnInit {
     // Actualizar currentUser.name con el nombre real
     this.currentUser.name = userName || 'Niñera';
     
-    console.log('🔍 Nanny Constructor - currentUser completo:', currentUser);
-    console.log('🔍 Nanny Constructor - currentUser.profile_image:', currentUser?.profile_image);
-    
+  
     // Obtener la imagen de perfil con prioridad:
     // 1. Del localStorage (más reciente)
     // 2. Del objeto currentUser en memoria
@@ -144,31 +142,22 @@ export class NannyDashboardComponent implements OnInit {
     
     // Verificar localStorage primero
     const storedUser = localStorage.getItem('currentUser');
-    console.log('🔍 Nanny Constructor - storedUser en localStorage:', storedUser ? 'existe' : 'no existe');
     
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        console.log('🔍 Nanny Constructor - parsedUser:', parsedUser);
-        console.log('🔍 Nanny Constructor - parsedUser.profile_image:', parsedUser.profile_image);
-        
+       
         if (parsedUser.profile_image) {
           userAvatar = parsedUser.profile_image;
-          console.log('🖼️ Nanny Avatar desde localStorage:', userAvatar);
         }
       } catch (e) {
-        console.error('Error parseando usuario de localStorage:', e);
       }
     }
     
     // Si no hay en localStorage, usar del currentUser
     if (userAvatar === '/assets/logo.png' && currentUser?.profile_image) {
       userAvatar = currentUser.profile_image;
-      console.log('🖼️ Nanny Avatar desde currentUser:', userAvatar);
     }
-    
-    console.log('👤 Nanny Usuario actual completo:', currentUser);
-    console.log('📸 Nanny Avatar final seleccionado:', userAvatar);
     
     this.headerConfig = {
       userType: 'nanny',
@@ -179,7 +168,6 @@ export class NannyDashboardComponent implements OnInit {
       showLogoutOption: true
     };
     
-    console.log('✅ Nanny headerConfig final:', this.headerConfig);
   }
 
   ngOnInit() {
@@ -197,10 +185,8 @@ export class NannyDashboardComponent implements OnInit {
       next: (notifications) => {
         this.notifications = notifications;
         this.unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
-        console.log('📬 Notificaciones actualizadas:', this.notifications.length, 'No leídas:', this.unreadNotificationsCount);
       },
       error: (error) => {
-        console.error('❌ Error en suscripción de notificaciones:', error);
       }
     });
   }
@@ -230,7 +216,6 @@ export class NannyDashboardComponent implements OnInit {
   }
 
   onHeaderProfileClick() {
-    console.log('Navegando a perfil...');
   }
 
   // Métodos para el modal de logout
@@ -245,7 +230,6 @@ export class NannyDashboardComponent implements OnInit {
   confirmLogout() {
     this.showLogoutModal = false;
     this.router.navigate(['/']);
-    console.log('Nanny cerró sesión');
   }
 
   // Métodos para manejar servicios
@@ -282,7 +266,6 @@ export class NannyDashboardComponent implements OnInit {
       // Inicializar con datos del servicio
       this.selectedClient = { ...service };
       this.showClientModal = true;
-      console.log('Abriendo modal del cliente:', clientName, service);
       
       // Cargar datos completos del cliente incluyendo la imagen de perfil
       this.loadClientProfileImage(clientName);
@@ -295,20 +278,17 @@ export class NannyDashboardComponent implements OnInit {
                    this.services.past.find(s => s.client === clientName);
     
     if (!service || !service.client_user_id) {
-      console.warn('⚠️ No se encontró información del cliente');
       this.isLoadingClientData = false;
       return;
     }
 
     // Mostrar que estamos cargando
     this.isLoadingClientData = true;
-    console.log('🔍 Cargando información del cliente, user_id:', service.client_user_id);
 
     // Cargar información completa del cliente incluyendo la imagen de perfil
     this.clientService.getClientInfo(service.client_user_id).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          console.log('✅ Información del cliente cargada:', response.data);
           
           // Actualizar el cliente seleccionado con los datos completos incluyendo la imagen
           this.selectedClient = {
@@ -320,12 +300,10 @@ export class NannyDashboardComponent implements OnInit {
             emergencyPhone: response.data.emergency_contact_phone
           };
           
-          console.log('📸 Imagen de perfil del cliente:', this.selectedClient.profileImage);
         }
         this.isLoadingClientData = false;
       },
       error: (error) => {
-        console.error('❌ Error cargando información del cliente:', error);
         this.isLoadingClientData = false;
       }
     });
@@ -359,7 +337,6 @@ export class NannyDashboardComponent implements OnInit {
     const service = this.services.upcoming.find(s => s.id === serviceId);
     
     if (service) {
-      console.log('Navegando a detalles del servicio:', serviceId);
       this.router.navigate(['/nanny/service-details', serviceId]);
     }
   }
@@ -383,13 +360,11 @@ export class NannyDashboardComponent implements OnInit {
   loadNannyData() {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser || !currentUser.id) {
-      console.error('❌ No hay usuario logueado');
       // Aunque no haya datos, permitir que el componente se muestre
       return;
     }
 
     this.isLoadingNannyData = true;
-    console.log('📥 Cargando datos de nanny para user_id:', currentUser.id);
 
     this.nannyService.getNannyByUserId(currentUser.id).subscribe({
       next: (response) => {
@@ -397,8 +372,6 @@ export class NannyDashboardComponent implements OnInit {
           this.nannyData = response.data;
           this.nannyId = response.data.id;
           
-          console.log('✅ Respuesta completa de nanny:', response);
-          console.log('✅ Nanny ID obtenido:', this.nannyId);
           
           // Actualizar estadísticas
           this.stats = {
@@ -406,22 +379,15 @@ export class NannyDashboardComponent implements OnInit {
             totalServices: response.data.services_completed || 0,
             upcomingServices: 0 // Se actualizará con los servicios
           };
-
-          console.log('✅ Datos de nanny cargados:', this.nannyData);
-          console.log('✅ Stats actualizadas:', this.stats);
           
           // Cargar servicios
           this.loadNannyServices();
         } else {
-          console.warn('⚠️ No se encontraron datos de nanny');
-          console.warn('Respuesta:', response);
+
         }
         this.isLoadingNannyData = false;
       },
       error: (error) => {
-        console.error('❌ Error cargando datos de nanny:', error);
-        console.error('Detalles del error:', error.message || error);
-        console.error('Status:', error.status);
         
         // Establecer mensaje de error
         if (error.status === 0) {
@@ -440,18 +406,14 @@ export class NannyDashboardComponent implements OnInit {
 
   loadNannyServices() {
     if (!this.nannyId) {
-      console.error('❌ No hay nannyId disponible');
       return;
     }
 
     this.isLoadingServices = true;
-    console.log('📥 Cargando servicios de nanny:', this.nannyId);
 
     this.nannyService.getNannyServices(this.nannyId).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          console.log('✅ Servicios cargados desde BD:', response.data);
-          console.log('📊 Total de servicios:', response.data.length);
           
           // Separar servicios en upcoming y past
           const now = new Date();
@@ -461,12 +423,6 @@ export class NannyDashboardComponent implements OnInit {
           this.services.past = [];
 
           response.data.forEach((service: any) => {
-            console.log(`🔍 Procesando servicio ID ${service.id}:`, {
-              start_date: service.start_date,
-              status: service.status,
-              nanny_id: service.nanny_id,
-              client_name: `${service.client_first_name || ''} ${service.client_last_name || ''}`
-            });
 
             const serviceDate = new Date(service.start_date);
             const serviceStatus = service.status;
@@ -485,23 +441,13 @@ export class NannyDashboardComponent implements OnInit {
               client_user_id: service.client_user_id || undefined
             };
 
-            console.log(`📝 Servicio formateado:`, {
-              id: formattedService.id,
-              date: formattedService.dateDisplay,
-              status: formattedService.status,
-              isCompleted: serviceStatus === 'completed' || serviceDate < today,
-              isConfirmedOrPending: serviceStatus === 'confirmed' || serviceStatus === 'pending' || serviceStatus === 'in_progress'
-            });
 
             // Clasificar por fecha y estado
             if (serviceStatus === 'completed' || serviceDate < today) {
-              console.log(`  ➡️ Añadiendo a PAST`);
               this.services.past.push(formattedService);
             } else if (serviceStatus === 'confirmed' || serviceStatus === 'pending' || serviceStatus === 'in_progress') {
-              console.log(`  ➡️ Añadiendo a UPCOMING`);
               this.services.upcoming.push(formattedService);
             } else {
-              console.log(`  ⚠️ Status no reconocido: ${serviceStatus}`);
             }
           });
 
@@ -528,21 +474,11 @@ export class NannyDashboardComponent implements OnInit {
           // Actualizar contadores del sidebar
           this.updateSidebarCounts();
 
-          console.log('📊 Servicios procesados:', {
-            upcoming: this.services.upcoming.length,
-            past: this.services.past.length,
-            totalServices: this.stats.totalServices,
-            upcomingServices: this.stats.upcomingServices,
-            nextService: this.nextService
-          });
         } else {
-          console.warn('⚠️ Respuesta vacía o sin éxito:', response);
         }
         this.isLoadingServices = false;
       },
       error: (error) => {
-        console.error('❌ Error cargando servicios:', error);
-        this.loadError = `Error al cargar servicios: ${error.status} ${error.statusText}`;
         this.isLoadingServices = false;
       }
     });
@@ -560,17 +496,11 @@ export class NannyDashboardComponent implements OnInit {
   loadNotifications() {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser || !currentUser.id) {
-      console.error('❌ No hay usuario logueado');
       return;
     }
-
-    console.log('📥 Cargando notificaciones para user_id:', currentUser.id);
-    // El servicio ya maneja la carga automática, solo necesitamos suscribirnos
-    // La suscripción ya está en ngOnInit
   }
 
   handleNotificationClick(notification: Notification) {
-    console.log('🔔 Click en notificación:', notification);
     
     // Marcar como leída
     if (!notification.is_read) {
@@ -582,7 +512,6 @@ export class NannyDashboardComponent implements OnInit {
           }
         },
         error: (error) => {
-          console.error('❌ Error marcando notificación como leída:', error);
         }
       });
     }
@@ -608,18 +537,15 @@ export class NannyDashboardComponent implements OnInit {
         if (response.success) {
           this.notifications.forEach(n => n.is_read = true);
           this.unreadNotificationsCount = 0;
-          console.log('✅ Todas las notificaciones marcadas como leídas');
         }
       },
       error: (error) => {
-        console.error('❌ Error marcando todas como leídas:', error);
       }
     });
   }
 
   // Manejo de error en la imagen de perfil del cliente
   onProfileImageError(event: any) {
-    console.warn('⚠️ Error cargando imagen de perfil del cliente');
     event.target.src = '/assets/logo.png';
   }
 }

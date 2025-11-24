@@ -83,7 +83,6 @@ export class AdminDashboardComponent implements OnInit {
           userAvatar = parsedUser.profile_image;
         }
       } catch (e) {
-        console.error('Error parseando usuario de localStorage:', e);
       }
     }
     
@@ -133,7 +132,6 @@ export class AdminDashboardComponent implements OnInit {
         this.isLoadingStats = false;
       },
       error: (error) => {
-        console.error('Error cargando estadísticas:', error);
         this.isLoadingStats = false;
       }
     });
@@ -141,11 +139,9 @@ export class AdminDashboardComponent implements OnInit {
 
   private loadNannys() {
     this.isLoadingNannys = true;
-    console.log('🔄 Iniciando carga de nannys...');
     // Usar el nuevo servicio de nanny que hace llamada a /api/v1/nannys
     this.nannyService.getAllNannys().subscribe({
       next: (response) => {
-        console.log('📦 Respuesta completa del backend:', response);
         if (response.success) {
           // Convertir campos numéricos que vienen como string desde MySQL
           this.nannysData = response.data.map((nanny: any) => ({
@@ -156,17 +152,13 @@ export class AdminDashboardComponent implements OnInit {
             total_ratings: Number(nanny.total_ratings),
             services_completed: Number(nanny.services_completed)
           }));
-          console.log('Nannys cargadas y convertidas:', this.nannysData);
           if (this.nannysData && this.nannysData.length > 0) {
-            console.log('Primera nanny:', this.nannysData[0]);
           }
         } else {
-          console.warn('Backend respondió pero success=false');
         }
         this.isLoadingNannys = false;
       },
       error: (error) => {
-        console.error('Error cargando nannys:', error);
         this.isLoadingNannys = false;
       }
     });
@@ -178,12 +170,10 @@ export class AdminDashboardComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.clientsData = response.data;
-          console.log('Clientes cargados:', this.clientsData.length);
         }
         this.isLoadingClients = false;
       },
       error: (error) => {
-        console.error('❌ Error cargando clientes:', error);
         this.isLoadingClients = false;
       }
     });
@@ -195,12 +185,10 @@ export class AdminDashboardComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.paymentsData = response.data;
-          console.log('Pagos cargados:', this.paymentsData.length);
         }
         this.isLoadingPayments = false;
       },
       error: (error) => {
-        console.error('Error cargando pagos:', error);
         this.isLoadingPayments = false;
       }
     });
@@ -212,13 +200,11 @@ export class AdminDashboardComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.datosBancarios = response.data;
-          console.log('Datos bancarios cargados:', this.datosBancarios.length);
           this.updateSidebarCounts();
         }
         this.isLoadingBankDetails = false;
       },
       error: (error) => {
-        console.error('Error cargando datos bancarios:', error);
         this.isLoadingBankDetails = false;
       }
     });
@@ -357,7 +343,6 @@ export class AdminDashboardComponent implements OnInit {
 
   // Métodos de navegación
   setCurrentView(view: string) {
-    console.log('Cambiando a vista:', view);
     this.currentView = view;
   }
 
@@ -375,11 +360,9 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   onHeaderProfileClick() {
-    console.log('Navegando a perfil...');
   }
 
   onNotificationClick(notification: any) {
-    console.log('🔔 Notificación clickeada en admin:', notification);
     // Aquí puedes manejar el clic en la notificación si es necesario
     // Por ejemplo, navegar a una sección específica o abrir un modal
   }
@@ -427,7 +410,6 @@ export class AdminDashboardComponent implements OnInit {
 
   // Obtener nannys según el filtro actual
   getCurrentNannys() {
-      console.log('Filtro actual de nannys:', this.nannyFilter);
       
       if (!this.nannysData || this.nannysData.length === 0) {
         return [];
@@ -457,7 +439,6 @@ export class AdminDashboardComponent implements OnInit {
       );
     }
     
-    console.log(`Nannys filtradas (${this.nannyFilter}):`, filtered.length);
     
     return filtered;
   }
@@ -680,7 +661,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   getVerifiedNannysWithBankCount(): number {
-    return this.datosBancarios.filter(datos => datos.nanny.status === 'active').length;
+    return this.datosBancarios.filter(datos => datos.isPrimary).length;
   }
 
   // Método para ocultar número de cuenta (mostrar solo últimos 4 dígitos)
@@ -694,18 +675,28 @@ export class AdminDashboardComponent implements OnInit {
   // Métodos para manejar datos bancarios
   openBankDetailsModal(bankData?: any) {
     if (bankData) {
-      this.selectedBankData = { ...bankData };
+      // Convertir propiedades a camelCase si vienen en snake_case
+      this.selectedBankData = {
+        id: bankData.id,
+        accountHolderName: bankData.accountHolderName || bankData.account_holder_name || '',
+        bankName: bankData.bankName || bankData.bank_name || '',
+        accountNumber: bankData.accountNumber || bankData.account_number || '',
+        clabe: bankData.clabe || '',
+        accountType: bankData.accountType || bankData.account_type || 'checking',
+        isPrimary: bankData.isPrimary !== undefined ? bankData.isPrimary : (bankData.is_primary || false),
+        isActive: bankData.isActive !== undefined ? bankData.isActive : (bankData.is_active !== undefined ? bankData.is_active : true)
+      };
       this.editingBankData = true;
     } else {
       this.selectedBankData = {
         id: null,
-        nanny_id: null,
-        account_holder_name: '',
-        bank_name: '',
-        account_number: '',
+        accountHolderName: '',
+        bankName: '',
+        accountNumber: '',
         clabe: '',
-        account_type: 'ahorro',
-        is_active: true
+        accountType: 'checking',
+        isPrimary: false,
+        isActive: true
       };
       this.editingBankData = false;
     }
@@ -722,46 +713,41 @@ export class AdminDashboardComponent implements OnInit {
     if (this.editingBankData) {
       // Actualizar datos existentes
       this.bankDetailsService.updateBankDetails(this.selectedBankData.id, {
-        accountHolderName: this.selectedBankData.account_holder_name,
-        bankName: this.selectedBankData.bank_name,
-        accountNumber: this.selectedBankData.account_number,
+        accountHolderName: this.selectedBankData.accountHolderName,
+        bankName: this.selectedBankData.bankName,
+        accountNumber: this.selectedBankData.accountNumber,
         clabe: this.selectedBankData.clabe,
-        accountType: this.selectedBankData.account_type,
-        isPrimary: this.selectedBankData.is_primary,
-        isActive: this.selectedBankData.is_active
+        accountType: this.selectedBankData.accountType,
+        isPrimary: this.selectedBankData.isPrimary,
+        isActive: this.selectedBankData.isActive
       }).subscribe({
         next: (response) => {
           if (response.success) {
-            console.log('Datos bancarios actualizados');
             this.loadBankDetails();
             this.closeBankDetailsModal();
           }
         },
         error: (error) => {
-          console.error('Error actualizando datos bancarios:', error);
         }
       });
     } else {
       // Crear nuevos datos
       this.bankDetailsService.createBankDetails({
-        nannyId: this.selectedBankData.nanny_id,
-        accountHolderName: this.selectedBankData.account_holder_name,
-        bankName: this.selectedBankData.bank_name,
-        accountNumber: this.selectedBankData.account_number,
+        accountHolderName: this.selectedBankData.accountHolderName,
+        bankName: this.selectedBankData.bankName,
+        accountNumber: this.selectedBankData.accountNumber,
         clabe: this.selectedBankData.clabe,
-        accountType: this.selectedBankData.account_type,
-        isPrimary: this.selectedBankData.is_primary,
-        isActive: this.selectedBankData.is_active
+        accountType: this.selectedBankData.accountType,
+        isPrimary: this.selectedBankData.isPrimary,
+        isActive: this.selectedBankData.isActive
       }).subscribe({
         next: (response) => {
           if (response.success) {
-            console.log('Datos bancarios creados');
             this.loadBankDetails();
             this.closeBankDetailsModal();
           }
         },
         error: (error) => {
-          console.error('Error creando datos bancarios:', error);
         }
       });
     }
@@ -772,12 +758,10 @@ export class AdminDashboardComponent implements OnInit {
       this.bankDetailsService.deleteBankDetails(id).subscribe({
         next: (response) => {
           if (response.success) {
-            console.log('Datos bancarios eliminados');
             this.loadBankDetails();
           }
         },
         error: (error) => {
-          console.error('Error eliminando datos bancarios:', error);
         }
       });
     }
@@ -787,22 +771,17 @@ export class AdminDashboardComponent implements OnInit {
     this.bankDetailsService.toggleActiveStatus(id).subscribe({
       next: (response) => {
         if (response.success) {
-          console.log('Estado actualizado');
           this.loadBankDetails();
         }
       },
       error: (error) => {
-        console.error('Error actualizando estado:', error);
       }
     });
   }
 
-  // Obtener nannys disponibles para agregar datos bancarios
-  getAvailableNannysForBankData() {
-    const allNannys = this.nannysData || [];
-    const nannysWithBankData = this.datosBancarios.filter((d: any) => d.es_activa).map((d: any) => d.nanny_id);
-    
-    return allNannys.filter((nanny: Nanny) => !nannysWithBankData.includes(nanny.id));
+  // Obtener información de datos bancarios disponibles
+  getAvailableBankDataCount() {
+    return this.datosBancarios.length;
   }
 
   // Métodos para el modal de logout
@@ -818,7 +797,6 @@ export class AdminDashboardComponent implements OnInit {
     this.showLogoutModal = false;
     // Navegar a la selección de usuario
     this.router.navigate(['/']);
-    console.log('Usuario cerró sesión');
   }
 
   // Métodos para el modal de agregar nanny
@@ -857,7 +835,6 @@ export class AdminDashboardComponent implements OnInit {
   onSubmitAddNanny(form: any) {
     if (form.valid && !this.isSubmitting) {
       this.isSubmitting = true;
-      console.log('Creando nueva nanny:', this.newNannyData);
       
       // Generar una contraseña aleatoria segura
       const password = this.generateRandomPassword(12);
@@ -872,7 +849,6 @@ export class AdminDashboardComponent implements OnInit {
       this.nannyService.createNanny(createNannyPayload).subscribe({
         next: (response) => {
           if (response.success) {
-            console.log('Nanny creada exitosamente:', response.data);
             
             // Cerrar modal
             this.closeAddNannyModal();
@@ -886,7 +862,6 @@ export class AdminDashboardComponent implements OnInit {
           this.isSubmitting = false;
         },
         error: (error) => {
-          console.error('Error creando nanny:', error);
           alert(`Error al crear la nanny:\n${error.error?.message || error.message}`);
           this.isSubmitting = false;
         }
@@ -1125,7 +1100,6 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   viewNannyProfile(nannyId: number) {
-    console.log('Ver perfil de nanny - ID:', nannyId);
     
     // Buscar la nanny en el array de nannys
     const nanny = this.nannysData.find(n => n.id === nannyId);
@@ -1153,14 +1127,12 @@ export class AdminDashboardComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.nannyRatings = response.data || [];
-          console.log(`⭐ Se cargaron ${this.nannyRatings.length} ratings para nanny ${nannyId}`, this.nannyRatings);
         } else {
           this.nannyRatings = [];
         }
         this.isLoadingNannyRatings = false;
       },
       error: (error) => {
-        console.error('Error cargando ratings:', error);
         this.nannyRatings = [];
         this.isLoadingNannyRatings = false;
       }
@@ -1168,7 +1140,6 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   contactNanny(nannyId: number) {
-    console.log('Contactar nanny:', nannyId);
     // Aquí podrías implementar la funcionalidad de contacto
   }
 
@@ -1177,17 +1148,14 @@ export class AdminDashboardComponent implements OnInit {
    */
   changeNannyStatus(nanny: any, newStatus: 'active' | 'inactive' | 'suspended') {
     if (!nanny || !nanny.id) {
-      console.error('❌ Nanny inválida');
       return;
     }
 
     const currentStatus = nanny.status;
     if (currentStatus === newStatus) {
-      console.log('⚠️ El status ya es:', newStatus);
       return;
     }
 
-    console.log(`🔄 Cambiando estado de nanny ${nanny.id} de ${currentStatus} a ${newStatus}...`);
 
     // Llamar a servicio para actualizar el status
     this.nannyService.updateNannyStatus(nanny.id, newStatus).subscribe({
@@ -1202,7 +1170,6 @@ export class AdminDashboardComponent implements OnInit {
           // Recargar datos
           this.loadNannys();
 
-          console.log(`✅ Status actualizado a: ${newStatus}`);
           this.openVerificationResultModal(
             'success',
             'Estado Actualizado',
@@ -1211,7 +1178,6 @@ export class AdminDashboardComponent implements OnInit {
         }
       },
       error: (error: any) => {
-        console.error('❌ Error al cambiar status:', error);
         this.openVerificationResultModal(
           'error',
           'Error',
@@ -1373,11 +1339,9 @@ export class AdminDashboardComponent implements OnInit {
   openVerifyDocumentModal(client: any) {
     this.selectedClientForVerification = client;
     this.showVerifyDocumentModal = true;
-    console.log('📄 Abriendo modal de verificación para cliente:', client);
   }
 
   viewClientProfile(client: any) {
-    console.log('👁️ Viendo perfil del cliente:', client);
     this.selectedClientProfile = client;
     this.showClientProfileModal = true;
   }
@@ -1458,7 +1422,6 @@ export class AdminDashboardComponent implements OnInit {
   async approveClientVerification(client: any) {
     this.isVerifyingDocument = true;
     try {
-      console.log('Aprobando verificación del cliente:', client.id);
       
       const token = this.authService.getToken();
       if (!token) {
@@ -1500,7 +1463,6 @@ export class AdminDashboardComponent implements OnInit {
       }
       
     } catch (error) {
-      console.error('Error al aprobar verificación:', error);
       this.openVerificationResultModal(
         'error',
         'Error en la Verificación',
@@ -1516,7 +1478,6 @@ export class AdminDashboardComponent implements OnInit {
   async rejectClientVerification(client: any) {
     this.isVerifyingDocument = true;
     try {
-      console.log('Rechazando verificación del cliente:', client.id);
       
       const token = this.authService.getToken();
       if (!token) {
@@ -1557,7 +1518,6 @@ export class AdminDashboardComponent implements OnInit {
       }
       
     } catch (error) {
-      console.error('❌ Error al rechazar verificación:', error);
       this.openVerificationResultModal(
         'error',
         'Error en el Rechazo',
@@ -1658,11 +1618,9 @@ export class AdminDashboardComponent implements OnInit {
    */
   viewPaymentReceipt(payment: any) {
     if (!payment.receipt_url) {
-      console.warn('⚠️ No hay comprobante disponible para este pago');
       return;
     }
     
-    console.log('📄 Mostrando comprobante de pago:', payment.receipt_url);
     this.selectedReceiptPayment = payment;
     this.showReceiptModal = true;
   }
@@ -1672,16 +1630,13 @@ export class AdminDashboardComponent implements OnInit {
    */
   approvePayment(payment: any) {
     if (!this.paymentService) {
-      console.error('❌ PaymentService no está disponible');
       return;
     }
 
-    console.log('✅ Aprobando pago:', payment.id);
     
     // Llamar al servicio para verificar el pago
     this.paymentService.verifyPayment(payment.id, 'approve', 'Comprobante verificado correctamente').subscribe({
       next: (response: any) => {
-        console.log('✅ Pago aprobado:', response);
         
         // Mostrar modal de éxito
         alert('✅ Pago aprobado exitosamente. La niñera recibirá el monto correspondiente.');
@@ -1690,8 +1645,6 @@ export class AdminDashboardComponent implements OnInit {
         this.loadPayments();
       },
       error: (error: any) => {
-        console.error('❌ Error al aprobar pago:', error);
-        alert('❌ Error al aprobar el pago: ' + (error.error?.message || error.message));
       }
     });
   }
@@ -1703,63 +1656,25 @@ export class AdminDashboardComponent implements OnInit {
     const reason = prompt('Por favor, proporciona una razón para rechazar este pago:');
     
     if (!reason) {
-      console.log('❌ Rechazo cancelado');
       return;
     }
 
     if (!this.paymentService) {
-      console.error('❌ PaymentService no está disponible');
       return;
     }
 
-    console.log('❌ Rechazando pago:', payment.id);
     
     // Llamar al servicio para rechazar el pago
     this.paymentService.verifyPayment(payment.id, 'reject', reason).subscribe({
       next: (response: any) => {
-        console.log('✅ Pago rechazado:', response);
-        
-        // Mostrar modal de éxito
-        alert('❌ Pago rechazado. El cliente será notificado para enviar un nuevo comprobante.');
         
         // Recargar los pagos
         this.loadPayments();
       },
       error: (error: any) => {
-        console.error('❌ Error al rechazar pago:', error);
-        alert('❌ Error al rechazar el pago: ' + (error.error?.message || error.message));
       }
     });
   }
 
-  /**
-   * Generar recibo de pago
-   */
-  generateReceipt(payment: any) {
-    console.log('🧾 Generando recibo de pago:', payment.id);
-    
-    // Generar un recibo simple en PDF o mostrar una modal con los datos
-    const receiptText = `
-    ======================================
-    RECIBO DE PAGO
-    ======================================
-    Número de Pago: #${payment.id}
-    Fecha: ${new Date(payment.payment_date).toLocaleDateString()}
-    
-    Cliente: ${payment.client_id}
-    Niñera: ${payment.nanny_id}
-    Servicio ID: ${payment.service_id}
-    
-    Monto Total: $${payment.amount.toFixed(2)} MXN
-    Comisión Plataforma: $${payment.platform_fee.toFixed(2)} MXN
-    Monto para Niñera: $${payment.nanny_amount.toFixed(2)} MXN
-    
-    Estado: ${payment.payment_status}
-    ======================================
-    `;
-    
-    // Copiar al portapapeles o mostrar en modal
-    console.log('📋 Recibo generado:', receiptText);
-    alert(receiptText);
-  }
+ 
 }

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const RatingController = require('../controllers/RatingController');
-const auth = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 /**
  * POST /api/v1/ratings - Crear nueva calificación
  */
-router.post('/', auth, RatingController.createRating);
+router.post('/', verifyToken, RatingController.createRating);
 
 /**
  * GET /api/v1/ratings - Obtener calificaciones de una nanny (por query param nannyId)

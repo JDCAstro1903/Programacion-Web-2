@@ -2729,16 +2729,13 @@ CLABE: 014320123456789012
         if (nannyBankDetail) {
           console.log('✅ Datos bancarios encontrados:', nannyBankDetail);
           
-          // Mapear de camelCase (API) a snake_case (template)
           this.currentBankData = {
-            nanny_nombre: nannyBankDetail.nanny.name || 'Nanny',
             banco: nannyBankDetail.bankName,
             numero_cuenta: nannyBankDetail.accountNumber,
             numero_cuenta_oculto: this.maskAccountNumber(nannyBankDetail.accountNumber),
             clabe: nannyBankDetail.clabe || 'N/A',
             nombre_titular: nannyBankDetail.accountHolderName,
             tipo_cuenta: nannyBankDetail.accountType === 'checking' ? 'corriente' : 
-                        nannyBankDetail.accountType === 'savings' ? 'ahorro' : 
                         nannyBankDetail.accountType,
             es_activa: nannyBankDetail.isActive
           };
