@@ -1656,59 +1656,74 @@ app-sidebar {
 @media (max-width: 768px) {
   /* Layout en columna para móvil */
   .main-layout {
-    flex-direction: column;
+    flex-direction: row;
+    width: 100%;
+    height: calc(100vh - 70px);
+    overflow: hidden;
   }
 
   .main-content {
     padding: 1.25rem;
     flex: 1;
+    width: calc(100% - 280px);
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
-  /* Sidebar arriba en móvil */
+  /* Sidebar a la izquierda en móvil */
   app-sidebar {
-    order: -1;
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    width: 280px;
+    height: 100%;
+    overflow-y: auto;
+    border-right: 1px solid #e2e8f0;
+    order: 0;
   }
 
   app-sidebar ::ng-deep {
     .sidebar-container {
-      flex-direction: row;
-      height: auto;
-      overflow-x: auto;
-      overflow-y: hidden;
+      flex-direction: column;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .sidebar-items {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       gap: 0;
       width: 100%;
       height: auto;
     }
 
     .sidebar-item {
-      flex: 1;
-      min-width: 100px;
+      flex: 0;
+      min-width: auto;
       height: auto;
-      border-right: 1px solid #e2e8f0;
+      border-right: none;
+      border-bottom: 1px solid #e2e8f0;
       padding: 1rem 0.75rem;
-      text-align: center;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
     .sidebar-item.active {
-      border-right: 1px solid #e2e8f0;
-      border-bottom: 3px solid #e31b7e;
+      border-right: 3px solid #e31b7e;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fef7ff;
     }
 
     .sidebar-item-icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.25rem;
+      font-size: 1.2rem;
+      margin-bottom: 0;
+      min-width: 24px;
     }
 
     .sidebar-item-label {
-      font-size: 0.75rem;
-      display: block;
+      font-size: 0.9rem;
+      display: inline;
     }
   }
 
@@ -1921,12 +1936,73 @@ app-sidebar {
 
 /* Móviles pequeños (hasta 480px) */
 @media (max-width: 480px) {
-  .main-content {
-    padding: 1rem;
+  .main-layout {
+    flex-direction: column;
+    height: auto;
   }
 
+  .main-content {
+    padding: 1rem;
+    width: 100%;
+    height: auto;
+  }
+
+  app-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  app-sidebar ::ng-deep {
+    .sidebar-container {
+      flex-direction: row;
+      height: auto;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .sidebar-items {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      width: 100%;
+      height: auto;
+    }
+
+    .sidebar-item {
+      flex: 1;
+      min-width: 80px;
+      height: auto;
+      border-right: 1px solid #e2e8f0;
+      border-bottom: none;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .sidebar-item.active {
+      border-right: 1px solid #e2e8f0;
+      border-bottom: 3px solid #e31b7e;
+      border-right: none;
+    }
+
+    .sidebar-item-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .sidebar-item-label {
+      font-size: 0.7rem;
+      display: block;
+    }
+  }
+
+  /* Estilos adicionales para 480px */
   .nanny-header {
     padding: 0.5rem 0.75rem;
+    height: 60px;
   }
 
   .content-header {
@@ -1997,15 +2073,5 @@ app-sidebar {
 
   .client-modal-content {
     width: 98vw;
-  }
-
-  app-sidebar ::ng-deep {
-    .sidebar-item {
-      padding: 0.75rem 0.5rem;
-    }
-
-    .sidebar-item-label {
-      font-size: 0.7rem;
-    }
   }
 }

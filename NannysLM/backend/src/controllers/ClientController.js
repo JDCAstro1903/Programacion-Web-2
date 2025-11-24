@@ -120,14 +120,19 @@ class ClientController {
    */
   static async getClientInfo(req, res) {
     try {
-      const userId = req.user.id;
+      // Si se proporciona userId en query, usar ese (para niñeras que ven info de clientes)
+      // Si no, usar el ID del usuario autenticado (para clientes que ven su propia info)
+      const targetUserId = req.query.userId ? parseInt(req.query.userId) : req.user.id;
+      const authenticatedUserId = req.user.id;
+      const authenticatedUserType = req.user.user_type;
 
-      // Verificar que el usuario sea cliente
-      const user = await UserModel.findById(userId);
-      if (!user || user.user_type !== 'client') {
+      // Verificar permisos: 
+      // - Clientes solo pueden ver su propia info
+      // - Niñeras pueden ver info de sus clientes
+      if (authenticatedUserType === 'client' && targetUserId !== authenticatedUserId) {
         return res.status(403).json({
           success: false,
-          message: 'Acceso denegado. Solo clientes pueden acceder a esta información'
+          message: 'Acceso denegado. Solo puedes ver tu propia información'
         });
       }
 
@@ -148,7 +153,7 @@ class ClientController {
         WHERE c.user_id = ?
       `;
 
-      const result = await executeQuery(clientQuery, [userId]);
+      const result = await executeQuery(clientQuery, [targetUserId]);
 
       if (result.success && result.data.length > 0) {
         const clientData = result.data[0];
