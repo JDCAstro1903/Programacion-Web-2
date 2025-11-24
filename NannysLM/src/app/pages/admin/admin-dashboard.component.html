@@ -2239,62 +2239,6 @@
           </div>
         </div>
 
-        <!-- Cuarta fila: Calificaciones Detalladas -->
-        <div class="profile-card-pro full-width" *ngIf="nannyRatings && nannyRatings.length > 0">
-          <div class="card-header-pro">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <polyline points="13 2 13 9 20 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <h3>Calificaciones ({{ nannyRatings.length }})</h3>
-          </div>
-          <div class="card-content-pro">
-            <div class="ratings-list">
-              <div *ngFor="let rating of nannyRatings" class="rating-item">
-                <div class="rating-header">
-                  <div class="rater-info">
-                    <h4>{{ rating.client_first_name }} {{ rating.client_last_name }}</h4>
-                    <p class="service-title">{{ rating.service_title }}</p>
-                  </div>
-                  <div class="rating-score">
-                    <div class="rating-stars">
-                      <span *ngFor="let i of [1,2,3,4,5]" class="star-mini" [class.filled]="i <= rating.rating">★</span>
-                    </div>
-                    <span class="rating-number">{{ rating.rating }}/5</span>
-                  </div>
-                </div>
-                
-                <div class="rating-details-grid" *ngIf="rating.punctuality_rating || rating.communication_rating || rating.care_quality_rating">
-                  <div class="detail-box" *ngIf="rating.punctuality_rating">
-                    <span class="detail-label">Puntualidad</span>
-                    <span class="detail-value">{{ rating.punctuality_rating }}/5</span>
-                  </div>
-                  <div class="detail-box" *ngIf="rating.communication_rating">
-                    <span class="detail-label">Comunicación</span>
-                    <span class="detail-value">{{ rating.communication_rating }}/5</span>
-                  </div>
-                  <div class="detail-box" *ngIf="rating.care_quality_rating">
-                    <span class="detail-label">Calidad de Cuidado</span>
-                    <span class="detail-value">{{ rating.care_quality_rating }}/5</span>
-                  </div>
-                  <div class="detail-box" *ngIf="rating.would_recommend">
-                    <span class="detail-label">Recomendación</span>
-                    <span class="detail-value">✓ Sí</span>
-                  </div>
-                </div>
-
-                <div class="rating-review" *ngIf="rating.review">
-                  <p>{{ rating.review }}</p>
-                </div>
-
-                <div class="rating-date">
-                  <small>{{ rating.created_at | date:'short' }}</small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Estado vacío de calificaciones -->
         <div class="profile-card-pro full-width" *ngIf="!isLoadingNannyRatings && (!nannyRatings || nannyRatings.length === 0)">
           <div class="card-content-pro">
