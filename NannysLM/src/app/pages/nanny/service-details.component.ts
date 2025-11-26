@@ -126,9 +126,9 @@ export class ServiceDetailsComponent implements OnInit {
           console.log('✅ Servicio aceptado exitosamente');
           this.acceptSuccess = true;
           
-          // Redirigir al dashboard después de 2 segundos
+          // Redirigir a la pestaña de servicios después de 2 segundos
           setTimeout(() => {
-            this.router.navigate(['/nanny/dashboard']);
+            this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services' } });
           }, 2000);
         } else {
           this.acceptError = response.message || 'No se pudo aceptar el servicio';
@@ -144,8 +144,8 @@ export class ServiceDetailsComponent implements OnInit {
   }
 
   declineService() {
-    // Simplemente redirigir al dashboard sin aceptar
-    this.router.navigate(['/nanny/dashboard']);
+    // Redirigir a la pestaña de servicios
+    this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services' } });
   }
 
   getServiceTypeName(type: string): string {
@@ -219,9 +219,9 @@ export class ServiceDetailsComponent implements OnInit {
             this.service.status = 'completed';
           }
           
-          // Redirigir al dashboard después de 2 segundos
+          // Redirigir a la pestaña de servicios después de 2 segundos
           setTimeout(() => {
-            this.router.navigate(['/nanny/dashboard']);
+            this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services' } });
           }, 2000);
         } else {
           this.completeError = response.message || 'No se pudo completar el servicio';

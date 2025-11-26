@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { HeaderComponent, HeaderConfig } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
@@ -99,6 +99,7 @@ export class NannyDashboardComponent implements OnInit {
   constructor(
     private userConfigService: UserConfigService, 
     private router: Router,
+    private route: ActivatedRoute,
     private authService: AuthService,
     private notificationService: NotificationService,
     private nannyService: NannyService,
@@ -176,6 +177,13 @@ export class NannyDashboardComponent implements OnInit {
     
     // Cargar notificaciones
     this.loadNotifications();
+    
+    // Revisar si hay un parámetro de vista en la URL
+    this.route.queryParams.subscribe(params => {
+      if (params['view']) {
+        this.currentView = params['view'];
+      }
+    });
     
     // Iniciar polling de notificaciones cada 30 segundos
     this.notificationService.startPolling();

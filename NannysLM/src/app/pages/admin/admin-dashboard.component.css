@@ -1185,6 +1185,34 @@
   justify-content: flex-start;
 }
 
+/* Mobile responsive para filtros */
+@media (max-width: 768px) {
+  .modern-filter-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    gap: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-title {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .modern-filter-section {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .filter-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+  }
+}
+
 .filter-tabs-container {
   display: flex;
   gap: 2.5rem;
@@ -1325,11 +1353,13 @@
   overflow: hidden;
   transition: max-height 0.4s ease;
   margin-top: 0;
+  width: 100%;
 }
 
 .date-filter-section.expanded {
   max-height: 1200px;
   overflow: visible;
+  margin-top: 1.5rem;
 }
 
 .date-filter-content {
@@ -1337,6 +1367,25 @@
   background: #fef7ff;
   border-radius: 12px;
   border: 1px solid rgba(227, 27, 126, 0.2);
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .date-filter-content {
+    padding: 1rem;
+    background: transparent;
+    border: none;
+  }
+
+  .date-filter-content h4 {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .date-filter-content {
+    padding: 0.75rem 0;
+  }
 }
 
 .date-filter-content h4 {
@@ -1357,6 +1406,19 @@
   margin-bottom: 1.5rem;
 }
 
+@media (max-width: 768px) {
+  .date-filter-tabs {
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .date-filter-tabs {
+    gap: 0.4rem;
+  }
+}
+
 .date-filter-btn {
   padding: 0.75rem 1.25rem;
   background: white;
@@ -1371,6 +1433,31 @@
   align-items: center;
   gap: 0.5rem;
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .date-filter-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  .date-filter-btn .filter-count {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.3rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .date-filter-btn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .date-filter-btn .filter-label {
+    font-size: 0.8rem;
+  }
 }
 
 .date-filter-btn:hover {
@@ -1690,6 +1777,10 @@
   background: #f59e0b;
 }
 
+.payment-status-indicator.status-processing {
+  background: #f59e0b;
+}
+
 .payment-status-indicator.status-failed {
   background: #ef4444;
 }
@@ -1734,7 +1825,12 @@
 }
 
 .payment-badge.status-pending {
-  background: #fef3c7;
+  background: #fed7aa;
+  color: #92400e;
+}
+
+.payment-badge.status-processing {
+  background: #fed7aa;
   color: #92400e;
 }
 
@@ -2002,6 +2098,12 @@
 .status-badge.pending,
 .status-text.status-busy,
 .status-text.status-pending {
+  background: #f59e0b;
+  color: white;
+}
+
+.status-badge.processing,
+.status-text.status-processing {
   background: #f59e0b;
   color: white;
 }
@@ -7382,6 +7484,285 @@ input[type="file"] {
   .stat-label {
     font-size: 0.65rem;
     letter-spacing: 0.5px;
+  }
+}
+
+/* Modal de Confirmación de Estado de Nanny */
+.status-confirmation-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  animation: modalSlideIn 0.3s ease;
+}
+
+.status-confirmation-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px 35px;
+  position: relative;
+  overflow: visible;
+  min-height: 220px;
+}
+
+.status-confirmation-header.green {
+  background: #10B981;
+}
+
+.status-confirmation-header.red {
+  background: #EF4444;
+}
+
+.status-confirmation-header.yellow {
+  background: #FBBF24;
+}
+
+.status-confirmation-header h2 {
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  text-align: center;
+  line-height: 1.4;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  letter-spacing: -0.3px;
+  max-width: 100%;
+}
+
+.status-confirmation-body {
+  padding: 45px 40px 50px;
+  text-align: center;
+  background: white;
+  flex: 1;
+}
+
+.status-confirmation-body p {
+  margin: 0;
+  font-size: 16px;
+  color: #64748b;
+  line-height: 1.7;
+  font-weight: 500;
+}
+
+.status-confirmation-footer {
+  padding: 25px 40px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 20px 20px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-confirm-status {
+  padding: 12px 32px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 130px;
+}
+
+.btn-confirm-status.green {
+  background: #10B981;
+  color: white;
+}
+
+.btn-confirm-status.green:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+}
+
+.btn-confirm-status.red {
+  background: #EF4444;
+  color: white;
+}
+
+.btn-confirm-status.red:hover {
+  background: #DC2626;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+}
+
+.btn-confirm-status.yellow {
+  background: #FBBF24;
+  color: #78350f;
+}
+
+.btn-confirm-status.yellow:hover {
+  background: #F59E0B;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(251, 191, 36, 0.3);
+}
+
+.btn-cancel-status {
+  padding: 12px 32px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #64748b;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 130px;
+}
+
+.btn-cancel-status:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+}
+
+/* ===========================
+   RESPONSIVE FILTER DROPDOWN
+   =========================== */
+
+/* Desktop: Mostrar botones */
+.tabs-desktop {
+  display: flex !important;
+}
+
+.tabs-mobile {
+  display: none !important;
+}
+
+/* Mobile: Mostrar dropdown y filtros por fecha, ocultar botones de estado */
+@media (max-width: 768px) {
+  /* Ocultar botones de estado pero mantener toggle de fecha */
+  .tabs-desktop {
+    display: none !important;
+  }
+
+  /* Mostrar solo el toggle de filtros por fecha en pagos */
+  .payments-view .toggle-date-filters-btn {
+    display: flex !important;
+    margin-bottom: 2.75rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f1f5f9;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tabs-mobile {
+    display: flex !important;
+    margin-bottom: 2.75rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f1f5f9;
+    position: relative;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .filter-dropdown-wrapper {
+    margin-bottom: 2.75rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f1f5f9;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .filter-dropdown {
+    flex: 1;
+    padding: 1rem 1.6rem 1rem 1.2rem;
+    padding-right: 2.8rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .filter-dropdown:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+    box-shadow: 0 4px 16px rgba(227, 27, 126, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .filter-dropdown:focus {
+    outline: none;
+    border-color: #e31b7e;
+    background: #fef7ff;
+    box-shadow: 0 4px 20px rgba(227, 27, 126, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .filter-dropdown option {
+    background: white;
+    color: #1e293b;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+  }
+
+  .dropdown-icon {
+    position: absolute;
+    right: 1.2rem;
+    color: #e31b7e;
+    pointer-events: none;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+}
+
+@media (max-width: 640px) {
+  .tabs-mobile {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .payments-view .toggle-date-filters-btn {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-dropdown-wrapper {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-dropdown {
+    font-size: 0.9rem;
+    padding: 0.9rem 1.2rem 0.9rem 1rem;
+    padding-right: 2.5rem;
+  }
+
+  .dropdown-icon {
+    width: 18px;
+    height: 18px;
+    right: 1rem;
   }
 }
 

@@ -1,6 +1,34 @@
 const nodemailer = require('nodemailer');
 
 /**
+ * Verificar si la configuración SMTP está disponible
+ */
+const isSMTPConfigured = () => {
+    return !!(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS);
+};
+
+/**
+ * Crear transporter de nodemailer con manejo de errores
+ */
+const createTransporter = () => {
+    try {
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT, 10),
+            secure: parseInt(process.env.SMTP_PORT, 10) === 465,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+        return transporter;
+    } catch (error) {
+        console.error('❌ Error al crear transporter SMTP:', error.message);
+        return null;
+    }
+};
+
+/**
  * Generar HTML profesional para correo de activación
  */
 const getActivationEmailTemplate = (toName, activationLink) => {
@@ -910,6 +938,453 @@ const sendVerificationRejectedEmail = async (toEmail, clientName) => {
     }
 };
 
+/**
+ * Obtener plantilla HTML para pago aprobado
+ */
+const getPaymentApprovedEmailTemplate = (clientName, serviceName, amount, nannyName) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tu Pago ha sido Aprobado</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); min-height: 100vh;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <!-- Contenedor principal -->
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                
+                <!-- Header con gradiente verde (aprobado) -->
+                <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">✓ Pago Aprobado</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Tu transacción ha sido procesada exitosamente</p>
+                </div>
+
+                <!-- Contenido principal -->
+                <div style="padding: 40px 30px;">
+                    
+                    <!-- Saludo personalizado -->
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">
+                        Hola <strong>${clientName}</strong>,
+                    </p>
+
+                    <!-- Mensaje principal -->
+                    <p style="margin: 0 0 30px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Nos complace informarte que tu pago ha sido aprobado y procesado correctamente por nuestro equipo. El servicio con <strong>${nannyName}</strong> está confirmado.
+                    </p>
+
+                    <!-- Ícono de confirmación -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block;">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#10B981" opacity="0.1"/>
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 12L11 14L15 10" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+
+                    <!-- Detalles del pago -->
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 12px 0; font-size: 13px; color: #047857; font-weight: 600;">Detalles del pago:</p>
+                        <div style="font-size: 13px; color: #047857; line-height: 1.8;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Servicio:</span>
+                                <strong>${serviceName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Nanny:</span>
+                                <strong>${nannyName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 8px; margin-top: 8px;">
+                                <span>Monto pagado:</span>
+                                <strong style="font-size: 16px;">$${parseFloat(amount).toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje adicional -->
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b; line-height: 1.6;">
+                        Puedes ver los detalles completos de tu pago en tu perfil. Si tienes alguna pregunta, no dudes en contactarnos.
+                    </p>
+
+                    <!-- Línea separadora -->
+                    <div style="height: 1px; background: #e2e8f0; margin: 30px 0;"></div>
+
+                    <!-- Información de seguridad -->
+                    <div style="background: #f0f9ff; border-left: 4px solid #1EB2E5; padding: 12px 16px; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 13px; color: #0c5460;">
+                            <strong>🔒 Privacidad:</strong> Nunca compartimos tu información de pago con terceros.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0 0 8px 0;">
+                        ¿Preguntas? Contáctanos en <a href="mailto:soporte@nannyslm.com" style="color: #10B981; text-decoration: none; font-weight: 600;">soporte@nannyslm.com</a>
+                    </p>
+                    <p style="margin: 0;">
+                        © 2025 NannysLM. Todos los derechos reservados.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Disclaimer -->
+            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px; line-height: 1.5;">
+                Este es un correo automático. Por favor no respondas a este mensaje.
+            </p>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Obtener plantilla HTML para pago rechazado
+ */
+const getPaymentRejectedEmailTemplate = (clientName, serviceName, amount, nannyName, reason = '') => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tu Pago ha sido Rechazado</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); min-height: 100vh;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <!-- Contenedor principal -->
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                
+                <!-- Header con gradiente rojo (rechazado) -->
+                <div style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">✗ Pago Rechazado</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Se encontraron problemas con tu pago</p>
+                </div>
+
+                <!-- Contenido principal -->
+                <div style="padding: 40px 30px;">
+                    
+                    <!-- Saludo personalizado -->
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">
+                        Hola <strong>${clientName}</strong>,
+                    </p>
+
+                    <!-- Mensaje principal -->
+                    <p style="margin: 0 0 30px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Lamentablemente, tu pago ha sido rechazado y no ha sido procesado. Te recomendamos revisar los detalles e intentar nuevamente.
+                    </p>
+
+                    <!-- Ícono de alerta -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block;">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#EF4444" opacity="0.1"/>
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 8V12" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 16H12.01" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+
+                    <!-- Detalles del pago -->
+                    <div style="background: #fef2f2; border-left: 4px solid #EF4444; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 12px 0; font-size: 13px; color: #991b1b; font-weight: 600;">Detalles del pago rechazado:</p>
+                        <div style="font-size: 13px; color: #991b1b; line-height: 1.8;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Servicio:</span>
+                                <strong>${serviceName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Nanny:</span>
+                                <strong>${nannyName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(239, 68, 68, 0.2); padding-top: 8px; margin-top: 8px;">
+                                <span>Monto:</span>
+                                <strong style="font-size: 16px;">$${parseFloat(amount).toFixed(2)}</strong>
+                            </div>
+                            ${reason ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(239, 68, 68, 0.2);"><p style="margin: 0 0 8px 0; font-weight: 600;">Motivo del rechazo:</p><p style="margin: 0;">${reason}</p></div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Próximos pasos -->
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b; line-height: 1.6; font-weight: 600;">
+                        Qué puedes hacer:
+                    </p>
+                    <ul style="margin: 0 0 20px 20px; font-size: 14px; color: #64748b; line-height: 1.8;">
+                        <li>Verifica que tus datos bancarios sean correctos</li>
+                        <li>Intenta nuevamente con otro método de pago</li>
+                        <li>Contacta a tu banco para más información</li>
+                    </ul>
+
+                    <!-- Botón de reintentar -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://nannyslm.com/payments" style="display: inline-block; background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                            Reintentar Pago
+                        </a>
+                    </div>
+
+                    <!-- Línea separadora -->
+                    <div style="height: 1px; background: #e2e8f0; margin: 30px 0;"></div>
+
+                    <!-- Información de soporte -->
+                    <div style="background: #fef3c7; border-left: 4px solid #FBBF24; padding: 12px 16px; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 13px; color: #78350f;">
+                            <strong>💬 Necesitas ayuda?</strong> Nuestro equipo de soporte está disponible para asistirte.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0 0 8px 0;">
+                        ¿Preguntas? Contáctanos en <a href="mailto:soporte@nannyslm.com" style="color: #EF4444; text-decoration: none; font-weight: 600;">soporte@nannyslm.com</a>
+                    </p>
+                    <p style="margin: 0;">
+                        © 2025 NannysLM. Todos los derechos reservados.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Disclaimer -->
+            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px; line-height: 1.5;">
+                Este es un correo automático. Por favor no respondas a este mensaje.
+            </p>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Obtener plantilla HTML para notificación de nuevo pago (para admin)
+ */
+const getNewPaymentNotificationEmailTemplate = (adminName, clientName, serviceName, amount, nannyName) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nuevo Pago Recibido</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); min-height: 100vh;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <!-- Contenedor principal -->
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                
+                <!-- Header con gradiente azul/rosa (admin) -->
+                <div style="background: linear-gradient(135deg, #1EB2E5 0%, #E31B7E 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">💰 Nuevo Pago Recibido</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Requiere revisión de administrador</p>
+                </div>
+
+                <!-- Contenido principal -->
+                <div style="padding: 40px 30px;">
+                    
+                    <!-- Saludo personalizado -->
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">
+                        Hola <strong>${adminName}</strong>,
+                    </p>
+
+                    <!-- Mensaje principal -->
+                    <p style="margin: 0 0 30px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Se ha recibido un nuevo pago pendiente de verificación. Por favor revisa los detalles y aprueba o rechaza el pago según corresponda.
+                    </p>
+
+                    <!-- Ícono de notificación -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block;">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#1EB2E5" opacity="0.1"/>
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" stroke="#1EB2E5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 7V13" stroke="#1EB2E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 17H12.01" stroke="#1EB2E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+
+                    <!-- Detalles del pago -->
+                    <div style="background: #f0f9ff; border-left: 4px solid #1EB2E5; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 12px 0; font-size: 13px; color: #0c5460; font-weight: 600;">Detalles del pago:</p>
+                        <div style="font-size: 13px; color: #0c5460; line-height: 1.8;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Cliente:</span>
+                                <strong>${clientName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Nanny:</span>
+                                <strong>${nannyName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Servicio:</span>
+                                <strong>${serviceName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(30, 178, 229, 0.2); padding-top: 8px; margin-top: 8px;">
+                                <span>Monto:</span>
+                                <strong style="font-size: 16px;">$${parseFloat(amount).toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón para revisar -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://nannyslm.com/admin/payments" style="display: inline-block; background: linear-gradient(135deg, #1EB2E5 0%, #E31B7E 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(30, 178, 229, 0.3);">
+                            Revisar Pago en Admin
+                        </a>
+                    </div>
+
+                    <!-- Línea separadora -->
+                    <div style="height: 1px; background: #e2e8f0; margin: 30px 0;"></div>
+
+                    <!-- Nota importante -->
+                    <div style="background: #fef3c7; border-left: 4px solid #FBBF24; padding: 12px 16px; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 13px; color: #78350f;">
+                            <strong>⏰ Importante:</strong> Revisa este pago lo antes posible. El cliente está esperando la confirmación.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0;">
+                        © 2025 NannysLM. Todos los derechos reservados.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Disclaimer -->
+            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px; line-height: 1.5;">
+                Este es un correo automático. Por favor no respondas a este mensaje.
+            </p>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Enviar correo de pago aprobado al cliente
+ */
+const sendPaymentApprovedEmail = async (toEmail, clientName, serviceName, amount, nannyName) => {
+    const host = process.env.SMTP_HOST;
+    const port = process.env.SMTP_PORT;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    const subject = '✓ Tu Pago ha sido Aprobado';
+    const html = getPaymentApprovedEmailTemplate(clientName, serviceName, amount, nannyName);
+
+    if (!host || !port || !user || !pass) {
+        console.log(`📨 Payment approved email (sin SMTP): Email: ${toEmail}, Amount: $${amount}`);
+        return { success: true, message: 'Payment approved email logged to console (SMTP not configured)' };
+    }
+
+    try {
+        const transporter = nodemailer.createTransport({
+            host,
+            port: parseInt(port, 10),
+            secure: parseInt(port, 10) === 465,
+            auth: { user, pass }
+        });
+
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
+            to: toEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Payment approved email sent:', info.messageId);
+        return { success: true, message: 'Payment approved email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending payment approved email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Enviar correo de pago rechazado al cliente
+ */
+const sendPaymentRejectedEmail = async (toEmail, clientName, serviceName, amount, nannyName, reason = '') => {
+    const host = process.env.SMTP_HOST;
+    const port = process.env.SMTP_PORT;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    const subject = '✗ Tu Pago ha sido Rechazado';
+    const html = getPaymentRejectedEmailTemplate(clientName, serviceName, amount, nannyName, reason);
+
+    if (!host || !port || !user || !pass) {
+        console.log(`📨 Payment rejected email (sin SMTP): Email: ${toEmail}, Amount: $${amount}`);
+        return { success: true, message: 'Payment rejected email logged to console (SMTP not configured)' };
+    }
+
+    try {
+        const transporter = nodemailer.createTransport({
+            host,
+            port: parseInt(port, 10),
+            secure: parseInt(port, 10) === 465,
+            auth: { user, pass }
+        });
+
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
+            to: toEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Payment rejected email sent:', info.messageId);
+        return { success: true, message: 'Payment rejected email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending payment rejected email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Enviar notificación de nuevo pago al admin
+ */
+const sendNewPaymentNotificationEmail = async (adminEmail, adminName, clientName, serviceName, amount, nannyName) => {
+    const host = process.env.SMTP_HOST;
+    const port = process.env.SMTP_PORT;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    const subject = '💰 Nuevo Pago Pendiente de Revisión';
+    const html = getNewPaymentNotificationEmailTemplate(adminName, clientName, serviceName, amount, nannyName);
+
+    if (!host || !port || !user || !pass) {
+        console.log(`📨 New payment notification email (sin SMTP): Email: ${adminEmail}, Amount: $${amount}`);
+        return { success: true, message: 'New payment notification email logged to console (SMTP not configured)' };
+    }
+
+    try {
+        const transporter = nodemailer.createTransport({
+            host,
+            port: parseInt(port, 10),
+            secure: parseInt(port, 10) === 465,
+            auth: { user, pass }
+        });
+
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
+            to: adminEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 New payment notification email sent:', info.messageId);
+        return { success: true, message: 'New payment notification email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending new payment notification email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
 module.exports = { 
     sendActivationEmail, 
     sendPasswordResetEmail, 
@@ -917,5 +1392,8 @@ module.exports = {
     getNannyCredentialsEmailTemplate,
     sendServiceNotificationEmail,
     sendVerificationApprovedEmail,
-    sendVerificationRejectedEmail
+    sendVerificationRejectedEmail,
+    sendPaymentApprovedEmail,
+    sendPaymentRejectedEmail,
+    sendNewPaymentNotificationEmail
 };

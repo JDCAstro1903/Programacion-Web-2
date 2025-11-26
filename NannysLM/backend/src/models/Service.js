@@ -600,7 +600,7 @@ class Service {
           `Tu servicio "${service.title}" ha sido aceptado por ${nannyName}`,
           'success',
           false,
-          `/client/services/${serviceId}`,
+          `/dashboard/client`,
           serviceId,
           'service'
         ]);

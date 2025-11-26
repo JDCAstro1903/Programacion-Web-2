@@ -1,9 +1,101 @@
 const { executeQuery } = require('../config/database');
+const { 
+    sendPaymentApprovedEmail,
+    sendPaymentRejectedEmail,
+    sendNewPaymentNotificationEmail 
+} = require('../utils/email');
 
 /**
  * Controlador para gestión de pagos
  */
 class PaymentController {
+    
+    /**
+     * Crear notificación de pago en la base de datos
+     */
+    static async createPaymentNotification(userId, title, message, type, paymentId) {
+        try {
+            const query = `
+                INSERT INTO notifications (
+                    user_id, title, message, type, is_read, 
+                    related_id, related_type, created_at
+                ) VALUES (?, ?, ?, ?, false, ?, 'payment', NOW())
+            `;
+
+            const result = await executeQuery(query, [
+                userId,
+                title,
+                message,
+                type,
+                paymentId
+            ]);
+
+            if (result.success) {
+                console.log(`✅ Notificación creada para usuario ${userId}: ${title}`);
+                return result;
+            } else {
+                console.error(`❌ Error al crear notificación: ${result.error}`);
+                return result;
+            }
+        } catch (error) {
+            console.error('❌ Error en createPaymentNotification:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Obtener todos los datos de un pago para notificaciones
+     */
+    static async getPaymentDataForNotification(paymentId) {
+        try {
+            const query = `
+                SELECT 
+                    p.id,
+                    p.amount,
+                    p.payment_status,
+                    p.client_id,
+                    p.nanny_id,
+                    -- Cliente
+                    uc.id as client_user_id,
+                    uc.first_name as client_first_name,
+                    uc.last_name as client_last_name,
+                    uc.email as client_email,
+                    -- Nanny
+                    un.id as nanny_user_id,
+                    un.first_name as nanny_first_name,
+                    un.last_name as nanny_last_name,
+                    un.email as nanny_email,
+                    -- Servicio
+                    s.title as service_title,
+                    -- Admin (primer usuario con user_type 'admin')
+                    ua.id as admin_user_id,
+                    ua.email as admin_email,
+                    ua.first_name as admin_first_name,
+                    ua.last_name as admin_last_name
+                FROM payments p
+                LEFT JOIN clients c ON p.client_id = c.id
+                LEFT JOIN users uc ON c.user_id = uc.id
+                LEFT JOIN nannys n ON p.nanny_id = n.id
+                LEFT JOIN users un ON n.user_id = un.id
+                LEFT JOIN services s ON p.service_id = s.id
+                LEFT JOIN users ua ON ua.user_type = 'admin'
+                WHERE p.id = ?
+                LIMIT 1
+            `;
+
+            const result = await executeQuery(query, [paymentId]);
+            
+            if (result.success && result.data.length > 0) {
+                return result.data[0];
+            } else {
+                console.error(`❌ No se encontraron datos para el pago ${paymentId}`);
+                return null;
+            }
+        } catch (error) {
+            console.error('❌ Error en getPaymentDataForNotification:', error);
+            return null;
+        }
+    }
     
     /**
      * Obtener todos los pagos con información completa
@@ -16,7 +108,6 @@ class PaymentController {
                     p.service_id,
                     p.amount,
                     p.payment_status,
-                    p.transaction_id,
                     p.platform_fee,
                     p.nanny_amount,
                     p.payment_date,
@@ -69,7 +160,6 @@ class PaymentController {
                     service_id: payment.service_id,
                     amount: parseFloat(payment.amount),
                     payment_status: payment.payment_status,
-                    transaction_id: payment.transaction_id,
                     platform_fee: parseFloat(payment.platform_fee || 0),
                     nanny_amount: parseFloat(payment.nanny_amount || 0),
                     payment_date: payment.payment_date,
@@ -151,7 +241,6 @@ class PaymentController {
                         serviceId: payment.service_id,
                         amount: parseFloat(payment.amount),
                         paymentStatus: payment.payment_status,
-                        transactionId: payment.transaction_id,
                         platformFee: parseFloat(payment.platform_fee || 0),
                         nannyAmount: parseFloat(payment.nanny_amount || 0),
                         paymentDate: payment.payment_date,
@@ -214,10 +303,49 @@ class PaymentController {
             ]);
 
             if (result.success) {
+                const paymentId = result.data.insertId;
+                
+                // Obtener datos del pago para notificaciones
+                const paymentData = await PaymentController.getPaymentDataForNotification(paymentId);
+                
+                // Notificar al admin sobre el nuevo pago
+                if (paymentData && paymentData.admin_user_id) {
+                    const notifTitle = `💰 Nuevo Pago Recibido - $${amount.toFixed(2)}`;
+                    const notifMessage = `${paymentData.client_first_name} ${paymentData.client_last_name} ha enviado un pago pendiente de revisión`;
+                    
+                    try {
+                        await PaymentController.createPaymentNotification(
+                            paymentData.admin_user_id,
+                            notifTitle,
+                            notifMessage,
+                            'payment_pending_review',
+                            paymentId
+                        );
+                        console.log(`✅ Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
+                    } catch (notifError) {
+                        console.error(`⚠️ Error al crear notificación en BD para pago #${paymentId}:`, notifError);
+                    }
+
+                    // Enviar email al admin
+                    try {
+                        await sendNewPaymentNotificationEmail(
+                            paymentData.admin_email,
+                            paymentData.admin_first_name,
+                            `${paymentData.client_first_name} ${paymentData.client_last_name}`,
+                            paymentData.service_title || 'Sin título',
+                            amount,
+                            `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`
+                        );
+                        console.log(`✅ Email notificación enviado al admin (${paymentData.admin_email}) sobre nuevo pago #${paymentId}`);
+                    } catch (emailError) {
+                        console.error(`⚠️ Error al enviar email al admin para pago #${paymentId}:`, emailError.message);
+                    }
+                }
+
                 res.status(201).json({
                     success: true,
                     message: 'Pago creado exitosamente',
-                    data: { id: result.data.insertId }
+                    data: { id: paymentId }
                 });
             } else {
                 throw new Error(result.error);
@@ -512,6 +640,33 @@ class PaymentController {
 
             if (createResult.success) {
                 console.log(`✅ Pago creado para servicio ${serviceId}`);
+                
+                // 🔔 Crear notificación al admin sobre el nuevo pago
+                try {
+                    const adminQuery = `
+                        SELECT id FROM users WHERE user_type = 'admin' LIMIT 1
+                    `;
+                    const adminResult = await executeQuery(adminQuery, []);
+                    
+                    if (adminResult.success && adminResult.data.length > 0) {
+                        const adminId = adminResult.data[0].id;
+                        const notificationTitle = '💰 Nuevo Pago para Verificar';
+                        const notificationMessage = `Se ha registrado un nuevo pago por $${amount.toFixed(2)} que requiere verificación del comprobante.`;
+                        
+                        await this.createPaymentNotification(
+                            adminId,
+                            notificationTitle,
+                            notificationMessage,
+                            'payment_pending',
+                            createResult.insertId
+                        );
+                        console.log(`✅ Notificación de nuevo pago enviada al admin`);
+                    }
+                } catch (notificationError) {
+                    console.error('⚠️ Error al crear notificación de pago:', notificationError);
+                    // No interrumpimos el flujo si falla la notificación
+                }
+                
                 res.json({
                     success: true,
                     message: 'Pago inicializado exitosamente',
@@ -569,10 +724,12 @@ class PaymentController {
 
             const payment = paymentResult.data[0];
 
+            console.log(`🔍 Verificando pago #${paymentId} - Estado actual: ${payment.payment_status}`);
+
             if (payment.payment_status !== 'processing') {
                 return res.status(400).json({
                     success: false,
-                    message: 'Solo se pueden verificar pagos en estado "processing"'
+                    message: `No se puede verificar este pago. Estado actual: ${payment.payment_status}. Debe estar en estado "processing" (el cliente debe subir el comprobante primero)`
                 });
             }
 
@@ -586,8 +743,79 @@ class PaymentController {
             const updateResult = await executeQuery(updateQuery, [newStatus, paymentId]);
 
             if (updateResult.success) {
+                // Obtener datos del pago para notificaciones
+                const paymentData = await PaymentController.getPaymentDataForNotification(paymentId);
+                
+                if (paymentData && paymentData.client_user_id && paymentData.client_email) {
+                    if (action === 'approve') {
+                        // Notificar al cliente que el pago fue aprobado
+                        const notifTitle = `✓ Tu Pago de $${payment.amount.toFixed(2)} ha sido Aprobado`;
+                        const notifMessage = `Tu pago para el servicio "${paymentData.service_title}" ha sido procesado exitosamente`;
+                        
+                        try {
+                            await PaymentController.createPaymentNotification(
+                                paymentData.client_user_id,
+                                notifTitle,
+                                notifMessage,
+                                'payment_approved',
+                                paymentId
+                            );
+                            console.log(`✅ Notificación DB creada para cliente sobre pago #${paymentId} aprobado`);
+                        } catch (notifError) {
+                            console.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
+                        }
+
+                        // Enviar email de aprobación
+                        try {
+                            await sendPaymentApprovedEmail(
+                                paymentData.client_email,
+                                `${paymentData.client_first_name} ${paymentData.client_last_name}`,
+                                paymentData.service_title || 'Sin título',
+                                payment.amount,
+                                `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`
+                            );
+                            console.log(`✅ Email de aprobación enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
+                        } catch (emailError) {
+                            console.error(`⚠️ Error al enviar email de aprobación a cliente (${paymentData.client_email}):`, emailError.message);
+                        }
+                    } else {
+                        // Notificar al cliente que el pago fue rechazado
+                        const notifTitle = `✗ Tu Pago de $${payment.amount.toFixed(2)} ha sido Rechazado`;
+                        const notifMessage = `Tu pago para el servicio "${paymentData.service_title}" ha sido rechazado. ${notes ? `Motivo: ${notes}` : ''}`;
+                        
+                        try {
+                            await PaymentController.createPaymentNotification(
+                                paymentData.client_user_id,
+                                notifTitle,
+                                notifMessage,
+                                'payment_rejected',
+                                paymentId
+                            );
+                            console.log(`✅ Notificación DB creada para cliente sobre pago #${paymentId} rechazado`);
+                        } catch (notifError) {
+                            console.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
+                        }
+
+                        // Enviar email de rechazo
+                        try {
+                            await sendPaymentRejectedEmail(
+                                paymentData.client_email,
+                                `${paymentData.client_first_name} ${paymentData.client_last_name}`,
+                                paymentData.service_title || 'Sin título',
+                                payment.amount,
+                                `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`,
+                                notes || ''
+                            );
+                            console.log(`✅ Email de rechazo enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
+                        } catch (emailError) {
+                            console.error(`⚠️ Error al enviar email de rechazo a cliente (${paymentData.client_email}):`, emailError.message);
+                        }
+                    }
+                } else {
+                    console.warn(`⚠️ No se encontraron datos del cliente para enviar notificaciones del pago #${paymentId}`);
+                }
+
                 const actionText = action === 'approve' ? 'aprobado' : 'rechazado';
-                console.log(`✅ Pago ${paymentId} ${actionText}`);
 
                 res.json({
                     success: true,

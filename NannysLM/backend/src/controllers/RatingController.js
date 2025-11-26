@@ -6,7 +6,7 @@ class RatingController {
    */
   static async createRating(req, res) {
     try {
-      const { service_id, rating, review, punctuality_rating, communication_rating, care_quality_rating, would_recommend } = req.body;
+      const { service_id, rating, punctuality_rating, communication_rating, care_quality_rating, would_recommend } = req.body;
       const client_id = req.user.id; // Del JWT token
 
       // Validar datos requeridos
@@ -63,13 +63,12 @@ class RatingController {
           client_id, 
           nanny_id, 
           rating, 
-          review, 
           punctuality_rating, 
           communication_rating, 
           care_quality_rating, 
           would_recommend, 
           created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
       `;
 
       const values = [
@@ -77,7 +76,6 @@ class RatingController {
         client_id,
         service.nanny_id,
         rating,
-        review || null,
         punctuality_rating || rating,
         communication_rating || rating,
         care_quality_rating || rating,
@@ -145,7 +143,11 @@ class RatingController {
 
       const query = `
         SELECT 
-          r.*,
+          r.id,
+          r.service_id,
+          r.client_id,
+          r.nanny_id,
+          r.rating,
           u.first_name,
           u.last_name
         FROM ratings r
@@ -246,34 +248,32 @@ class RatingController {
           r.client_id,
           r.nanny_id,
           r.rating,
-          r.review,
           r.punctuality_rating,
           r.communication_rating,
           r.care_quality_rating,
           r.would_recommend,
           r.created_at,
-          u.first_name as client_first_name,
-          u.last_name as client_last_name,
-          s.title as service_title,
-          s.start_date,
-          s.end_date
+          COALESCE(u.first_name, 'Cliente') as client_first_name,
+          COALESCE(u.last_name, 'Anónimo') as client_last_name,
+          COALESCE(s.title, 'Servicio') as service_title
         FROM ratings r
-        JOIN users u ON r.client_id = u.id
-        JOIN services s ON r.service_id = s.id
+        LEFT JOIN clients c ON r.client_id = c.id
+        LEFT JOIN users u ON c.user_id = u.id
+        LEFT JOIN services s ON r.service_id = s.id
         WHERE r.nanny_id = ?
         ORDER BY r.created_at DESC
       `;
 
       const result = await executeQuery(query, [nannyId]);
 
-      console.log(`📊 Resultado de executeQuery:`, result);
-      console.log(`📊 result.data:`, result.data);
-      console.log(`📊 result.data length:`, result.data ? result.data.length : 'undefined');
+      console.log(`📊 Resultado de executeQuery:`, {success: result.success, count: result.data ? result.data.length : 0});
 
       if (!result.success) {
+        console.error('❌ Error en la query:', result.error);
         return res.status(500).json({
           success: false,
-          message: 'Error al obtener calificaciones'
+          message: 'Error al obtener calificaciones',
+          error: result.error
         });
       }
 

@@ -427,8 +427,47 @@ header {
   }
 
   .notifications-dropdown {
-    width: 320px;
+    width: 90vw;
+    max-width: 380px;
     right: -1rem;
+    max-height: 60vh;
+    top: calc(100% + 0.5rem);
+  }
+
+  .notifications-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .notifications-header h3 {
+    font-size: 0.9rem;
+  }
+
+  .mark-read-btn {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .notifications-list {
+    max-height: calc(60vh - 100px);
+  }
+
+  .notification-item {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .notification-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .notification-content h4 {
+    font-size: 0.85rem;
+  }
+
+  .notification-content p {
+    font-size: 0.75rem;
   }
 
   .user-name,
@@ -466,8 +505,50 @@ header {
 
 @media (max-width: 480px) {
   .notifications-dropdown {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: calc(100vw - 2rem);
-    right: -0.5rem;
+    max-width: 380px;
+    right: auto;
+    max-height: 70vh;
+  }
+
+  .notifications-header {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .notifications-header h3 {
+    font-size: 0.85rem;
+  }
+
+  .notifications-list {
+    max-height: calc(70vh - 80px);
+  }
+
+  .notification-item {
+    padding: 0.6rem 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .notification-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
+
+  .notification-content h4 {
+    font-size: 0.8rem;
+  }
+
+  .notification-content p {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  .notification-time {
+    font-size: 0.65rem;
   }
 
   .brand-info h1 {
@@ -480,5 +561,9 @@ header {
 
   .logo-section {
     gap: 0.5rem;
+  }
+
+  .mark-read-btn {
+    font-size: 0.65rem;
   }
 }

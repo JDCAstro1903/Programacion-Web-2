@@ -233,8 +233,7 @@ class ClientController {
           u.last_name as nanny_last_name,
           u.profile_image as nanny_image,
           n.rating_average as nanny_rating,
-          r.rating as service_rating,
-          r.review as service_review
+          r.rating as service_rating
         FROM services s
         LEFT JOIN nannys n ON s.nanny_id = n.id
         LEFT JOIN users u ON n.user_id = u.id
@@ -287,8 +286,7 @@ class ClientController {
           } : null,
           rating: {
             given: !!service.service_rating,
-            rating: service.service_rating,
-            review: service.service_review
+            rating: service.service_rating
           }
         }));
 
@@ -626,7 +624,7 @@ class ClientController {
   static async rateService(req, res) {
     try {
       const userId = req.user.id;
-      const { service_id, rating, review, punctuality_rating, communication_rating, care_quality_rating, would_recommend } = req.body;
+      const { service_id, rating, punctuality_rating, communication_rating, care_quality_rating, would_recommend } = req.body;
 
       console.log('🔍 Datos de calificación recibidos:', { userId, service_id, rating });
 
@@ -715,13 +713,12 @@ class ClientController {
           client_id, 
           nanny_id, 
           rating, 
-          review, 
           punctuality_rating, 
           communication_rating, 
           care_quality_rating, 
           would_recommend, 
           created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
       `;
 
       const values = [
@@ -729,7 +726,6 @@ class ClientController {
         userClientId,
         service.nanny_id,
         rating,
-        review || null,
         punctuality_rating || rating,
         communication_rating || rating,
         care_quality_rating || rating,

@@ -14,6 +14,11 @@ export interface DashboardStats {
     verified: number;
     unverified: number;
   };
+  payments: {
+    total: number;
+    pending: number;
+    completed: number;
+  };
   admin: {
     total: number;
   };

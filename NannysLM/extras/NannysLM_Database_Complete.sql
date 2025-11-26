@@ -1,7 +1,13 @@
+SET FOREIGN_KEY_CHECKS=0;
 
+create database if not exists `nannyslm_db` default character set utf8mb4 collate utf8mb4_0900_ai_ci;
+use `nannyslm_db`;
+
+DROP TABLE IF EXISTS `bank_details`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `bank_details` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `nanny_id` int NOT NULL,
   `account_holder_name` varchar(150) NOT NULL,
   `bank_name` varchar(100) NOT NULL,
   `account_number` varchar(50) NOT NULL,
@@ -11,23 +17,17 @@ CREATE TABLE `bank_details` (
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `nanny_id` (`nanny_id`),
-  CONSTRAINT `bank_details_ibfk_1` FOREIGN KEY (`nanny_id`) REFERENCES `nannys` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE `client_favorites` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `client_id` int NOT NULL,
-  `nanny_id` int NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_favorite` (`client_id`,`nanny_id`),
-  KEY `nanny_id` (`nanny_id`),
-  CONSTRAINT `client_favorites_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `client_favorites_ibfk_2` FOREIGN KEY (`nanny_id`) REFERENCES `nannys` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+--
+-- Table structure for table `clients`
+--
 
+DROP TABLE IF EXISTS `clients`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `clients` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
@@ -44,7 +44,15 @@ CREATE TABLE `clients` (
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `clients_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `nanny_availability`
+--
+
+DROP TABLE IF EXISTS `nanny_availability`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `nanny_availability` (
   `id` int NOT NULL AUTO_INCREMENT,
   `nanny_id` int NOT NULL,
@@ -56,7 +64,15 @@ CREATE TABLE `nanny_availability` (
   UNIQUE KEY `nanny_id` (`nanny_id`),
   CONSTRAINT `nanny_availability_ibfk_1` FOREIGN KEY (`nanny_id`) REFERENCES `nannys` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `nannys`
+--
+
+DROP TABLE IF EXISTS `nannys`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `nannys` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
@@ -73,7 +89,15 @@ CREATE TABLE `nannys` (
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `nannys_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `notifications`
+--
+
+DROP TABLE IF EXISTS `notifications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `notifications` (
   `id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
@@ -90,7 +114,15 @@ CREATE TABLE `notifications` (
   KEY `user_id` (`user_id`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `payments`
+--
+
+DROP TABLE IF EXISTS `payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `payments` (
   `id` int NOT NULL AUTO_INCREMENT,
   `service_id` int NOT NULL,
@@ -98,7 +130,6 @@ CREATE TABLE `payments` (
   `nanny_id` int NOT NULL,
   `amount` decimal(10,2) NOT NULL,
   `payment_status` enum('pending','processing','completed','failed','refunded') DEFAULT 'pending',
-  `transaction_id` varchar(100) DEFAULT NULL,
   `platform_fee` decimal(10,2) DEFAULT '0.00',
   `nanny_amount` decimal(10,2) DEFAULT NULL,
   `payment_date` timestamp NULL DEFAULT NULL,
@@ -113,14 +144,21 @@ CREATE TABLE `payments` (
   CONSTRAINT `payments_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE,
   CONSTRAINT `payments_ibfk_3` FOREIGN KEY (`nanny_id`) REFERENCES `nannys` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `ratings`
+--
+
+DROP TABLE IF EXISTS `ratings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ratings` (
   `id` int NOT NULL AUTO_INCREMENT,
   `service_id` int NOT NULL,
   `client_id` int NOT NULL,
   `nanny_id` int NOT NULL,
   `rating` decimal(2,1) NOT NULL,
-  `review` text,
   `punctuality_rating` int DEFAULT NULL,
   `communication_rating` int DEFAULT NULL,
   `care_quality_rating` int DEFAULT NULL,
@@ -137,8 +175,16 @@ CREATE TABLE `ratings` (
   CONSTRAINT `ratings_chk_2` CHECK (((`punctuality_rating` >= 1) and (`punctuality_rating` <= 5))),
   CONSTRAINT `ratings_chk_3` CHECK (((`communication_rating` >= 1) and (`communication_rating` <= 5))),
   CONSTRAINT `ratings_chk_4` CHECK (((`care_quality_rating` >= 1) and (`care_quality_rating` <= 5)))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `services`
+--
+
+DROP TABLE IF EXISTS `services`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `services` (
   `id` int NOT NULL AUTO_INCREMENT,
   `client_id` int NOT NULL,
@@ -165,8 +211,15 @@ CREATE TABLE `services` (
   CONSTRAINT `services_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE,
   CONSTRAINT `services_ibfk_2` FOREIGN KEY (`nanny_id`) REFERENCES `nannys` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `users`
+--
 
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
@@ -185,3 +238,5 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+SET FOREIGN_KEY_CHECKS=1;

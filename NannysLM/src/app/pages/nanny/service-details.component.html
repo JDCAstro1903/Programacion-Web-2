@@ -100,8 +100,12 @@
             </div>
             <div class="card-content">
               <div class="detail-row">
-                <span class="label">Fecha:</span>
+                <span class="label">Fecha de llegada:</span>
                 <span class="value">{{ formatDate(service.start_date) }}</span>
+              </div>
+              <div class="detail-row" *ngIf="service.end_date && service.end_date !== service.start_date">
+                <span class="label">Fecha de salida:</span>
+                <span class="value">{{ formatDate(service.end_date) }}</span>
               </div>
               <div class="detail-row">
                 <span class="label">Hora de inicio:</span>

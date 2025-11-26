@@ -155,22 +155,35 @@
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
     background: white;
+    position: relative;
   }
   
   .sidebar-nav {
     display: flex;
-    padding: 1rem;
+    padding: 1rem 0.75rem;
     gap: 0.5rem;
     overflow-x: auto;
+    max-height: 80px;
   }
   
   .nav-item {
     white-space: nowrap;
     margin-bottom: 0;
     flex-shrink: 0;
+    padding: 10px 14px;
+    font-size: 0.85rem;
   }
   
   .nav-label {
+    display: none;
+  }
+  
+  .nav-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .nav-count {
     display: none;
   }
   

@@ -1099,10 +1099,15 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   /**
    * Manejar click en notificación desde el panel en la vista de notificaciones
-   * (Solo por logging/futuras acciones adicionales)
    */
   handleNotificationPanelClick(notification: Notification) {
-    // Aquí puedes agregar lógica adicional si es necesario
+    // Si es una notificación de servicio, navegar a la vista de servicios
+    if (notification.type === 'success' && notification.related_type === 'service') {
+      this.currentView = 'services';
+      this.servicesView = 'services-history';
+      // Cargar servicios para que se muestre el servicio confirmado
+      this.loadClientServices();
+    }
   }
 
   /**
@@ -2251,11 +2256,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         if (response.success && response.data) {
           this.serviceModalType = 'success';
           this.serviceModalTitle = 'Pago Inicializado';
-          this.serviceModalMessage = `Pago de $${response.data.amount} creado. Por favor, realiza la transferencia bancaria y sube el comprobante.`;
+          this.serviceModalMessage = `Pago de $${response.data.amount} creado exitosamente. Realiza la transferencia bancaria y sube el comprobante en tu sección de pagos.`;
           
-          // Esperar 2 segundos y luego mostrar modal para subir comprobante
+          // Esperar 2 segundos y luego ir a la sección de pagos
           setTimeout(() => {
-            this.openUploadReceiptModal(response.data.paymentId);
+            this.closeServiceModal();
+            this.currentView = 'payments';
           }, 2000);
         }
       },

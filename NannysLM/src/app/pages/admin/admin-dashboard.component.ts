@@ -35,6 +35,7 @@ export class AdminDashboardComponent implements OnInit {
   dashboardStats: DashboardStats = {
     nannys: { total: 0, active: 0, inactive: 0, verified: 0 },
     clients: { total: 0, verified: 0, unverified: 0 },
+    payments: { total: 0, pending: 0, completed: 0 },
     admin: { total: 0 }
   };
 
@@ -126,7 +127,12 @@ export class AdminDashboardComponent implements OnInit {
     this.dashboardService.getStats().subscribe({
       next: (response) => {
         if (response.success) {
-          this.dashboardStats = response.data;
+          // Merge server data with existing dashboardStats to preserve payments
+          this.dashboardStats = {
+            ...this.dashboardStats,
+            ...response.data,
+            payments: this.dashboardStats.payments // Preserve payments object
+          };
           this.updateSidebarCounts();
         }
         this.isLoadingStats = false;
@@ -185,6 +191,14 @@ export class AdminDashboardComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.paymentsData = response.data;
+          // Ensure payments object exists
+          if (!this.dashboardStats.payments) {
+            this.dashboardStats.payments = { total: 0, pending: 0, completed: 0 };
+          }
+          this.dashboardStats.payments.total = this.paymentsData.length;
+          this.dashboardStats.payments.pending = this.paymentsData.filter((p: any) => p.payment_status === 'pending').length;
+          this.dashboardStats.payments.completed = this.paymentsData.filter((p: any) => p.payment_status === 'completed').length;
+          this.updateSidebarCounts();
         }
         this.isLoadingPayments = false;
       },
@@ -211,11 +225,12 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private updateSidebarCounts() {
-    this.userConfigService.updateSidebarItemCount('admin', 'nannys', this.dashboardStats.nannys.total);
-    this.userConfigService.updateSidebarItemCount('admin', 'clients', this.dashboardStats.clients.total);
-    this.userConfigService.updateSidebarItemCount('admin', 'payments', 0); // TODO: Implementar pagos
+    this.userConfigService.updateSidebarItemCount('admin', 'nannys', this.dashboardStats.nannys?.total || 0);
+    this.userConfigService.updateSidebarItemCount('admin', 'clients', this.dashboardStats.clients?.total || 0);
+    this.userConfigService.updateSidebarItemCount('admin', 'payments', this.dashboardStats.payments?.total || 0);
     this.userConfigService.updateSidebarItemCount('admin', 'datos-bancarios', this.datosBancarios.length);
   }
+
   // Estados de filtro para las nannys
   nannyFilter: string = 'active';
   
@@ -319,6 +334,22 @@ export class AdminDashboardComponent implements OnInit {
   selectedNannyProfile: any = null;
   nannyRatings: any[] = [];
   isLoadingNannyRatings: boolean = false;
+
+  // Estados para modal de cambio de estado de nanny
+  showStatusConfirmationModal: boolean = false;
+  statusConfirmationData: {
+    nanny: any;
+    newStatus: 'active' | 'inactive' | 'suspended';
+    title: string;
+    message: string;
+    color: string;
+  } = {
+    nanny: null,
+    newStatus: 'active',
+    title: '',
+    message: '',
+    color: ''
+  };
 
   // Estados para modal de resultado de verificación
   showVerificationResultModal: boolean = false;
@@ -489,43 +520,11 @@ export class AdminDashboardComponent implements OnInit {
     
     // Aplicar filtro de fecha
     if (this.paymentDateFilter !== 'all') {
-      const today = new Date();
-      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      
       payments = payments.filter((payment: any) => {
         if (!payment.payment_date && !payment.created_at) return false;
         const paymentDate = new Date(payment.payment_date || payment.created_at);
         
-        switch(this.paymentDateFilter) {
-          case 'today':
-            return this.isSameDay(paymentDate, startOfToday);
-          
-          case 'week':
-            const startOfWeek = new Date(startOfToday);
-            startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23, 59, 59, 999);
-            return paymentDate >= startOfWeek && paymentDate <= endOfWeek;
-          
-          case 'month':
-            return paymentDate.getMonth() === today.getMonth() && 
-                   paymentDate.getFullYear() === today.getFullYear();
-          
-          case 'quarter':
-            const quarter = Math.floor(today.getMonth() / 3);
-            const quarterStart = quarter * 3;
-            const quarterEnd = quarterStart + 2;
-            return paymentDate.getFullYear() === today.getFullYear() &&
-                   paymentDate.getMonth() >= quarterStart &&
-                   paymentDate.getMonth() <= quarterEnd;
-          
-          case 'custom':
-            return this.selectedDate ? this.isSameDay(paymentDate, this.selectedDate) : true;
-          
-          default:
-            return true;
-        }
+        return this.isPaymentInDateRange(paymentDate, this.paymentDateFilter);
       });
     }
     
@@ -543,6 +542,50 @@ export class AdminDashboardComponent implements OnInit {
     }
     
     return payments;
+  }
+
+  // Método auxiliar para verificar si un pago está en el rango de fechas
+  private isPaymentInDateRange(paymentDate: Date, filter: string): boolean {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    
+    switch(filter) {
+      case 'today':
+        return paymentDate >= todayStart && paymentDate <= todayEnd;
+      
+      case 'week':
+        // Calcular inicio de semana (domingo)
+        const dayOfWeek = today.getDay();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        // Calcular fin de semana (sábado)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        
+        return paymentDate >= startOfWeek && paymentDate <= endOfWeek;
+      
+      case 'month':
+        return paymentDate.getMonth() === today.getMonth() && 
+               paymentDate.getFullYear() === today.getFullYear();
+      
+      case 'quarter':
+        const quarter = Math.floor(today.getMonth() / 3);
+        const quarterStart = quarter * 3;
+        const quarterEnd = quarterStart + 2;
+        return paymentDate.getFullYear() === today.getFullYear() &&
+               paymentDate.getMonth() >= quarterStart &&
+               paymentDate.getMonth() <= quarterEnd;
+      
+      case 'custom':
+        return this.selectedDate ? this.isSameDay(paymentDate, this.selectedDate) : true;
+      
+      default:
+        return true;
+    }
   }
 
   // Métodos auxiliares para el template
@@ -615,43 +658,11 @@ export class AdminDashboardComponent implements OnInit {
       return allPayments.length;
     }
 
-    const today = new Date();
-    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
     return allPayments.filter((payment: any) => {
-      if (!payment.paymentDate && !payment.createdAt) return false;
-      const paymentDate = new Date(payment.paymentDate || payment.createdAt);
+      if (!payment.payment_date && !payment.created_at) return false;
+      const paymentDate = new Date(payment.payment_date || payment.created_at);
       
-      switch (dateFilter) {
-        case 'today':
-          return this.isSameDay(paymentDate, startOfToday);
-        
-        case 'week':
-          const startOfWeek = new Date(startOfToday);
-          startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
-          const endOfWeek = new Date(startOfWeek);
-          endOfWeek.setDate(startOfWeek.getDate() + 6);
-          endOfWeek.setHours(23, 59, 59, 999);
-          return paymentDate >= startOfWeek && paymentDate <= endOfWeek;
-        
-        case 'month':
-          return paymentDate.getMonth() === today.getMonth() && 
-                 paymentDate.getFullYear() === today.getFullYear();
-        
-        case 'quarter':
-          const quarter = Math.floor(today.getMonth() / 3);
-          const quarterStart = quarter * 3;
-          const quarterEnd = quarterStart + 2;
-          return paymentDate.getFullYear() === today.getFullYear() &&
-                 paymentDate.getMonth() >= quarterStart &&
-                 paymentDate.getMonth() <= quarterEnd;
-        
-        case 'custom':
-          return this.selectedDate ? this.isSameDay(paymentDate, this.selectedDate) : true;
-        
-        default:
-          return true;
-      }
+      return this.isPaymentInDateRange(paymentDate, dateFilter);
     }).length;
   }
 
@@ -904,6 +915,7 @@ export class AdminDashboardComponent implements OnInit {
       case 'active': return 'Activa';
       case 'busy': return 'Ocupada';
       case 'inactive': return 'Inactiva';
+      case 'suspended': return 'Suspendida';
       default: return '';
     }
   }
@@ -1156,6 +1168,45 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
 
+    // Preparar datos para el modal de confirmación
+    let title = '';
+    let message = '';
+    let color = '';
+
+    switch (newStatus) {
+      case 'active':
+        title = '✓ Activar Nanny';
+        message = `¿Estás seguro de que deseas activar a ${nanny.first_name} ${nanny.last_name}? Podrá recibir nuevos servicios.`;
+        color = 'green';
+        break;
+      case 'inactive':
+        title = '✗ Desactivar Nanny';
+        message = `¿Estás seguro de que deseas desactivar a ${nanny.first_name} ${nanny.last_name}? No podrá recibir nuevos servicios.`;
+        color = 'red';
+        break;
+      case 'suspended':
+        title = '⚠ Suspender Nanny';
+        message = `¿Estás seguro de que deseas suspender a ${nanny.first_name} ${nanny.last_name}? Esta acción requiere revisión.`;
+        color = 'yellow';
+        break;
+    }
+
+    // Mostrar modal de confirmación
+    this.statusConfirmationData = {
+      nanny,
+      newStatus,
+      title,
+      message,
+      color
+    };
+    this.showStatusConfirmationModal = true;
+  }
+
+  /**
+   * Confirmar el cambio de estado de la nanny
+   */
+  confirmStatusChange() {
+    const { nanny, newStatus } = this.statusConfirmationData;
 
     // Llamar a servicio para actualizar el status
     this.nannyService.updateNannyStatus(nanny.id, newStatus).subscribe({
@@ -1166,6 +1217,9 @@ export class AdminDashboardComponent implements OnInit {
           if (this.selectedNannyProfile) {
             this.selectedNannyProfile.status = newStatus;
           }
+
+          // Cerrar modal de confirmación
+          this.closeStatusConfirmationModal();
 
           // Recargar datos
           this.loadNannys();
@@ -1178,6 +1232,7 @@ export class AdminDashboardComponent implements OnInit {
         }
       },
       error: (error: any) => {
+        this.closeStatusConfirmationModal();
         this.openVerificationResultModal(
           'error',
           'Error',
@@ -1185,6 +1240,13 @@ export class AdminDashboardComponent implements OnInit {
         );
       }
     });
+  }
+
+  /**
+   * Cerrar modal de confirmación de estado
+   */
+  closeStatusConfirmationModal() {
+    this.showStatusConfirmationModal = false;
   }
 
   // Funciones del calendario
