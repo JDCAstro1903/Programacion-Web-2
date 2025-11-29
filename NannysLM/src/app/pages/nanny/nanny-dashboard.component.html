@@ -437,6 +437,11 @@
 
       <!-- Footer -->
       <div class="modal-footer-client">
+        <app-whatsapp-button 
+          [phoneNumber]="selectedClient.phone || ''"
+          [message]="'Hola ' + (selectedClient.client || 'Cliente') + ', soy ' + currentUser.name + ', tu niñera. Me gustaría confirmar los detalles de nuestro próximo servicio.'"
+          [buttonText]="'Contactar por WhatsApp'">
+        </app-whatsapp-button>
         <button class="btn-close-modal" (click)="closeClientModal()">Cerrar</button>
       </div>
     </div>

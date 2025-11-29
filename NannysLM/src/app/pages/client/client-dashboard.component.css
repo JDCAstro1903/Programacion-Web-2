@@ -1844,6 +1844,722 @@
   opacity: 1;
 }
 
+/* ============================================
+   MODAL DE CANCELACIÓN DE SERVICIO
+   ============================================ */
+
+.cancel-service-modal .modal-content {
+  max-width: 520px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.modal-header-cancel {
+  text-align: center;
+  padding: 32px 32px 24px;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.cancel-icon-circle {
+  margin: 0 auto 16px;
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.modal-header-cancel h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.modal-body-cancel {
+  padding: 24px 32px;
+  background: white;
+}
+
+.cancel-warning {
+  text-align: center;
+  font-size: 15px;
+  color: #374151;
+  margin-bottom: 20px;
+}
+
+.service-info-box {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-left: 4px solid #ec4899;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.service-info-box h4 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.service-info-box p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-info-box svg {
+  flex-shrink: 0;
+  color: #ec4899;
+}
+
+.cancel-note {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.cancel-note strong {
+  color: #78350f;
+}
+
+.modal-actions-cancel {
+  display: flex;
+  gap: 12px;
+  padding: 24px 32px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-actions-cancel button {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+}
+
+.modal-actions-cancel .btn-secondary {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.modal-actions-cancel .btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
+
+.modal-actions-cancel .btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.modal-actions-cancel .btn-danger:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+/* ============================================
+   MODAL DE CAMBIO DE FECHA
+   ============================================ */
+
+.change-date-modal .modal-content {
+  max-width: 560px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.modal-header-change-date {
+  text-align: center;
+  padding: 32px 32px 24px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.change-date-icon-circle {
+  margin: 0 auto 16px;
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.modal-header-change-date h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.modal-body-change-date {
+  padding: 24px 32px;
+  background: white;
+}
+
+.change-date-info {
+  text-align: center;
+  font-size: 15px;
+  color: #374151;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.change-date-steps {
+  margin: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.step-item p {
+  margin: 0;
+  font-size: 14px;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.change-date-note {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.5;
+  margin-top: 20px;
+}
+
+.change-date-note strong {
+  color: #78350f;
+}
+
+.modal-actions-change-date {
+  display: flex;
+  gap: 12px;
+  padding: 24px 32px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-actions-change-date button {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+}
+
+.modal-actions-change-date .btn-secondary {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.modal-actions-change-date .btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
+
+.modal-actions-change-date .btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.modal-actions-change-date .btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+/* Estilos para el modal de cambio de fecha - Layout horizontal */
+.change-date-modal-content {
+  max-width: 900px !important;
+  width: 90%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header-change-date {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-bottom: 2px solid #93c5fd;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-text h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.header-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.close-btn {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  transform: scale(1.05);
+}
+
+.modal-body-change-date {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Grid horizontal: 2 columnas */
+.change-date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.calendar-column,
+.time-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 6px;
+}
+
+.section-note {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.calendar-container {
+  background: white;
+  border: 2px solid #e0e7ff;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.calendar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e40af;
+  margin: 0;
+}
+
+.calendar-nav-btn {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #3b82f6;
+}
+
+.calendar-nav-btn:hover {
+  background: #dbeafe;
+  transform: scale(1.05);
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 8px 0;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.calendar-day.empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+.calendar-day:not(.empty):not(.disabled) {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.calendar-day:not(.empty):not(.disabled):hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  transform: scale(1.05);
+}
+
+.calendar-day.selected {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  border-color: #1e40af !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.calendar-day.disabled {
+  background: #f3f4f6;
+  color: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.selected-date-display {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #065f46;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.selected-date-display svg {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.selected-date-display strong {
+  color: #047857;
+}
+
+/* Estilos para selectores de hora - vertical compacto */
+.time-selectors-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.time-selector-compact label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.time-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.time-select:hover {
+  border-color: #3b82f6;
+}
+
+.time-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Resumen de selección */
+.selection-summary {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid #10b981;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.selection-summary h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.summary-item .label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.summary-item .value {
+  color: #047857;
+  font-weight: 700;
+}
+
+.change-date-note-compact {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.change-date-note-compact strong {
+  color: #78350f;
+}
+
+/* Botón deshabilitado */
+.modal-actions-change-date .btn-primary.disabled,
+.modal-actions-change-date .btn-primary:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.modal-actions-change-date .btn-primary.disabled:hover,
+.modal-actions-change-date .btn-primary:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsive para modales */
+@media (max-width: 768px) {
+  .change-date-modal-content {
+    max-width: 95% !important;
+    width: 95%;
+  }
+
+  .change-date-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .modal-header-change-date {
+    padding: 16px;
+  }
+
+  .header-text h3 {
+    font-size: 16px;
+  }
+
+  .change-date-icon-circle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .change-date-icon-circle svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .cancel-service-modal .modal-content,
+  .change-date-modal .modal-content {
+    max-width: 95%;
+    margin: 20px auto;
+  }
+
+  .modal-header-cancel,
+  .modal-header-change-date {
+    padding: 16px 12px;
+  }
+
+  .cancel-icon-circle,
+  .change-date-icon-circle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .calendar-day {
+    font-size: 12px;
+  }
+
+  .modal-actions-change-date {
+    padding: 16px;
+  }
+
+  .modal-actions-change-date button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+}
+
+  .cancel-icon-circle svg,
+  .change-date-icon-circle svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .modal-header-cancel h3,
+  .modal-header-change-date h3 {
+    font-size: 20px;
+  }
+
+  .modal-body-cancel,
+  .modal-body-change-date {
+    padding: 20px;
+  }
+
+  .modal-actions-cancel,
+  .modal-actions-change-date {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .modal-actions-cancel button,
+  .modal-actions-change-date button {
+    width: 100%;
+  }
+
+  .step-item {
+    padding: 10px 12px;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .step-item p {
+    font-size: 13px;
+  }
+
+
 /* Mensaje sin servicios contratados */
 .no-services-message {
   display: flex;

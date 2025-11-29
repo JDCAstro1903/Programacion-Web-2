@@ -108,6 +108,86 @@
   margin-bottom: 1.5rem;
 }
 
+/* Service Unavailable State */
+.service-unavailable-container {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  text-align: center;
+  max-width: 600px;
+  margin: 2rem auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.unavailable-icon {
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.service-unavailable-container h2 {
+  color: #64748b;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.service-unavailable-container .subtitle {
+  color: #94a3b8;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.service-unavailable-container .action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.service-unavailable-container .action-buttons .action-btn {
+  min-width: 180px;
+}
+
+.service-unavailable-container .info-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.service-unavailable-container .info-box h4 {
+  color: #1f2937;
+  font-size: 1rem;
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+}
+
+.service-unavailable-container .info-box ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #64748b;
+  line-height: 1.8;
+}
+
+.service-unavailable-container .info-box li {
+  font-size: 0.95rem;
+}
+
 .back-btn {
   padding: 0.75rem 1.5rem;
   background: #E31B7E;

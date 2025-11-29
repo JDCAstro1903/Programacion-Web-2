@@ -1,4 +1,5 @@
 const Service = require('../models/Service');
+const notificationSystem = require('../utils/NotificationSystem');
 
 class ServiceController {
   /**
@@ -103,10 +104,77 @@ class ServiceController {
     try {
       const { id } = req.params;
       
+      // Primero obtener información del servicio antes de eliminarlo
+      const { executeQuery } = require('../config/database');
+      const getServiceQuery = `
+        SELECT s.*, 
+               c.user_id as client_user_id,
+               u_client.first_name as client_first_name,
+               u_client.last_name as client_last_name,
+               n.user_id as nanny_user_id,
+               u_nanny.first_name as nanny_first_name,
+               u_nanny.last_name as nanny_last_name,
+               u_nanny.email as nanny_email
+        FROM services s
+        LEFT JOIN clients c ON s.client_id = c.id
+        LEFT JOIN users u_client ON c.user_id = u_client.id
+        LEFT JOIN nannys n ON s.nanny_id = n.id
+        LEFT JOIN users u_nanny ON n.user_id = u_nanny.id
+        WHERE s.id = ?
+      `;
+      
+      const serviceResult = await executeQuery(getServiceQuery, [id]);
+      
+      if (!serviceResult.success || serviceResult.data.length === 0) {
+        return res.status(404).json({ success: false, message: 'Servicio no encontrado' });
+      }
+      
+      const serviceInfo = serviceResult.data[0];
+      
+      // Eliminar el servicio
       const result = await Service.delete(id);
       
       if (!result.success) {
         return res.status(404).json(result);
+      }
+      
+      // Si había una nanny asignada, notificarla
+      console.log('🔍 Verificando si hay nanny asignada:', {
+        nanny_id: serviceInfo.nanny_id,
+        nanny_email: serviceInfo.nanny_email,
+        status: serviceInfo.status
+      });
+      
+      if (serviceInfo.nanny_id && serviceInfo.nanny_email) {
+        const nannyName = `${serviceInfo.nanny_first_name} ${serviceInfo.nanny_last_name}`;
+        const clientName = `${serviceInfo.client_first_name} ${serviceInfo.client_last_name}`;
+        
+        const serviceDate = new Date(serviceInfo.start_date).toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        console.log('📧 Notificando cancelación a nanny asignada...');
+        console.log(`   Nanny: ${nannyName} (${serviceInfo.nanny_email})`);
+        console.log(`   Cliente: ${clientName}`);
+        console.log(`   Servicio: ${serviceInfo.title}`);
+        console.log(`   Fecha: ${serviceDate}`);
+        
+        await notificationSystem.notifyNannyCancellation(
+          serviceInfo.nanny_email,
+          serviceInfo.nanny_user_id,
+          nannyName,
+          clientName,
+          serviceInfo.title,
+          serviceDate,
+          id
+        );
+        
+        console.log('✅ Notificación de cancelación enviada exitosamente');
+      } else {
+        console.log('ℹ️ No se envió notificación de cancelación: servicio sin nanny asignada (estado: pending)');
       }
       
       return res.json({ success: true, message: 'Servicio cancelado exitosamente' });
@@ -258,6 +326,52 @@ class ServiceController {
         
         await executeQuery(incrementQuery, [nannyId]);
         console.log(`✓ Contador de servicios completados incrementado para nanny ${nannyId}`);
+      }
+
+      // Obtener información del servicio completo para notificar al cliente
+      const fullServiceQuery = `
+        SELECT s.*, 
+               c.user_id as client_user_id,
+               u_client.first_name as client_first_name,
+               u_client.last_name as client_last_name,
+               u_client.email as client_email,
+               u_nanny.first_name as nanny_first_name,
+               u_nanny.last_name as nanny_last_name
+        FROM services s
+        JOIN clients c ON s.client_id = c.id
+        JOIN users u_client ON c.user_id = u_client.id
+        LEFT JOIN nannys n ON s.nanny_id = n.id
+        LEFT JOIN users u_nanny ON n.user_id = u_nanny.id
+        WHERE s.id = ?
+      `;
+      
+      const fullServiceResult = await executeQuery(fullServiceQuery, [serviceId]);
+      
+      if (fullServiceResult.success && fullServiceResult.data.length > 0) {
+        const serviceInfo = fullServiceResult.data[0];
+        const clientName = `${serviceInfo.client_first_name} ${serviceInfo.client_last_name}`;
+        const nannyName = serviceInfo.nanny_first_name 
+          ? `${serviceInfo.nanny_first_name} ${serviceInfo.nanny_last_name}`
+          : 'la nanny';
+        
+        const serviceDate = new Date(serviceInfo.start_date).toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        // Enviar notificación al cliente
+        console.log('📧 Enviando notificación al cliente sobre servicio completado...');
+        await notificationSystem.notifyClientServiceCompleted(
+          serviceInfo.client_email,
+          serviceInfo.client_user_id,
+          clientName,
+          nannyName,
+          serviceInfo.title,
+          serviceDate,
+          serviceId
+        );
       }
 
       console.log(`✓ Servicio ${serviceId} marcado como completado`);

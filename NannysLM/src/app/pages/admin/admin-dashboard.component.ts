@@ -290,12 +290,30 @@ export class AdminDashboardComponent implements OnInit {
     // Datos de tabla nannys
     description: '',
     experience_years: 0,
-    hourly_rate: 15.00,
+    hourly_rate: 50.00,
     status: 'active' as 'active' | 'inactive',
     
     // Datos de tabla nanny_availability
     is_available: true,
     reason: ''
+  };
+
+  // Estados para modal de edición de tarifa
+  showEditHourlyRateModal: boolean = false;
+  selectedNannyForRateEdit: any = null;
+  editingHourlyRate: number = 0;
+
+  // Estados para modal de resultado de edición de tarifa
+  showHourlyRateResultModal: boolean = false;
+  hourlyRateResultData: {
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+    newRate?: number;
+  } = {
+    type: 'success',
+    title: '',
+    message: ''
   };
 
   // Datos para nuevo cliente
@@ -363,6 +381,18 @@ export class AdminDashboardComponent implements OnInit {
     title: '',
     message: '',
     action: ''
+  };
+
+  // Estados para modal de resultado de creación de nanny
+  showNannyCreationModal: boolean = false;
+  nannyCreationData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  } = {
+    firstName: '',
+    lastName: '',
+    email: ''
   };
 
   // Usuario actual (temporal)
@@ -861,11 +891,18 @@ export class AdminDashboardComponent implements OnInit {
         next: (response) => {
           if (response.success) {
             
-            // Cerrar modal
+            // Cerrar modal de creación
             this.closeAddNannyModal();
             
-            // Mostrar mensaje de éxito
-            alert(`✅ Nanny ${this.newNannyData.first_name} ${this.newNannyData.last_name} creada exitosamente.\n\n📧 Se envió un correo a ${this.newNannyData.email} con sus credenciales de acceso.\n\n⏰ La nanny podrá iniciar sesión inmediatamente con las credenciales enviadas.`);
+            // Preparar datos para el modal de éxito
+            this.nannyCreationData = {
+              firstName: this.newNannyData.first_name,
+              lastName: this.newNannyData.last_name,
+              email: this.newNannyData.email
+            };
+            
+            // Mostrar modal de éxito
+            this.showNannyCreationModal = true;
             
             // Recargar datos desde la base de datos
             this.loadNannys();
@@ -878,6 +915,13 @@ export class AdminDashboardComponent implements OnInit {
         }
       });
     }
+  }
+
+  /**
+   * Cerrar modal de creación de nanny
+   */
+  closeNannyCreationModal() {
+    this.showNannyCreationModal = false;
   }
 
   /**
@@ -1695,18 +1739,29 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
 
+    this.isSubmitting = true;
     
     // Llamar al servicio para verificar el pago
     this.paymentService.verifyPayment(payment.id, 'approve', 'Comprobante verificado correctamente').subscribe({
       next: (response: any) => {
+        this.isSubmitting = false;
         
         // Mostrar modal de éxito
         alert('✅ Pago aprobado exitosamente. La niñera recibirá el monto correspondiente.');
         
-        // Recargar los pagos
+        // Recargar los pagos inmediatamente
         this.loadPayments();
+        
+        // Cerrar el modal si está abierto
+        this.closePaymentDetailsModal();
       },
       error: (error: any) => {
+        this.isSubmitting = false;
+        console.error('Error al aprobar pago:', error);
+        alert('❌ Error al aprobar el pago. Por favor, intenta nuevamente.');
+        
+        // Recargar los pagos de todas formas para ver el estado actual
+        this.loadPayments();
       }
     });
   }
@@ -1725,17 +1780,115 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
 
+    this.isSubmitting = true;
     
     // Llamar al servicio para rechazar el pago
     this.paymentService.verifyPayment(payment.id, 'reject', reason).subscribe({
       next: (response: any) => {
+        this.isSubmitting = false;
         
-        // Recargar los pagos
+        // Mostrar modal de éxito
+        alert('✅ Pago rechazado exitosamente. Se ha notificado al cliente.');
+        
+        // Recargar los pagos inmediatamente
         this.loadPayments();
+        
+        // Cerrar el modal si está abierto
+        this.closePaymentDetailsModal();
       },
       error: (error: any) => {
+        this.isSubmitting = false;
+        console.error('Error al rechazar pago:', error);
+        alert('❌ Error al rechazar el pago. Por favor, intenta nuevamente.');
+        
+        // Recargar los pagos de todas formas para ver el estado actual
+        this.loadPayments();
       }
     });
+  }
+
+  /**
+   * Abrir modal para editar tarifa por hora de una nanny
+   */
+  openEditHourlyRateModal(nanny: any) {
+    this.selectedNannyForRateEdit = nanny;
+    this.editingHourlyRate = nanny.hourly_rate || 50;
+    this.showEditHourlyRateModal = true;
+  }
+
+  /**
+   * Cerrar modal de edición de tarifa
+   */
+  closeEditHourlyRateModal() {
+    this.showEditHourlyRateModal = false;
+    this.selectedNannyForRateEdit = null;
+    this.editingHourlyRate = 0;
+  }
+
+  /**
+   * Guardar la tarifa editada de la nanny
+   */
+  saveHourlyRate() {
+    if (!this.selectedNannyForRateEdit) return;
+
+    // Validar que la tarifa esté entre 50 y 500
+    if (this.editingHourlyRate < 50 || this.editingHourlyRate > 500) {
+      this.openHourlyRateResultModal('error', 'Tarifa Inválida', 'La tarifa debe estar entre $50 y $500 pesos mexicanos');
+      return;
+    }
+
+    // Marcar como enviando
+    this.isSubmitting = true;
+
+    // Llamar al servicio para actualizar la tarifa en la BD
+    this.nannyService.updateNannyHourlyRate(this.selectedNannyForRateEdit.id, this.editingHourlyRate).subscribe({
+      next: (response) => {
+        this.isSubmitting = false;
+        
+        // Actualizar la tarifa en la data local
+        this.selectedNannyForRateEdit.hourly_rate = this.editingHourlyRate;
+
+        // Mostrar modal de éxito
+        console.log('✅ Tarifa actualizada correctamente:', response);
+        this.openHourlyRateResultModal('success', '¡Tarifa Actualizada!', `La tarifa se ha actualizado a $${this.editingHourlyRate} por hora`, this.editingHourlyRate);
+
+        // Cerrar el modal de edición
+        this.closeEditHourlyRateModal();
+
+        // Recargar los datos para asegurar sincronización
+        this.loadNannys();
+      },
+      error: (error) => {
+        this.isSubmitting = false;
+        console.error('❌ Error al actualizar tarifa:', error);
+        this.openHourlyRateResultModal('error', 'Error', 'Error al actualizar la tarifa. Por favor, intenta nuevamente.');
+      }
+    });
+  }
+
+  /**
+   * Abrir modal de resultado de edición de tarifa
+   */
+  openHourlyRateResultModal(type: 'success' | 'error', title: string, message: string, newRate?: number) {
+    this.hourlyRateResultData = {
+      type,
+      title,
+      message,
+      newRate
+    };
+    this.showHourlyRateResultModal = true;
+  }
+
+  /**
+   * Cerrar modal de resultado de edición de tarifa
+   */
+  closeHourlyRateResultModal() {
+    this.showHourlyRateResultModal = false;
+    this.hourlyRateResultData = {
+      type: 'success',
+      title: '',
+      message: ''
+    };
   }
 
  

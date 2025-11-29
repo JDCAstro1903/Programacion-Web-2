@@ -428,6 +428,11 @@
                 <div class="hourly-rate">
                   <span class="rate-amount">${{ nanny.hourly_rate || 0 }}</span>
                   <span class="rate-period">/hora</span>
+                  <button class="edit-rate-btn" (click)="openEditHourlyRateModal(nanny)" title="Editar tarifa">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13M15.5 2.5C16.3284 1.67157 17.6716 1.67157 18.5 2.5L21.5 5.5C22.3284 6.32843 22.3284 7.67157 21.5 8.5L11 19H7V15L15.5 2.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1363,7 +1368,7 @@
           <div *ngIf="datosBancarios.length === 0" class="empty-state-banking">
            
             <h3>No hay datos bancarios registrados</h3>
-            <p>Agrega información bancaria para las nannys para facilitar los pagos y transferencias.</p>
+            <p>Agrega información bancaria para facilitar los pagos y transferencias.</p>
             <button class="empty-state-btn" (click)="openBankDetailsModal()">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -1738,8 +1743,9 @@
               
               <div class="form-group-professional">
                 <label for="hourly_rate">
-                  <span class="label-text">Tarifa por Hora</span>
+                  <span class="label-text">Tarifa por Hora (MXN)</span>
                   <span class="required-star">*</span>
+                  <span class="helper-text">Entre $50 y $500</span>
                 </label>
                 <div class="input-with-prefix">
                   <span class="input-prefix">$</span>
@@ -1748,11 +1754,11 @@
                          [(ngModel)]="newNannyData.hourly_rate" 
                          name="hourly_rate" 
                          required
-                         min="10"
-                         max="100"
+                         min="50"
+                         max="500"
                          step="0.50"
                          class="input-professional"
-                         placeholder="15.00">
+                         placeholder="50.00">
                 </div>
               </div>
             </div>
@@ -2788,4 +2794,206 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal de creación exitosa de nanny -->
+  <div *ngIf="showNannyCreationModal" class="modal-overlay professional-overlay" (click)="closeNannyCreationModal()">
+    <div class="modal-container nanny-creation-success-modal" (click)="$event.stopPropagation()">
+      <!-- Header con ícono de éxito -->
+      <div class="success-modal-header">
+        <div class="success-icon-container">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="2"/>
+            <polyline points="7 12 11 16 17 9" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>¡Nanny Creada Exitosamente!</h2>
+      </div>
+
+      <!-- Contenido del modal -->
+      <div class="success-modal-body">
+        <div class="success-message-section">
+          <h3>{{ nannyCreationData.firstName }} {{ nannyCreationData.lastName }}</h3>
+        </div>
+
+        <!-- Información de credenciales -->
+        <div class="credentials-info-card">
+          <div class="credentials-item">
+            <div class="credentials-icon">📧</div>
+            <div class="credentials-content">
+              <p class="credentials-label">Correo de Acceso</p>
+              <p class="credentials-value">{{ nannyCreationData.email }}</p>
+            </div>
+          </div>
+
+          <div class="credentials-divider"></div>
+
+          <div class="credentials-item">
+            <div class="credentials-icon">🔐</div>
+            <div class="credentials-content">
+              <p class="credentials-label">Credenciales Enviadas</p>
+              <p class="credentials-value">Se envió un correo con sus datos de acceso</p>
+            </div>
+          </div>
+
+          <div class="credentials-divider"></div>
+
+          <div class="credentials-item">
+            <div class="credentials-icon">⏰</div>
+            <div class="credentials-content">
+              <p class="credentials-label">Acceso Inmediato</p>
+              <p class="credentials-value">Podrá iniciar sesión inmediatamente</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nota importante -->
+        <div class="important-note">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+          </svg>
+          <p>La nanny recibirá un correo con sus credenciales de acceso al sistema.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para editar tarifa por hora de nanny -->
+  <div *ngIf="showEditHourlyRateModal" class="modal-overlay professional-overlay" (click)="closeEditHourlyRateModal()">
+    <div class="modal-container edit-rate-modal" (click)="$event.stopPropagation()">
+      <!-- Header del modal -->
+      <div class="professional-modal-header">
+        <div class="header-title-section">
+          <h2>Editar Tarifa por Hora</h2>
+          <p *ngIf="selectedNannyForRateEdit">Ajusta la tarifa de {{ selectedNannyForRateEdit.first_name }} {{ selectedNannyForRateEdit.last_name }}</p>
+        </div>
+        <button class="close-modal-btn-pro" (click)="closeEditHourlyRateModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo del modal -->
+      <div class="professional-modal-body">
+        <div class="rate-edit-container">
+          <!-- Tarifa actual -->
+          <div class="rate-info-section" *ngIf="selectedNannyForRateEdit">
+            <div class="info-card">
+              <div class="info-label">Tarifa Actual</div>
+              <div class="current-rate">${{ selectedNannyForRateEdit.hourly_rate || 0 }}</div>
+            </div>
+          </div>
+
+          <!-- Formulario de edición -->
+          <form (ngSubmit)="saveHourlyRate()" class="rate-form">
+            <div class="form-group-rate">
+              <label for="editHourlyRate">
+                <span class="label-text">Nueva Tarifa (MXN)</span>
+                <span class="required-star">*</span>
+              </label>
+              <div class="input-with-prefix rate-input">
+                <span class="input-prefix">$</span>
+                <input 
+                  type="number" 
+                  id="editHourlyRate" 
+                  [(ngModel)]="editingHourlyRate" 
+                  name="editHourlyRate" 
+                  required
+                  min="50"
+                  max="500"
+                  step="0.50"
+                  class="input-professional"
+                  placeholder="50.00">
+              </div>
+              <div class="rate-help-text">
+                <span class="info-icon">ℹ️</span>
+                <span>La tarifa debe estar entre $50 y $500 pesos mexicanos</span>
+              </div>
+            </div>
+
+            <!-- Rangos de tarifa sugeridos -->
+            <div class="suggested-rates">
+              <p class="suggestion-title">Tarifas Sugeridas:</p>
+              <div class="rate-buttons">
+                <button type="button" class="rate-btn" (click)="editingHourlyRate = 50">$50</button>
+                <button type="button" class="rate-btn" (click)="editingHourlyRate = 100">$100</button>
+                <button type="button" class="rate-btn" (click)="editingHourlyRate = 150">$150</button>
+                <button type="button" class="rate-btn" (click)="editingHourlyRate = 200">$200</button>
+                <button type="button" class="rate-btn" (click)="editingHourlyRate = 300">$300</button>
+                <button type="button" class="rate-btn" (click)="editingHourlyRate = 500">$500</button>
+              </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary-professional" (click)="closeEditHourlyRateModal()" [disabled]="isSubmitting">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-primary-professional" [disabled]="isSubmitting">
+                <svg *ngIf="!isSubmitting" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span *ngIf="!isSubmitting">Guardar Cambios</span>
+                <span *ngIf="isSubmitting">Guardando...</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de resultado de edición de tarifa - PROFESIONAL -->
+  <div *ngIf="showHourlyRateResultModal" class="modal-overlay professional-overlay" (click)="closeHourlyRateResultModal()">
+    <div class="modal-container hourly-rate-result-modal" (click)="$event.stopPropagation()">
+      <!-- Header del modal -->
+      <div class="result-modal-header" [class.result-success]="hourlyRateResultData.type === 'success'" [class.result-error]="hourlyRateResultData.type === 'error'">
+        <div class="result-icon-container">
+          <!-- Ícono de éxito -->
+          <svg *ngIf="hourlyRateResultData.type === 'success'" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="2"/>
+            <path d="M8 12L11 15L16 9" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <!-- Ícono de error -->
+          <svg *ngIf="hourlyRateResultData.type === 'error'" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="#ef4444" stroke-width="2"/>
+            <line x1="15" y1="9" x2="9" y2="15" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+            <line x1="9" y1="9" x2="15" y2="15" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>{{ hourlyRateResultData.title }}</h2>
+      </div>
+
+      <!-- Cuerpo del modal -->
+      <div class="result-modal-body">
+        <p class="result-message">{{ hourlyRateResultData.message }}</p>
+        
+        <!-- Información de la nueva tarifa (solo en caso de éxito) -->
+        <div class="rate-result-info" *ngIf="hourlyRateResultData.type === 'success' && hourlyRateResultData.newRate">
+          <div class="rate-result-card">
+            <span class="rate-result-label">Nueva Tarifa</span>
+            <span class="rate-result-value">${{ hourlyRateResultData.newRate }}</span>
+            <span class="rate-result-period">/hora</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del modal -->
+      <div class="result-modal-footer">
+        <button type="button" class="btn-result-close" (click)="closeHourlyRateResultModal()">
+          <svg *ngIf="hourlyRateResultData.type === 'success'" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg *ngIf="hourlyRateResultData.type === 'error'" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          {{ hourlyRateResultData.type === 'success' ? 'Entendido' : 'Cerrar' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
+

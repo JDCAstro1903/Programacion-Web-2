@@ -451,10 +451,79 @@ const updateNannyStatus = async (req, res) => {
     }
 };
 
+/**
+ * Actualizar la tarifa por hora de una nanny
+ */
+const updateNannyHourlyRate = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { hourly_rate } = req.body;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID de nanny requerido'
+            });
+        }
+
+        if (hourly_rate === undefined || hourly_rate === null) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tarifa por hora requerida'
+            });
+        }
+
+        // Validar que la tarifa esté entre 50 y 500
+        if (hourly_rate < 50 || hourly_rate > 500) {
+            return res.status(400).json({
+                success: false,
+                message: 'La tarifa debe estar entre $50 y $500 pesos mexicanos'
+            });
+        }
+
+        console.log(`💰 Actualizando tarifa por hora de nanny ${id} a: $${hourly_rate}`);
+
+        // Actualizar en la BD
+        const updateQuery = `
+            UPDATE nannys
+            SET hourly_rate = ?, updated_at = NOW()
+            WHERE id = ?
+        `;
+
+        const connection = await pool.getConnection();
+        const [result] = await connection.execute(updateQuery, [hourly_rate, id]);
+        connection.release();
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Nanny no encontrada'
+            });
+        }
+
+        console.log(`✅ Tarifa actualizada a: $${hourly_rate}`);
+
+        return res.json({
+            success: true,
+            message: `Tarifa actualizada a: $${hourly_rate}`,
+            data: { id, hourly_rate }
+        });
+
+    } catch (error) {
+        console.error('❌ Error al actualizar tarifa:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createNanny,
     getAllNannys,
     getNannyById,
     getNannyByUserId,
-    updateNannyStatus
+    updateNannyStatus,
+    updateNannyHourlyRate
 };

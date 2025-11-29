@@ -200,7 +200,7 @@ app.use((err, req, res, next) => {
 });
 
 // ===============================================
-// INICIAR SERVIDOR
+// INICIAR SERVIDOR Y SCHEDULERS
 // ===============================================
 const startServer = async () => {
     try {
@@ -213,6 +213,10 @@ const startServer = async () => {
             process.exit(1);
         }
         
+        // Iniciar scheduler de recordatorios de servicios
+        const serviceReminderScheduler = require('./src/utils/ServiceReminderScheduler');
+        serviceReminderScheduler.start();
+        
         app.listen(PORT, () => {
             console.log(' ==========================================');
             console.log(` ✅ Servidor NannysLM iniciado exitosamente`);
@@ -221,6 +225,7 @@ const startServer = async () => {
             console.log(` 🔗 URL: http://localhost:${PORT}`);
             console.log(` 🩺 API Health: http://localhost:${PORT}/api/health`);
             console.log(` 💾 Base de datos: Conectada ✅`);
+            console.log(` ⏰ Recordatorios: Activos ✅`);
             console.log(' ==========================================');
         });
         

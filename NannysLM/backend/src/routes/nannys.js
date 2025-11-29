@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
-const { createNanny, getAllNannys, getNannyById, getNannyByUserId, updateNannyStatus } = require('../controllers/NannyController');
+const { createNanny, getAllNannys, getNannyById, getNannyByUserId, updateNannyStatus, updateNannyHourlyRate } = require('../controllers/NannyController');
 
 /**
  * POST /api/v1/nannys - Crear nueva nanny (SOLO ADMIN)
@@ -23,6 +23,11 @@ router.get('/user/:userId', verifyToken, getNannyByUserId);
  * PATCH /api/v1/nannys/:id/status - Cambiar estado de una nanny (SOLO ADMIN)
  */
 router.patch('/:id/status', verifyToken, updateNannyStatus);
+
+/**
+ * PATCH /api/v1/nannys/:id/hourly-rate - Actualizar tarifa por hora (SOLO ADMIN)
+ */
+router.patch('/:id/hourly-rate', verifyToken, updateNannyHourlyRate);
 
 /**
  * GET /api/v1/nannys/:nannyId - Obtener nanny específica (SOLO ADMIN)

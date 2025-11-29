@@ -105,15 +105,48 @@ export class NotificationsPanelComponent implements OnInit {
 
   getNotificationColor(type: string): string {
     switch (type) {
+      // Tipos básicos
       case 'success':
-        return '#10b981';
+        return '#10b981'; // Verde
       case 'error':
-        return '#ef4444';
+        return '#ef4444'; // Rojo
       case 'warning':
-        return '#f59e0b';
+        return '#f59e0b'; // Amarillo/Naranja
       case 'info':
+        return '#3b82f6'; // Azul
+      
+      // Verificación
+      case 'verification_pending':
+        return '#f59e0b'; // Naranja
+      case 'verification_approved':
+        return '#10b981'; // Verde
+      case 'verification_rejected':
+        return '#ef4444'; // Rojo
+      
+      // Servicios
+      case 'service':
+      case 'service_accepted':
+        return '#10b981'; // Verde
+      case 'service_reminder':
+        return '#f59e0b'; // Naranja
+      case 'service_completed':
+        return '#8b5cf6'; // Púrpura
+      
+      // Pagos
+      case 'payment':
+      case 'payment_pending':
+        return '#f59e0b'; // Naranja
+      case 'payment_approved':
+        return '#10b981'; // Verde
+      case 'payment_rejected':
+        return '#ef4444'; // Rojo
+      
+      // Calificaciones
+      case 'rating_received':
+        return '#f59e0b'; // Naranja/Dorado (estrellas)
+      
       default:
-        return '#3b82f6';
+        return '#3b82f6'; // Azul por defecto
     }
   }
 

@@ -127,6 +127,22 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   serviceModalMessage: string = '';
   serviceModalErrors: string[] = [];
 
+  // Estado del modal de cancelación de servicio
+  showCancelModal: boolean = false;
+  serviceToCancel: any = null;
+
+  // Estado del modal de cambio de fecha
+  showChangeDateModal: boolean = false;
+  serviceToChangeDate: any = null;
+  
+  // Calendario para cambio de fecha
+  changeDateCalendarMonth: number = new Date().getMonth();
+  changeDateCalendarYear: number = new Date().getFullYear();
+  selectedNewDate: Date | null = null;
+  selectedNewStartTime: string = '';
+  selectedNewEndTime: string = '';
+  minSelectableDate: Date | null = null;
+
   // Estado del modal de perfil de niñera
   private nannyProfileSubject = new BehaviorSubject<any>(null);
   showNannyProfileModal$ = this.nannyProfileSubject.asObservable();
@@ -690,7 +706,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               service_type_name,
               showRating: false,
               tempRating: 0,
-              isRated: (service.rating?.rating && service.rating.rating > 0) ? true : false
+              isRated: (service.rating && service.rating.rating && service.rating.rating > 0) ? true : false,
+              rating: service.rating || { rating: 0 }
             };
             
             // Convertir strings de fecha a Date objects para Angular date pipe
@@ -969,14 +986,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       return;
     }
     
-    const confirmCancel = confirm(
-      `¿Estás seguro de que deseas cancelar el servicio "${this.selectedService.title}"?\n\n` +
-      `Esta acción no se puede deshacer.`
-    );
-
-    if (confirmCancel) {
-      this.cancelServiceById(this.selectedService.id);
-    }
+    this.serviceToCancel = this.selectedService;
+    this.showCancelModal = true;
   }
 
   // Abrir modal de cancelación (Legacy - mantener por compatibilidad)
@@ -989,17 +1000,43 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.serviceService.deleteService(serviceId).subscribe({
       next: (response: any) => {
         if (response.success) {
-          alert('El servicio ha sido cancelado correctamente');
+          // Cerrar modal de cancelación
+          this.closeCancelModal();
+          
+          // Mostrar mensaje de éxito
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = '✓ Servicio Cancelado';
+          this.serviceModalMessage = 'El servicio ha sido cancelado correctamente';
+          this.showServiceModal = true;
           
           // Volver a la lista y recargar servicios
-          this.backToServices();
-          this.loadClientServices();
+          setTimeout(() => {
+            this.closeServiceModal();
+            this.backToServices();
+            this.loadClientServices();
+          }, 2000);
         }
       },
       error: (error: any) => {
-        alert('Error al cancelar el servicio. Por favor intenta nuevamente.');
+        this.closeCancelModal();
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al Cancelar';
+        this.serviceModalMessage = error.error?.message || 'Error al cancelar el servicio. Por favor intenta nuevamente.';
+        this.showServiceModal = true;
       }
     });
+  }
+
+  // Cerrar modal de cancelación
+  closeCancelModal() {
+    this.showCancelModal = false;
+    this.serviceToCancel = null;
+  }
+
+  // Procesar cancelación desde modal
+  processCancelService() {
+    if (!this.serviceToCancel) return;
+    this.cancelServiceById(this.serviceToCancel.id);
   }
 
   // Método helper para abrir perfil desde servicio
@@ -1425,6 +1462,56 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     return `${startDate} - ${endDate} (${daysDiff} días)`;
   }
 
+  /**
+   * Formatear fecha completa con día de la semana en español
+   */
+  formatDateLong(date: Date | string | null | undefined): string {
+    if (!date) return 'Fecha no disponible';
+
+    try {
+      let dateObj: Date;
+      
+      if (typeof date === 'string') {
+        const dateStr = date.split('T')[0];
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          dateObj = new Date(year, month, day);
+        } else {
+          dateObj = new Date(date);
+        }
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        return 'Tipo inválido';
+      }
+
+      if (isNaN(dateObj.getTime())) {
+        return 'Fecha inválida';
+      }
+
+      const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+
+      const dayName = dayNames[dateObj.getDay()];
+      const day = dateObj.getDate();
+      const month = monthNames[dateObj.getMonth()];
+      const year = dateObj.getFullYear();
+
+      return `${dayName}, ${day} de ${month} de ${year}`;
+    } catch (error) {
+      return 'Error al formatear';
+    }
+  }
+
+  /**
+   * Formatear fecha corta sin año
+   */
   formatDate(date: Date | string | null | undefined): string {
     // Validar que la fecha exista
     if (!date) {
@@ -1865,15 +1952,218 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.currentView = 'booking';
   }
 
-  // Cambiar fecha del servicio
+  // Cambiar fecha del servicio (desde vista de detalles)
   changeServiceDate() {
-    this.showServiceDetails = false;
-    this.currentView = 'booking';
-    // Mantener el servicio para facilitar el cambio
-    if (this.createdService?.service) {
-      this.selectedServiceType = this.createdService.service.id;
+    if (!this.selectedService) return;
+    
+    this.serviceToChangeDate = this.selectedService;
+    
+    // Calcular fecha mínima seleccionable (día siguiente al servicio actual)
+    const currentServiceDate = new Date(this.selectedService.start_date);
+    this.minSelectableDate = new Date(currentServiceDate);
+    this.minSelectableDate.setDate(this.minSelectableDate.getDate() + 1);
+    
+    // Inicializar calendario en el mes de la fecha mínima
+    this.changeDateCalendarMonth = this.minSelectableDate.getMonth();
+    this.changeDateCalendarYear = this.minSelectableDate.getFullYear();
+    
+    // Limpiar selecciones previas
+    this.selectedNewDate = null;
+    this.selectedNewStartTime = '';
+    this.selectedNewEndTime = '';
+    
+    this.showChangeDateModal = true;
+  }
+
+  // Cerrar modal de cambio de fecha
+  closeChangeDateModal() {
+    this.showChangeDateModal = false;
+    this.serviceToChangeDate = null;
+    this.selectedNewDate = null;
+    this.selectedNewStartTime = '';
+    this.selectedNewEndTime = '';
+    this.minSelectableDate = null;
+  }
+
+  // Procesar cambio de fecha - cancela el servicio actual y abre el pool
+  async processChangeDateService() {
+    if (!this.serviceToChangeDate) return;
+    
+    // Validar que se haya seleccionado nueva fecha y horarios
+    if (!this.selectedNewDate) {
+      this.serviceModalType = 'warning';
+      this.serviceModalTitle = '⚠️ Fecha requerida';
+      this.serviceModalMessage = 'Por favor selecciona una nueva fecha para el servicio.';
+      this.showServiceModal = true;
+      return;
     }
-    this.createdService = null;
+    
+    if (!this.selectedNewStartTime || !this.selectedNewEndTime) {
+      this.serviceModalType = 'warning';
+      this.serviceModalTitle = '⚠️ Horarios requeridos';
+      this.serviceModalMessage = 'Por favor selecciona la hora de inicio y fin del servicio.';
+      this.showServiceModal = true;
+      return;
+    }
+
+    const serviceId = this.serviceToChangeDate.id;
+    const serviceType = this.serviceToChangeDate.service_type;
+    const numberOfChildren = this.serviceToChangeDate.number_of_children || 1;
+    const specialInstructions = this.serviceToChangeDate.special_instructions || '';
+    
+    // Guardar las selecciones antes de cerrar el modal
+    const newDate = this.selectedNewDate;
+    const newStartTime = this.selectedNewStartTime;
+    const newEndTime = this.selectedNewEndTime;
+    
+    try {
+      // Paso 1: Cerrar modal de cambio de fecha y mostrar progreso
+      this.closeChangeDateModal();
+      this.serviceModalType = 'loading';
+      this.serviceModalTitle = 'Procesando cambio de fecha...';
+      this.serviceModalMessage = 'Cancelando servicio actual. La nanny será notificada de la cancelación.';
+      this.showServiceModal = true;
+
+      // Paso 2: Cancelar el servicio mediante el API
+      await new Promise<void>((resolve, reject) => {
+        this.serviceService.deleteService(serviceId).subscribe({
+          next: (response: any) => {
+            console.log('✅ Servicio cancelado:', response);
+            if (response.success) {
+              resolve();
+            } else {
+              reject(new Error(response.message || 'Error al cancelar el servicio'));
+            }
+          },
+          error: (error) => {
+            console.error('❌ Error al cancelar servicio:', error);
+            reject(error);
+          }
+        });
+      });
+
+      // Paso 3: Actualizar mensaje - servicio cancelado exitosamente
+      this.serviceModalMessage = 'Servicio cancelado. Preparando formulario para nueva fecha...';
+
+      // Paso 4: Recargar servicios del cliente
+      await new Promise<void>((resolve) => {
+        this.clientApiService.getClientServices(this.currentUserId).subscribe({
+          next: (response: any) => {
+            if (response.success && response.data) {
+              this.contractedServices = response.data
+                .filter((service: any) => service.status !== 'cancelled')
+                .map((service: any) => this.transformServiceData(service));
+            }
+            resolve();
+          },
+          error: () => resolve() // Continuar aunque falle la recarga
+        });
+      });
+
+      // Paso 5: Mostrar mensaje de éxito
+      this.serviceModalType = 'success';
+      this.serviceModalTitle = '✓ Servicio Cancelado';
+      this.serviceModalMessage = 'El servicio anterior ha sido cancelado exitosamente. Ahora puedes seleccionar una nueva fecha y horario. Las nannys disponibles recibirán una notificación con tu nueva solicitud.';
+
+      // Paso 6: Preparar datos del nuevo servicio con la fecha y horarios seleccionados
+      this.serviceModalMessage = 'Creando nuevo servicio con la fecha seleccionada...';
+      
+      // Obtener el nombre del servicio desde serviceTypes
+      const serviceTypeMapping: { [key: string]: string } = {
+        'hourly': 'home-care',
+        'overnight': 'night-care',
+        'weekly': 'weekly-care',
+        'event': 'event-care',
+        'travel': 'travel-care'
+      };
+      
+      const mappedServiceType = serviceTypeMapping[serviceType] || 'home-care';
+      const selectedServiceObj = this.serviceTypes.find(s => s.id === mappedServiceType);
+      const serviceTitle = selectedServiceObj ? selectedServiceObj.name : 'Servicio de cuidado';
+      
+      // Formatear la fecha seleccionada
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      const newServiceTitle = `${serviceTitle} - ${newDate.getDate()} de ${monthNames[newDate.getMonth()]}`;
+      
+      // Preparar datos del nuevo servicio
+      const newServiceData: ServiceData = {
+        client_id: this.clientInfo!.id,
+        title: newServiceTitle,
+        service_type: serviceType,
+        description: `Servicio de ${serviceTitle} para ${numberOfChildren} niño(s)`,
+        start_date: this.serviceService.formatDate(newDate),
+        start_time: newStartTime,
+        end_time: newEndTime,
+        number_of_children: numberOfChildren,
+        special_instructions: specialInstructions,
+        address: this.clientInfo?.address || 'Dirección no proporcionada'
+      };
+      
+      // Paso 7: Crear el nuevo servicio
+      await new Promise<void>((resolve, reject) => {
+        this.serviceService.createService(newServiceData).subscribe({
+          next: (response) => {
+            if (response.success) {
+              resolve();
+            } else {
+              reject(new Error(response.message || 'Error al crear servicio'));
+            }
+          },
+          error: (error) => reject(error)
+        });
+      });
+      
+      // Paso 8: Recargar servicios nuevamente
+      await new Promise<void>((resolve) => {
+        this.clientApiService.getClientServices(this.currentUserId).subscribe({
+          next: (response: any) => {
+            if (response.success && response.data) {
+              this.services.upcoming = response.data.filter((s: any) => 
+                s.status === 'pending' || s.status === 'confirmed' || s.status === 'in_progress'
+              ).map((s: any) => this.transformServiceData(s));
+              this.services.past = response.data.filter((s: any) => 
+                s.status === 'completed' || s.status === 'cancelled'
+              ).map((s: any) => this.transformServiceData(s));
+            }
+            resolve();
+          },
+          error: () => resolve()
+        });
+      });
+      
+      // Paso 9: Mostrar mensaje de éxito final
+      this.serviceModalType = 'success';
+      this.serviceModalTitle = '✓ Fecha Cambiada Exitosamente';
+      this.serviceModalMessage = `¡Perfecto! Tu servicio ha sido reprogramado para el ${newDate.getDate()} de ${monthNames[newDate.getMonth()]} de ${newStartTime} a ${newEndTime}.\n\nUna nanny disponible ha sido notificada y confirmará tu servicio pronto.`;
+      
+      // Paso 10: Después de 3 segundos, cerrar modal y volver a la lista
+      setTimeout(() => {
+        this.closeServiceModal();
+        this.closeChangeDateModal();
+        
+        // Salir de la vista de detalles
+        this.selectedService = null;
+        this.isEditingInstructions = false;
+        
+        // Volver a la lista de servicios
+        this.currentView = 'services';
+        this.servicesView = 'services-history';
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('❌ Error en processChangeDateService:', error);
+      this.serviceModalType = 'error';
+      this.serviceModalTitle = 'Error al Cambiar Fecha';
+      this.serviceModalMessage = error.error?.message || error.message || 'No se pudo procesar el cambio de fecha. Por favor intenta nuevamente.';
+      
+      // Agregar detalles del error si están disponibles
+      if (error.error?.error) {
+        this.serviceModalErrors = [error.error.error];
+      }
+    }
   }
 
   // Formatear fecha del servicio
@@ -2645,6 +2935,137 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       return this.nannyBankData[service.nanny.name] || null;
     }
     return null;
+  }
+  
+  // ===============================================
+  // MÉTODOS PARA CALENDARIO DE CAMBIO DE FECHA
+  // ===============================================
+  
+  /**
+   * Obtener días del mes para el calendario de cambio de fecha
+   */
+  getChangeDateCalendarDays(): number[] {
+    const daysInMonth = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, 1).getDay();
+    
+    const days: number[] = [];
+    
+    // Agregar espacios vacíos para los días anteriores al primer día del mes
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(0);
+    }
+    
+    // Agregar los días del mes
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+    
+    return days;
+  }
+  
+  /**
+   * Obtener nombre del mes del calendario de cambio de fecha
+   */
+  getChangeDateMonthName(): string {
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return monthNames[this.changeDateCalendarMonth];
+  }
+  
+  /**
+   * Navegar al mes anterior en el calendario de cambio de fecha
+   */
+  previousChangeDateMonth() {
+    if (this.changeDateCalendarMonth === 0) {
+      this.changeDateCalendarMonth = 11;
+      this.changeDateCalendarYear--;
+    } else {
+      this.changeDateCalendarMonth--;
+    }
+  }
+  
+  /**
+   * Navegar al mes siguiente en el calendario de cambio de fecha
+   */
+  nextChangeDateMonth() {
+    if (this.changeDateCalendarMonth === 11) {
+      this.changeDateCalendarMonth = 0;
+      this.changeDateCalendarYear++;
+    } else {
+      this.changeDateCalendarMonth++;
+    }
+  }
+  
+  /**
+   * Seleccionar fecha en el calendario de cambio de fecha
+   */
+  selectChangeDateDay(day: number) {
+    if (day === 0) return;
+    
+    const selectedDate = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, day);
+    
+    // Verificar si la fecha es seleccionable
+    if (this.isChangeDateDayDisabled(day)) {
+      return;
+    }
+    
+    this.selectedNewDate = selectedDate;
+  }
+  
+  /**
+   * Verificar si un día está seleccionado
+   */
+  isChangeDateDaySelected(day: number): boolean {
+    if (day === 0 || !this.selectedNewDate) return false;
+    
+    const checkDate = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, day);
+    return this.selectedNewDate.getFullYear() === checkDate.getFullYear() &&
+           this.selectedNewDate.getMonth() === checkDate.getMonth() &&
+           this.selectedNewDate.getDate() === checkDate.getDate();
+  }
+  
+  /**
+   * Verificar si un día está deshabilitado (antes de la fecha mínima)
+   */
+  isChangeDateDayDisabled(day: number): boolean {
+    if (day === 0) return true;
+    
+    const checkDate = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, day);
+    
+    // Deshabilitar si es antes de la fecha mínima seleccionable
+    if (this.minSelectableDate) {
+      const minDate = new Date(this.minSelectableDate.getFullYear(), this.minSelectableDate.getMonth(), this.minSelectableDate.getDate());
+      const currentDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+      return currentDate < minDate;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Formatear la fecha seleccionada para mostrar
+   */
+  getSelectedNewDateText(): string {
+    if (!this.selectedNewDate) return 'Selecciona una fecha';
+    
+    const day = this.selectedNewDate.getDate();
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const month = monthNames[this.selectedNewDate.getMonth()];
+    const year = this.selectedNewDate.getFullYear();
+    
+    return `${day} de ${month} de ${year}`;
+  }
+  
+  /**
+   * Verificar si se puede proceder con el cambio de fecha
+   */
+  canProceedWithDateChange(): boolean {
+    return !!(this.selectedNewDate && this.selectedNewStartTime && this.selectedNewEndTime);
   }
 
   // ===============================================

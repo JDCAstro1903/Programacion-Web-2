@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const notificationSystem = require('../utils/NotificationSystem');
 
 class RatingController {
   /**
@@ -115,6 +116,49 @@ class RatingController {
       }
 
       console.log(`✓ Calificación creada para servicio ${service_id} por cliente ${client_id}`);
+
+      // Notificar a la nanny sobre la nueva calificación
+      try {
+        // Obtener información completa para la notificación
+        const notificationQuery = `
+          SELECT 
+            n.user_id as nanny_user_id,
+            u_nanny.first_name as nanny_first_name,
+            u_nanny.last_name as nanny_last_name,
+            u_nanny.email as nanny_email,
+            u_client.first_name as client_first_name,
+            u_client.last_name as client_last_name,
+            s.title as service_title
+          FROM nannys n
+          JOIN users u_nanny ON n.user_id = u_nanny.id
+          JOIN services s ON s.id = ?
+          JOIN clients c ON s.client_id = c.id
+          JOIN users u_client ON c.user_id = u_client.id
+          WHERE n.id = ?
+        `;
+        
+        const notifResult = await executeQuery(notificationQuery, [service_id, service.nanny_id]);
+        
+        if (notifResult.success && notifResult.data.length > 0) {
+          const notifData = notifResult.data[0];
+          const nannyName = `${notifData.nanny_first_name} ${notifData.nanny_last_name}`;
+          const clientName = `${notifData.client_first_name} ${notifData.client_last_name}`;
+          
+          console.log('📧 Enviando notificación a nanny sobre nueva calificación...');
+          await notificationSystem.notifyNannyNewRating(
+            notifData.nanny_email,
+            notifData.nanny_user_id,
+            nannyName,
+            clientName,
+            rating,
+            notifData.service_title,
+            service_id,
+            req.body.comment || ''
+          );
+        }
+      } catch (notifError) {
+        console.error('⚠️ Error al notificar a nanny sobre calificación:', notifError);
+      }
 
       return res.json({
         success: true,

@@ -1385,6 +1385,592 @@ const sendNewPaymentNotificationEmail = async (adminEmail, adminName, clientName
     }
 };
 
+/**
+ * Plantilla HTML para notificar al admin sobre nueva solicitud de verificación
+ */
+const getNewVerificationRequestEmailTemplate = (adminName, clientName, clientEmail) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nueva Solicitud de Verificación - NannysLM</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);">
+                
+                <div style="background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">⚠️ Nueva Verificación Pendiente</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Un cliente requiere aprobación</p>
+                </div>
+
+                <div style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151;">
+                        Hola <strong>${adminName}</strong>,
+                    </p>
+
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Un nuevo cliente ha enviado su información para verificación:
+                    </p>
+
+                    <div style="background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #92400E;">
+                            <strong>Cliente:</strong> ${clientName}
+                        </p>
+                        <p style="margin: 0; font-size: 14px; color: #92400E;">
+                            <strong>Email:</strong> ${clientEmail}
+                        </p>
+                    </div>
+
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b;">
+                        Por favor, revisa la información del cliente en el panel de administración y procede con la aprobación o rechazo.
+                    </p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/admin/verifications" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                            📋 Ver Panel de Verificaciones
+                        </a>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0;">© 2025 NannysLM. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Plantilla HTML para notificar al cliente cuando nanny acepta servicio
+ */
+const getNannyAcceptedServiceEmailTemplate = (clientName, nannyName, serviceName, serviceDate) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Servicio Aceptado - NannysLM</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);">
+                
+                <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">✅ ¡Servicio Aceptado!</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Tu nanny ha confirmado el servicio</p>
+                </div>
+
+                <div style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151;">
+                        Hola <strong>${clientName}</strong>,
+                    </p>
+
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Tenemos buenas noticias: <strong>${nannyName}</strong> ha aceptado tu solicitud de servicio.
+                    </p>
+
+                    <div style="background: #D1FAE5; border-left: 4px solid #10B981; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #065F46;">
+                            <strong>Servicio:</strong> ${serviceName}
+                        </p>
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #065F46;">
+                            <strong>Nanny:</strong> ${nannyName}
+                        </p>
+                        <p style="margin: 0; font-size: 14px; color: #065F46;">
+                            <strong>Fecha:</strong> ${serviceDate}
+                        </p>
+                    </div>
+
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b;">
+                        Puedes ver todos los detalles del servicio en tu panel de cliente.
+                    </p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/client/services" style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                            📋 Ver Mis Servicios
+                        </a>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0;">© 2025 NannysLM. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Plantilla HTML para recordatorio de servicio
+ */
+const getServiceReminderEmailTemplate = (nannyName, serviceName, serviceDate, daysAhead) => {
+    const urgencyColor = daysAhead === 1 ? '#EF4444' : '#F59E0B';
+    const urgencyGradient = daysAhead === 1 ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' : 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)';
+    const urgencyText = daysAhead === 1 ? '¡Mañana!' : 'En 3 días';
+    
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Recordatorio de Servicio - NannysLM</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);">
+                
+                <div style="background: ${urgencyGradient}; padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">🔔 Recordatorio de Servicio</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">${urgencyText}</p>
+                </div>
+
+                <div style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151;">
+                        Hola <strong>${nannyName}</strong>,
+                    </p>
+
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Te recordamos que tienes un servicio programado ${daysAhead === 1 ? 'mañana' : 'en 3 días'}:
+                    </p>
+
+                    <div style="background: ${daysAhead === 1 ? '#FEE2E2' : '#FEF3C7'}; border-left: 4px solid ${urgencyColor}; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: ${daysAhead === 1 ? '#991B1B' : '#92400E'};">
+                            <strong>Servicio:</strong> ${serviceName}
+                        </p>
+                        <p style="margin: 0; font-size: 14px; color: ${daysAhead === 1 ? '#991B1B' : '#92400E'};">
+                            <strong>Fecha:</strong> ${serviceDate}
+                        </p>
+                    </div>
+
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b;">
+                        Por favor, asegúrate de estar disponible y preparada para el servicio.
+                    </p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/nanny/services" style="display: inline-block; background: ${urgencyGradient}; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                            📋 Ver Detalles del Servicio
+                        </a>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0;">© 2025 NannysLM. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Plantilla HTML para notificar servicio completado
+ */
+const getServiceCompletedEmailTemplate = (clientName, nannyName, serviceName, serviceDate) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Servicio Completado - NannysLM</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);">
+                
+                <div style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">✨ Servicio Completado</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">¡El servicio ha finalizado!</p>
+                </div>
+
+                <div style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151;">
+                        Hola <strong>${clientName}</strong>,
+                    </p>
+
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        El servicio con <strong>${nannyName}</strong> ha sido marcado como completado.
+                    </p>
+
+                    <div style="background: #EDE9FE; border-left: 4px solid #8B5CF6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #5B21B6;">
+                            <strong>Servicio:</strong> ${serviceName}
+                        </p>
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #5B21B6;">
+                            <strong>Nanny:</strong> ${nannyName}
+                        </p>
+                        <p style="margin: 0; font-size: 14px; color: #5B21B6;">
+                            <strong>Fecha:</strong> ${serviceDate}
+                        </p>
+                    </div>
+
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b;">
+                        ¿Te gustaría dejar una calificación sobre el servicio recibido?
+                    </p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/client/services" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                            ⭐ Calificar Servicio
+                        </a>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0;">© 2025 NannysLM. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Enviar correo al admin sobre nueva solicitud de verificación
+ */
+const sendNewVerificationRequestEmail = async (adminEmail, adminName, clientName, clientEmail) => {
+    if (!isSMTPConfigured()) {
+        console.log('📧 [Email not sent - SMTP not configured]');
+        console.log(`   TO: ${adminEmail} (Admin)`);
+        console.log(`   SUBJECT: Nueva solicitud de verificación de ${clientName}`);
+        return { success: true, fallback: true };
+    }
+
+    const subject = '⚠️ Nueva Solicitud de Verificación - NannysLM';
+    const html = getNewVerificationRequestEmailTemplate(adminName, clientName, clientEmail);
+
+    try {
+        const transporter = createTransporter();
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
+            to: adminEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Verification request email sent to admin:', info.messageId);
+        return { success: true, message: 'Verification request email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending verification request email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Enviar correo cuando nanny acepta servicio
+ */
+const sendNannyAcceptedServiceEmail = async (clientEmail, clientName, nannyName, serviceName, serviceDate) => {
+    if (!isSMTPConfigured()) {
+        console.log('📧 [Email not sent - SMTP not configured]');
+        console.log(`   TO: ${clientEmail}`);
+        console.log(`   SUBJECT: ${nannyName} ha aceptado tu servicio`);
+        return { success: true, fallback: true };
+    }
+
+    const subject = '✅ Tu servicio ha sido aceptado - NannysLM';
+    const html = getNannyAcceptedServiceEmailTemplate(clientName, nannyName, serviceName, serviceDate);
+
+    try {
+        const transporter = createTransporter();
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
+            to: clientEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Service acceptance email sent to client:', info.messageId);
+        return { success: true, message: 'Service acceptance email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending service acceptance email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Enviar recordatorio de servicio
+ */
+const sendServiceReminderEmail = async (nannyEmail, nannyName, serviceName, serviceDate, daysAhead) => {
+    if (!isSMTPConfigured()) {
+        console.log('📧 [Email not sent - SMTP not configured]');
+        console.log(`   TO: ${nannyEmail}`);
+        console.log(`   SUBJECT: Recordatorio: Servicio en ${daysAhead} día(s)`);
+        return { success: true, fallback: true };
+    }
+
+    const subject = `🔔 Recordatorio: Servicio ${daysAhead === 1 ? 'mañana' : 'en 3 días'} - NannysLM`;
+    const html = getServiceReminderEmailTemplate(nannyName, serviceName, serviceDate, daysAhead);
+
+    try {
+        const transporter = createTransporter();
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
+            to: nannyEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Service reminder email sent to nanny:', info.messageId);
+        return { success: true, message: 'Service reminder email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending service reminder email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Enviar notificación de servicio completado
+ */
+const sendServiceCompletedEmail = async (clientEmail, clientName, nannyName, serviceName, serviceDate) => {
+    if (!isSMTPConfigured()) {
+        console.log('📧 [Email not sent - SMTP not configured]');
+        console.log(`   TO: ${clientEmail}`);
+        console.log(`   SUBJECT: Servicio completado con ${nannyName}`);
+        return { success: true, fallback: true };
+    }
+
+    const subject = '✨ Servicio Completado - NannysLM';
+    const html = getServiceCompletedEmailTemplate(clientName, nannyName, serviceName, serviceDate);
+
+    try {
+        const transporter = createTransporter();
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
+            to: clientEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Service completed email sent to client:', info.messageId);
+        return { success: true, message: 'Service completed email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending service completed email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Plantilla HTML para notificar a nanny sobre nueva calificación
+ */
+const getNannyRatingReceivedEmailTemplate = (nannyName, clientName, rating, serviceName, comment = '') => {
+    const stars = '⭐'.repeat(Math.round(rating));
+    const ratingColor = rating >= 4 ? '#10B981' : rating >= 3 ? '#F59E0B' : '#EF4444';
+    
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nueva Calificación Recibida - NannysLM</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);">
+                
+                <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">⭐ Nueva Calificación</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Has recibido una nueva calificación</p>
+                </div>
+
+                <div style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151;">
+                        Hola <strong>${nannyName}</strong>,
+                    </p>
+
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        <strong>${clientName}</strong> ha dejado una calificación sobre el servicio que realizaste.
+                    </p>
+
+                    <div style="background: #FEF3C7; border-left: 4px solid ${ratingColor}; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">
+                            ${stars}
+                        </div>
+                        <p style="margin: 0 0 8px 0; font-size: 32px; font-weight: bold; color: ${ratingColor};">
+                            ${rating}/5
+                        </p>
+                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #92400E;">
+                            <strong>Servicio:</strong> ${serviceName}
+                        </p>
+                        ${comment ? `
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #FDE68A;">
+                            <p style="margin: 0; font-size: 13px; color: #78350F; font-style: italic;">
+                                "${comment}"
+                            </p>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b;">
+                        ¡Sigue brindando un excelente servicio! Las calificaciones ayudan a construir tu reputación en la plataforma.
+                    </p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/nanny/ratings" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                            📊 Ver Todas Mis Calificaciones
+                        </a>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0;">© 2025 NannysLM. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Enviar notificación de nueva calificación a nanny
+ */
+const sendNannyRatingReceivedEmail = async (nannyEmail, nannyName, clientName, rating, serviceName, comment = '') => {
+    if (!isSMTPConfigured()) {
+        console.log('📧 [Email not sent - SMTP not configured]');
+        console.log(`   TO: ${nannyEmail}`);
+        console.log(`   SUBJECT: Nueva calificación recibida: ${rating}/5 estrellas`);
+        return { success: true, fallback: true };
+    }
+
+    const subject = `⭐ Nueva Calificación: ${rating}/5 estrellas - NannysLM`;
+    const html = getNannyRatingReceivedEmailTemplate(nannyName, clientName, rating, serviceName, comment);
+
+    try {
+        const transporter = createTransporter();
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
+            to: nannyEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Rating notification email sent to nanny:', info.messageId);
+        return { success: true, message: 'Rating notification email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending rating notification email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Template HTML para correo de servicio cancelado
+ */
+const getServiceCancelledEmailTemplate = (nannyName, clientName, serviceName, serviceDate) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Servicio Cancelado - NannysLM</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); min-height: 100vh;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                
+                <!-- Header con gradiente rojo -->
+                <div style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Servicio Cancelado</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Actualización sobre un servicio programado</p>
+                </div>
+
+                <!-- Contenido -->
+                <div style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; line-height: 1.6;">
+                        Hola <strong>${nannyName}</strong>,
+                    </p>
+
+                    <p style="margin: 0 0 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Te informamos que <strong>${clientName}</strong> ha cancelado el siguiente servicio:
+                    </p>
+
+                    <!-- Detalles del servicio cancelado -->
+                    <div style="background: #FEF2F2; border-left: 4px solid #EF4444; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <div style="margin-bottom: 12px;">
+                            <span style="color: #6B7280; font-size: 13px; display: block; margin-bottom: 4px;">📋 Servicio:</span>
+                            <span style="color: #1F2937; font-size: 15px; font-weight: 600;">${serviceName}</span>
+                        </div>
+                        <div>
+                            <span style="color: #6B7280; font-size: 13px; display: block; margin-bottom: 4px;">📅 Fecha programada:</span>
+                            <span style="color: #1F2937; font-size: 15px; font-weight: 600;">${serviceDate}</span>
+                        </div>
+                    </div>
+
+                    <p style="margin: 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        Este servicio ya no aparecerá en tu lista de servicios programados. Estarás disponible nuevamente para aceptar otros servicios en ese horario.
+                    </p>
+
+                    <!-- Información adicional -->
+                    <div style="background: #F0F9FF; border-left: 4px solid #1EB2E5; padding: 12px 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 13px; color: #0c5460;">
+                            <strong>💡 Recuerda:</strong> Mantén tu disponibilidad actualizada para seguir recibiendo solicitudes de servicio.
+                        </p>
+                    </div>
+
+                    <div style="height: 1px; background: #e2e8f0; margin: 30px 0;"></div>
+
+                    <p style="margin: 0; font-size: 14px; color: #94a3b8; text-align: center;">
+                        Gracias por formar parte de la comunidad NannysLM
+                    </p>
+                </div>
+
+                <!-- Footer -->
+                <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 5px 0; font-size: 12px; color: #94a3b8;">
+                        © 2024 NannysLM - Cuidado profesional que confías
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
+ * Enviar notificación de servicio cancelado a nanny
+ */
+const sendServiceCancelledEmail = async (nannyEmail, nannyName, clientName, serviceName, serviceDate) => {
+    if (!isSMTPConfigured()) {
+        console.log('📧 [Email not sent - SMTP not configured]');
+        console.log(`   TO: ${nannyEmail}`);
+        console.log(`   SUBJECT: Servicio Cancelado - ${serviceName}`);
+        return { success: true, fallback: true };
+    }
+
+    const subject = `❌ Servicio Cancelado: ${serviceName} - NannysLM`;
+    const html = getServiceCancelledEmailTemplate(nannyName, clientName, serviceName, serviceDate);
+
+    try {
+        const transporter = createTransporter();
+        const info = await transporter.sendMail({
+            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
+            to: nannyEmail,
+            subject,
+            html
+        });
+
+        console.log('📨 Service cancelled email sent to nanny:', info.messageId);
+        return { success: true, message: 'Service cancelled email sent', info };
+    } catch (error) {
+        console.error('❌ Error sending service cancelled email:', error);
+        return { success: false, message: error.message };
+    }
+};
+
 module.exports = { 
     sendActivationEmail, 
     sendPasswordResetEmail, 
@@ -1395,5 +1981,11 @@ module.exports = {
     sendVerificationRejectedEmail,
     sendPaymentApprovedEmail,
     sendPaymentRejectedEmail,
-    sendNewPaymentNotificationEmail
+    sendNewPaymentNotificationEmail,
+    sendNewVerificationRequestEmail,
+    sendNannyAcceptedServiceEmail,
+    sendServiceReminderEmail,
+    sendServiceCompletedEmail,
+    sendNannyRatingReceivedEmail,
+    sendServiceCancelledEmail
 };

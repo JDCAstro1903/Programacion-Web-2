@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
@@ -11,6 +11,7 @@ import { Notification } from '../../shared/components/header/header.component';
 import { NannyService } from '../../services/nanny.service';
 import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
 import { ClientService } from '../../services/client.service';
+import { WhatsappButtonComponent } from '../../shared/components/whatsapp-button/whatsapp-button.component';
 
 // Interfaz para definir la estructura de un servicio
 interface Service {
@@ -29,11 +30,11 @@ interface Service {
 @Component({
   selector: 'app-nanny-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent],
+  imports: [CommonModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent, NotificationsPanelComponent, WhatsappButtonComponent],
   templateUrl: './nanny-dashboard.component.html',
   styleUrl: './nanny-dashboard.component.css'
 })
-export class NannyDashboardComponent implements OnInit {
+export class NannyDashboardComponent implements OnInit, OnDestroy {
   // Vista actual del dashboard
   currentView: string = 'dashboard';
   
@@ -171,6 +172,9 @@ export class NannyDashboardComponent implements OnInit {
     
   }
 
+  // Intervalo para actualizar servicios periódicamente
+  private servicesInterval: any;
+
   ngOnInit() {
     // Cargar datos de la nanny
     this.loadNannyData();
@@ -188,15 +192,44 @@ export class NannyDashboardComponent implements OnInit {
     // Iniciar polling de notificaciones cada 30 segundos
     this.notificationService.startPolling();
     
+    // Iniciar actualización de servicios cada 15 segundos
+    this.startServicesPolling();
+    
     // Suscribirse a cambios en notificaciones
     this.notificationService.notifications$.subscribe({
       next: (notifications) => {
         this.notifications = notifications;
         this.unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
+        
+        // Si hay una notificación de servicio tomado, recargar servicios
+        const serviceTakenNotification = notifications.find(n => 
+          !n.is_read && n.title === 'Servicio ya asignado'
+        );
+        if (serviceTakenNotification) {
+          console.log('🔄 Servicio tomado detectado, recargando servicios...');
+          this.loadNannyServices();
+        }
       },
       error: (error) => {
       }
     });
+  }
+
+  ngOnDestroy() {
+    // Detener polling cuando el componente se destruye
+    if (this.servicesInterval) {
+      clearInterval(this.servicesInterval);
+    }
+  }
+
+  private startServicesPolling() {
+    // Actualizar servicios cada 15 segundos para mantener sincronizado
+    this.servicesInterval = setInterval(() => {
+      if (this.nannyId) {
+        console.log('🔄 Actualizando servicios automáticamente...');
+        this.loadNannyServices();
+      }
+    }, 15000); // 15 segundos
   }
 
   private updateSidebarCounts() {

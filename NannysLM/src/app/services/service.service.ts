@@ -215,4 +215,11 @@ export class ServiceService {
   completeService(serviceId: number): Observable<ApiResponse<any>> {
     return this.http.put<ApiResponse<any>>(`${this.apiUrl}/${serviceId}/complete`, {});
   }
+
+  /**
+   * Obtener servicios disponibles (pending) para que las nannys puedan aceptar
+   */
+  getAvailableServices(): Observable<ApiResponse<ServiceData[]>> {
+    return this.getServices(undefined, 'pending', 50);
+  }
 }

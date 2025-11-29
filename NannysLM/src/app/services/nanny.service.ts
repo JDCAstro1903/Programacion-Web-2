@@ -93,4 +93,12 @@ export class NannyService {
     console.log(`🔄 Actualizando status de nanny ${nannyId} a: ${status}`);
     return this.http.patch<NannyResponse>(`${this.apiUrl}/${nannyId}/status`, { status });
   }
+
+  /**
+   * Actualizar la tarifa por hora de una nanny
+   */
+  updateNannyHourlyRate(nannyId: number, hourlyRate: number): Observable<NannyResponse> {
+    console.log(`💰 Actualizando tarifa por hora de nanny ${nannyId} a: $${hourlyRate}`);
+    return this.http.patch<NannyResponse>(`${this.apiUrl}/${nannyId}/hourly-rate`, { hourly_rate: hourlyRate });
+  }
 }

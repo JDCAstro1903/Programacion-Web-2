@@ -4,6 +4,7 @@ const {
     sendPaymentRejectedEmail,
     sendNewPaymentNotificationEmail 
 } = require('../utils/email');
+const notificationSystem = require('../utils/NotificationSystem');
 
 /**
  * Controlador para gestión de pagos
@@ -533,6 +534,64 @@ class PaymentController {
 
             console.log(`✅ Comprobante subido exitosamente para pago ${paymentId}:`, receiptUrl);
 
+            // Notificar al admin sobre el nuevo recibo de pago
+            try {
+                // Obtener información completa del pago para notificación
+                const fullPaymentQuery = `
+                    SELECT p.*, 
+                           s.title as service_title,
+                           c.user_id as client_user_id,
+                           u_client.first_name as client_first_name,
+                           u_client.last_name as client_last_name,
+                           u_client.email as client_email,
+                           n.user_id as nanny_user_id,
+                           u_nanny.first_name as nanny_first_name,
+                           u_nanny.last_name as nanny_last_name
+                    FROM payments p
+                    JOIN services s ON p.service_id = s.id
+                    JOIN clients c ON p.client_id = c.id
+                    JOIN users u_client ON c.user_id = u_client.id
+                    LEFT JOIN nannys n ON s.nanny_id = n.id
+                    LEFT JOIN users u_nanny ON n.user_id = u_nanny.id
+                    WHERE p.id = ?
+                `;
+                
+                const fullPaymentResult = await executeQuery(fullPaymentQuery, [paymentId]);
+                
+                if (fullPaymentResult.success && fullPaymentResult.data.length > 0) {
+                    const paymentInfo = fullPaymentResult.data[0];
+                    
+                    // Buscar admin (user_type = 'admin')
+                    const adminQuery = "SELECT id, first_name, email FROM users WHERE user_type = 'admin' LIMIT 1";
+                    const adminResult = await executeQuery(adminQuery);
+                    
+                    if (adminResult.success && adminResult.data.length > 0) {
+                        const admin = adminResult.data[0];
+                        const clientName = `${paymentInfo.client_first_name} ${paymentInfo.client_last_name}`;
+                        const nannyName = paymentInfo.nanny_first_name 
+                            ? `${paymentInfo.nanny_first_name} ${paymentInfo.nanny_last_name}`
+                            : 'N/A';
+                        
+                        console.log('📧 Enviando notificación al admin sobre nuevo recibo de pago...');
+                        await notificationSystem.notifyAdminNewPayment(
+                            admin.email,
+                            admin.id,
+                            admin.first_name,
+                            clientName,
+                            paymentInfo.service_title,
+                            paymentInfo.amount,
+                            nannyName,
+                            paymentId
+                        );
+                        console.log(`✅ Notificación enviada al admin (${admin.email}) sobre pago #${paymentId}`);
+                    } else {
+                        console.warn('⚠️ No se encontró ningún usuario admin en la base de datos');
+                    }
+                }
+            } catch (notifError) {
+                console.error('⚠️ Error al notificar al admin sobre nuevo pago:', notifError);
+            }
+
             return res.json({
                 success: true,
                 message: 'Comprobante subido exitosamente',
@@ -575,7 +634,7 @@ class PaymentController {
                 FROM services s
                 INNER JOIN clients c ON s.client_id = c.id
                 INNER JOIN nannys n ON s.nanny_id = n.id
-                WHERE s.id = ? AND s.status = 'completed'
+                WHERE s.id = ? AND s.status IN ('completed', 'finished')
             `;
 
             const serviceResult = await executeQuery(serviceQuery, [serviceId]);
@@ -747,18 +806,23 @@ class PaymentController {
                 const paymentData = await PaymentController.getPaymentDataForNotification(paymentId);
                 
                 if (paymentData && paymentData.client_user_id && paymentData.client_email) {
+                    const clientName = `${paymentData.client_first_name} ${paymentData.client_last_name}`;
+                    const nannyName = `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`;
+                    const amount = parseFloat(paymentData.amount) || 0;
+                    
                     if (action === 'approve') {
-                        // Notificar al cliente que el pago fue aprobado
-                        const notifTitle = `✓ Tu Pago de $${payment.amount.toFixed(2)} ha sido Aprobado`;
+                        // Notificar al cliente que el pago fue aprobado (BD + correo)
+                        const notifTitle = `✓ Tu Pago de $${amount.toFixed(2)} ha sido Aprobado`;
                         const notifMessage = `Tu pago para el servicio "${paymentData.service_title}" ha sido procesado exitosamente`;
                         
                         try {
-                            await PaymentController.createPaymentNotification(
+                            await notificationSystem.createNotification(
                                 paymentData.client_user_id,
                                 notifTitle,
                                 notifMessage,
                                 'payment_approved',
-                                paymentId
+                                paymentId,
+                                'payment'
                             );
                             console.log(`✅ Notificación DB creada para cliente sobre pago #${paymentId} aprobado`);
                         } catch (notifError) {
@@ -769,27 +833,28 @@ class PaymentController {
                         try {
                             await sendPaymentApprovedEmail(
                                 paymentData.client_email,
-                                `${paymentData.client_first_name} ${paymentData.client_last_name}`,
+                                clientName,
                                 paymentData.service_title || 'Sin título',
                                 payment.amount,
-                                `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`
+                                nannyName
                             );
                             console.log(`✅ Email de aprobación enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
                         } catch (emailError) {
                             console.error(`⚠️ Error al enviar email de aprobación a cliente (${paymentData.client_email}):`, emailError.message);
                         }
                     } else {
-                        // Notificar al cliente que el pago fue rechazado
-                        const notifTitle = `✗ Tu Pago de $${payment.amount.toFixed(2)} ha sido Rechazado`;
+                        // Notificar al cliente que el pago fue rechazado (BD + correo)
+                        const notifTitle = `✗ Tu Pago de $${amount.toFixed(2)} ha sido Rechazado`;
                         const notifMessage = `Tu pago para el servicio "${paymentData.service_title}" ha sido rechazado. ${notes ? `Motivo: ${notes}` : ''}`;
                         
                         try {
-                            await PaymentController.createPaymentNotification(
+                            await notificationSystem.createNotification(
                                 paymentData.client_user_id,
                                 notifTitle,
                                 notifMessage,
                                 'payment_rejected',
-                                paymentId
+                                paymentId,
+                                'payment'
                             );
                             console.log(`✅ Notificación DB creada para cliente sobre pago #${paymentId} rechazado`);
                         } catch (notifError) {
@@ -798,11 +863,12 @@ class PaymentController {
 
                         // Enviar email de rechazo
                         try {
+                            const amountForEmail = parseFloat(paymentData.amount) || 0;
                             await sendPaymentRejectedEmail(
                                 paymentData.client_email,
                                 `${paymentData.client_first_name} ${paymentData.client_last_name}`,
                                 paymentData.service_title || 'Sin título',
-                                payment.amount,
+                                amountForEmail,
                                 `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`,
                                 notes || ''
                             );

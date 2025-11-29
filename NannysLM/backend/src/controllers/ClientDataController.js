@@ -1,5 +1,7 @@
 // Controlador para gestionar información específica del cliente
 const { pool } = require('../config/database');
+const notificationSystem = require('../utils/NotificationSystem');
+const { sendVerificationApprovedEmail, sendVerificationRejectedEmail } = require('../utils/email');
 
 // Obtener información del cliente por user_id
 const getClientData = async (req, res) => {
@@ -148,6 +150,35 @@ const upsertClientData = async (req, res) => {
           [result.insertId]
         );
         
+        // Obtener datos del usuario para notificación al admin
+        const [userData] = await pool.query(
+          'SELECT first_name, last_name, email FROM users WHERE id = ?',
+          [userId]
+        );
+        
+        if (userData.length > 0) {
+          const clientName = `${userData[0].first_name} ${userData[0].last_name}`;
+          const clientEmail = userData[0].email;
+          
+          // Buscar admin (role_id = 1)
+          const [adminData] = await pool.query(
+            'SELECT id, first_name, email FROM users WHERE role_id = 1 LIMIT 1'
+          );
+          
+          if (adminData.length > 0) {
+            // Enviar notificación y correo al admin
+            console.log('📧 Enviando notificación al admin sobre nueva verificación...');
+            await notificationSystem.notifyAdminNewVerification(
+              adminData[0].email,
+              adminData[0].id,
+              adminData[0].first_name,
+              clientName,
+              clientEmail,
+              result.insertId
+            );
+          }
+        }
+        
         return res.status(201).json({
           success: true,
           message: 'Información registrada correctamente',
@@ -208,6 +239,15 @@ const verifyClient = async (req, res) => {
       
       await pool.query(updateQuery, [status, clientId]);
       
+      // Obtener datos del usuario para enviar correo
+      const [userData] = await pool.query(
+        'SELECT first_name, last_name, email FROM users WHERE id = ?',
+        [client.user_id]
+      );
+      
+      const clientName = userData.length > 0 ? `${userData[0].first_name} ${userData[0].last_name}` : 'Cliente';
+      const clientEmail = userData.length > 0 ? userData[0].email : null;
+      
       // Si es verificado, también actualizar el campo is_verified del usuario
       if (status === 'verified') {
         await pool.query(
@@ -216,20 +256,22 @@ const verifyClient = async (req, res) => {
         );
         
         // Crear notificación de verificación exitosa
-        await pool.query(
-          `INSERT INTO notifications (user_id, title, message, type, action_url, related_type)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            client.user_id,
-            '¡Cuenta Verificada! ✓',
-            'Tu cuenta ha sido verificada exitosamente. Ya puedes acceder a todos los servicios de NannysLM.',
-            'success',
-            '/profile',
-            'verification'
-          ]
+        await notificationSystem.createNotification(
+          client.user_id,
+          '¡Cuenta Verificada! ✓',
+          'Tu cuenta ha sido verificada exitosamente. Ya puedes acceder a todos los servicios de NannysLM.',
+          'verification_approved',
+          clientId,
+          'client'
         );
         
-        console.log(`📬 Notificación de verificación creada para usuario ${client.user_id}`);
+        // Enviar correo de aprobación
+        if (clientEmail) {
+          console.log('📧 Enviando correo de verificación aprobada...');
+          await sendVerificationApprovedEmail(clientEmail, clientName);
+        }
+        
+        console.log(`📬 Notificación y correo de verificación enviados para usuario ${client.user_id}`);
       } else {
         await pool.query(
           'UPDATE users SET is_verified = FALSE WHERE id = ?',
@@ -237,20 +279,24 @@ const verifyClient = async (req, res) => {
         );
         
         // Crear notificación de verificación rechazada
-        await pool.query(
-          `INSERT INTO notifications (user_id, title, message, type, action_url, related_type)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            client.user_id,
-            'Verificación Rechazada',
-            `${reason ? 'Razón: ' + reason : 'Tu solicitud de verificación ha sido rechazada. Por favor contacta al equipo de soporte.'}`,
-            'warning',
-            '/profile',
-            'verification'
-          ]
+        const rejectionMessage = reason ? `Razón: ${reason}` : 'Tu solicitud de verificación ha sido rechazada. Por favor contacta al equipo de soporte.';
+        
+        await notificationSystem.createNotification(
+          client.user_id,
+          'Verificación Rechazada',
+          rejectionMessage,
+          'verification_rejected',
+          clientId,
+          'client'
         );
         
-        console.log(`📬 Notificación de rechazo creada para usuario ${client.user_id}`);
+        // Enviar correo de rechazo
+        if (clientEmail) {
+          console.log('📧 Enviando correo de verificación rechazada...');
+          await sendVerificationRejectedEmail(clientEmail, clientName);
+        }
+        
+        console.log(`📬 Notificación y correo de rechazo enviados para usuario ${client.user_id}`);
       }
       
       console.log(`✅ Cliente ${clientId} ${status === 'verified' ? 'verificado' : 'rechazado'} correctamente`);

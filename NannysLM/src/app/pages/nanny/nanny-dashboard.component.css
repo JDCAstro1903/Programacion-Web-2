@@ -1580,9 +1580,11 @@ app-sidebar {
   padding: 1.5rem;
   border-top: 1px solid #e5e7eb;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 1rem;
   background: #f9fafb;
+  flex-wrap: wrap;
 }
 
 .btn-close-modal {

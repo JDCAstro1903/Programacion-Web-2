@@ -103,7 +103,7 @@ CREATE TABLE `notifications` (
   `user_id` int NOT NULL,
   `title` varchar(200) NOT NULL,
   `message` text NOT NULL,
-  `type` enum('info','success','warning','error','service','payment') DEFAULT 'info',
+  `type` enum('info','success','warning','error','service','payment','verification_pending','verification_approved','verification_rejected','service_accepted','service_reminder','service_completed','payment_pending','payment_approved','payment_rejected','rating_received') DEFAULT 'info',
   `is_read` tinyint(1) DEFAULT '0',
   `action_url` varchar(500) DEFAULT NULL,
   `related_id` int DEFAULT NULL,

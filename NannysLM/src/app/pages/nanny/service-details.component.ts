@@ -148,6 +148,11 @@ export class ServiceDetailsComponent implements OnInit {
     this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services' } });
   }
 
+  goToAvailableServices() {
+    // Redirigir al dashboard con la vista de servicios, filtrando por pendientes
+    this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services', filter: 'available' } });
+  }
+
   getServiceTypeName(type: string): string {
     const types: { [key: string]: string } = {
       'hourly': 'Niñeras a domicilio',

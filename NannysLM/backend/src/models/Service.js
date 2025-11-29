@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const notificationSystem = require('../utils/NotificationSystem');
 
 class Service {
   /**
@@ -510,24 +511,36 @@ class Service {
   }
 
   /**
-   * Aceptar un servicio por parte de una nanny
+   * Aceptar un servicio por parte de una nanny (con control de concurrencia)
    */
   static async acceptService(serviceId, nannyId) {
+    const connection = require('mysql2/promise');
+    const dbConfig = require('../config/database');
+    let conn = null;
+
     try {
       console.log(`🤝 Nanny ${nannyId} intentando aceptar servicio ${serviceId}`);
 
-      // Verificar que el servicio existe y está pendiente
-      const serviceQuery = 'SELECT * FROM services WHERE id = ? AND status = ?';
-      const serviceResult = await executeQuery(serviceQuery, [serviceId, 'pending']);
+      // Crear conexión para usar transacciones
+      conn = await connection.createConnection(dbConfig.getConnectionConfig());
+      await conn.beginTransaction();
 
-      if (!serviceResult.success || serviceResult.data.length === 0) {
+      // Verificar que el servicio existe y está pendiente CON BLOQUEO (FOR UPDATE)
+      // Esto evita que otra nanny pueda leer el mismo estado al mismo tiempo
+      const [serviceRows] = await conn.query(
+        'SELECT * FROM services WHERE id = ? AND status = ? FOR UPDATE',
+        [serviceId, 'pending']
+      );
+
+      if (serviceRows.length === 0) {
+        await conn.rollback();
         return {
           success: false,
           message: 'El servicio no está disponible o ya fue asignado a otra nanny'
         };
       }
 
-      const service = serviceResult.data[0];
+      const service = serviceRows[0];
 
       // Verificar que la nanny no tenga conflictos de horario
       const hasConflict = await this.hasScheduleConflict(
@@ -538,6 +551,7 @@ class Service {
       );
 
       if (hasConflict) {
+        await conn.rollback();
         return {
           success: false,
           message: 'Ya tienes un servicio confirmado en ese horario'
@@ -549,6 +563,7 @@ class Service {
       const nannyResult = await executeQuery(nannyQuery, [nannyId]);
       
       if (!nannyResult.success || nannyResult.data.length === 0) {
+        await conn.rollback();
         return {
           success: false,
           message: 'Nanny no encontrada'
@@ -559,54 +574,76 @@ class Service {
       const totalAmount = service.total_hours * nanny.hourly_rate;
 
       // Actualizar el servicio: asignar nanny y cambiar estado a 'confirmed'
-      const updateQuery = `
-        UPDATE services 
-        SET nanny_id = ?, 
-            status = 'confirmed', 
-            total_amount = ?,
-            updated_at = NOW()
-        WHERE id = ? AND status = 'pending'
-      `;
+      const [updateResult] = await conn.query(
+        `UPDATE services 
+         SET nanny_id = ?, 
+             status = 'confirmed', 
+             total_amount = ?,
+             updated_at = NOW()
+         WHERE id = ? AND status = 'pending'`,
+        [nannyId, totalAmount, serviceId]
+      );
 
-      const updateResult = await executeQuery(updateQuery, [nannyId, totalAmount, serviceId]);
-
-      if (!updateResult.success || updateResult.data.affectedRows === 0) {
+      if (updateResult.affectedRows === 0) {
+        await conn.rollback();
+        
+        // Notificar a esta nanny que el servicio ya fue tomado
+        await this.notifyNannyServiceTaken(nanny.user_id, service.title, serviceId);
+        
         return {
           success: false,
-          message: 'No se pudo asignar el servicio. Puede que otra nanny ya lo aceptó.'
+          message: 'No se pudo asignar el servicio. Otra nanny lo aceptó primero.'
         };
       }
+
+      // Commit de la transacción - el servicio fue asignado exitosamente
+      await conn.commit();
+      console.log(`✅ Servicio ${serviceId} asignado a nanny ${nannyId} exitosamente`);
 
       // Notificar al cliente que su servicio fue aceptado
       const clientQuery = 'SELECT user_id FROM clients WHERE id = ?';
       const clientResult = await executeQuery(clientQuery, [service.client_id]);
 
       if (clientResult.success && clientResult.data.length > 0) {
-        const clientNotificationQuery = `
-          INSERT INTO notifications 
-          (user_id, title, message, type, is_read, action_url, related_id, related_type)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-
         const nannyNameQuery = 'SELECT first_name, last_name FROM users WHERE id = ?';
         const nannyNameResult = await executeQuery(nannyNameQuery, [nanny.user_id]);
         const nannyName = nannyNameResult.data[0] 
           ? `${nannyNameResult.data[0].first_name} ${nannyNameResult.data[0].last_name}`
           : 'una nanny';
 
-        await executeQuery(clientNotificationQuery, [
-          clientResult.data[0].user_id,
-          'Servicio confirmado',
-          `Tu servicio "${service.title}" ha sido aceptado por ${nannyName}`,
-          'success',
-          false,
-          `/dashboard/client`,
-          serviceId,
-          'service'
-        ]);
+        // Obtener información del cliente para enviar correo
+        const clientInfoQuery = 'SELECT u.first_name, u.last_name, u.email FROM users u WHERE u.id = ?';
+        const clientInfoResult = await executeQuery(clientInfoQuery, [clientResult.data[0].user_id]);
+        
+        if (clientInfoResult.success && clientInfoResult.data.length > 0) {
+          const clientInfo = clientInfoResult.data[0];
+          const clientName = `${clientInfo.first_name} ${clientInfo.last_name}`;
+          const clientEmail = clientInfo.email;
+          
+          // Formatear fecha del servicio
+          const serviceDate = new Date(service.start_date).toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          
+          // Enviar notificación Y correo al cliente
+          console.log('📧 Enviando notificación y correo al cliente sobre servicio aceptado...');
+          await notificationSystem.notifyClientServiceAccepted(
+            clientEmail,
+            clientResult.data[0].user_id,
+            clientName,
+            nannyName,
+            service.title,
+            serviceDate,
+            serviceId
+          );
+        }
       }
 
-      console.log(`✅ Servicio ${serviceId} asignado a nanny ${nannyId} exitosamente`);
+      // Notificar a TODAS las demás nannys que el servicio ya fue tomado
+      await this.notifyOtherNannysServiceTaken(nannyId, service.title, serviceId);
 
       return {
         success: true,
@@ -618,8 +655,102 @@ class Service {
         }
       };
     } catch (error) {
+      if (conn) {
+        await conn.rollback();
+      }
       console.error('❌ Error aceptando servicio:', error);
       throw error;
+    } finally {
+      if (conn) {
+        await conn.end();
+      }
+    }
+  }
+
+  /**
+   * Notificar a una nanny específica que el servicio ya fue tomado
+   */
+  static async notifyNannyServiceTaken(nannyUserId, serviceTitle, serviceId) {
+    try {
+      const notificationQuery = `
+        INSERT INTO notifications 
+        (user_id, title, message, type, is_read, action_url, related_id, related_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      await executeQuery(notificationQuery, [
+        nannyUserId,
+        'Servicio ya asignado',
+        `El servicio "${serviceTitle}" ya fue aceptado por otra nanny. Te invitamos a ver otros servicios disponibles.`,
+        'service',
+        false,
+        '/nanny/dashboard?view=services',
+        serviceId,
+        'service'
+      ]);
+
+      console.log(`📢 Notificación enviada a nanny (user_id: ${nannyUserId}) - servicio ya tomado`);
+    } catch (error) {
+      console.error('❌ Error notificando a nanny sobre servicio tomado:', error);
+    }
+  }
+
+  /**
+   * Notificar a todas las demás nannys que el servicio ya fue tomado
+   */
+  static async notifyOtherNannysServiceTaken(acceptingNannyId, serviceTitle, serviceId) {
+    try {
+      console.log('📢 Notificando a otras nannys que el servicio fue tomado...');
+
+      // Obtener todas las nannys activas excepto la que aceptó
+      const query = `
+        SELECT 
+          n.id as nanny_id,
+          n.user_id,
+          u.first_name,
+          u.last_name
+        FROM nannys n
+        INNER JOIN users u ON n.user_id = u.id
+        WHERE 
+          n.status = 'active'
+          AND u.is_active = TRUE
+          AND n.id != ?
+      `;
+
+      const result = await executeQuery(query, [acceptingNannyId]);
+
+      if (!result.success || result.data.length === 0) {
+        console.log('⚠️ No hay otras nannys para notificar');
+        return;
+      }
+
+      console.log(`📊 Notificando a ${result.data.length} nannys sobre servicio tomado`);
+
+      // Enviar notificación a cada nanny
+      for (const nanny of result.data) {
+        const notificationQuery = `
+          INSERT INTO notifications 
+          (user_id, title, message, type, is_read, action_url, related_id, related_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const notificationMessage = `El servicio "${serviceTitle}" ya fue aceptado por otra nanny. Revisa otros servicios disponibles.`;
+
+        await executeQuery(notificationQuery, [
+          nanny.user_id,
+          'Servicio ya asignado',
+          notificationMessage,
+          'service',
+          false,
+          '/nanny/dashboard?view=services',
+          serviceId,
+          'service'
+        ]);
+      }
+
+      console.log(`✅ Notificaciones enviadas a ${result.data.length} nannys`);
+    } catch (error) {
+      console.error('❌ Error notificando a otras nannys:', error);
     }
   }
 
