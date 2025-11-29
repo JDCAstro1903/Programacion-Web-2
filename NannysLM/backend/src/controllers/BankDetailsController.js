@@ -10,35 +10,31 @@ class BankDetailsController {
      */
     static async getBankDetails(req, res) {
         try {
+            console.log('📋 Obteniendo todos los datos bancarios...');
+            
             const query = `
                 SELECT 
-                    bd.id,
-                    bd.nanny_id,
-                    bd.account_holder_name,
-                    bd.bank_name,
-                    bd.account_number,
-                    bd.clabe,
-                    bd.account_type,
-                    bd.is_primary,
-                    bd.is_active,
-                    bd.created_at,
-                    bd.updated_at,
-                    u.first_name as nanny_first_name,
-                    u.last_name as nanny_last_name,
-                    u.email as nanny_email,
-                    n.status as nanny_status
-                FROM bank_details bd
-                INNER JOIN nannys n ON bd.nanny_id = n.id
-                INNER JOIN users u ON n.user_id = u.id
-                ORDER BY bd.created_at DESC
+                    id,
+                    account_holder_name,
+                    bank_name,
+                    account_number,
+                    clabe,
+                    account_type,
+                    is_primary,
+                    is_active,
+                    created_at,
+                    updated_at
+                FROM bank_details
+                ORDER BY created_at DESC
             `;
 
             const result = await executeQuery(query);
 
             if (result.success) {
+                console.log(`✅ Se encontraron ${result.data.length} registros de datos bancarios`);
+                
                 const bankDetails = result.data.map(detail => ({
                     id: detail.id,
-                    nannyId: detail.nanny_id,
                     accountHolderName: detail.account_holder_name,
                     bankName: detail.bank_name,
                     accountNumber: detail.account_number,
@@ -47,13 +43,7 @@ class BankDetailsController {
                     isPrimary: Boolean(detail.is_primary),
                     isActive: Boolean(detail.is_active),
                     createdAt: detail.created_at,
-                    updatedAt: detail.updated_at,
-                    nanny: {
-                        id: detail.nanny_id,
-                        name: `${detail.nanny_first_name} ${detail.nanny_last_name}`,
-                        email: detail.nanny_email,
-                        status: detail.nanny_status
-                    }
+                    updatedAt: detail.updated_at
                 }));
 
                 res.json({
@@ -61,11 +51,13 @@ class BankDetailsController {
                     data: bankDetails
                 });
             } else {
+                console.error('❌ Error en la query:', result.error);
                 throw new Error(result.error);
             }
 
         } catch (error) {
-            console.error('Error obteniendo datos bancarios:', error);
+            console.error('❌ Error obteniendo datos bancarios:', error.message);
+            console.error('Stack:', error.stack);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -83,13 +75,18 @@ class BankDetailsController {
 
             const query = `
                 SELECT 
-                    bd.*,
-                    u.first_name as nanny_first_name,
-                    u.last_name as nanny_last_name
-                FROM bank_details bd
-                INNER JOIN nannys n ON bd.nanny_id = n.id
-                INNER JOIN users u ON n.user_id = u.id
-                WHERE bd.id = ?
+                    id,
+                    account_holder_name,
+                    bank_name,
+                    account_number,
+                    clabe,
+                    account_type,
+                    is_primary,
+                    is_active,
+                    created_at,
+                    updated_at
+                FROM bank_details
+                WHERE id = ?
             `;
 
             const result = await executeQuery(query, [id]);
@@ -101,7 +98,6 @@ class BankDetailsController {
                     success: true,
                     data: {
                         id: detail.id,
-                        nannyId: detail.nanny_id,
                         accountHolderName: detail.account_holder_name,
                         bankName: detail.bank_name,
                         accountNumber: detail.account_number,
@@ -109,7 +105,6 @@ class BankDetailsController {
                         accountType: detail.account_type,
                         isPrimary: Boolean(detail.is_primary),
                         isActive: Boolean(detail.is_active),
-                        nannyName: `${detail.nanny_first_name} ${detail.nanny_last_name}`,
                         createdAt: detail.created_at,
                         updatedAt: detail.updated_at
                     }
@@ -137,7 +132,6 @@ class BankDetailsController {
     static async createBankDetails(req, res) {
         try {
             const {
-                nannyId,
                 accountHolderName,
                 bankName,
                 accountNumber,
@@ -147,44 +141,57 @@ class BankDetailsController {
                 isActive = true
             } = req.body;
 
+            console.log('📝 Creando nuevos datos bancarios');
+            console.log('Datos recibidos:', { accountHolderName, bankName, accountNumber, clabe, accountType, isPrimary, isActive });
+
             // Validar campos requeridos
-            if (!nannyId || !accountHolderName || !bankName || !accountNumber) {
+            if (!accountHolderName || !bankName || !accountNumber) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Faltan campos requeridos'
+                    message: 'Faltan campos requeridos: nombre titular, banco y número de cuenta'
                 });
             }
 
+            // Convertir booleanos correctamente
+            const isPrimaryValue = (isPrimary === true || isPrimary === 1 || isPrimary === '1') ? 1 : 0;
+            const isActiveValue = (isActive === true || isActive === 1 || isActive === '1') ? 1 : 0;
+
             const query = `
                 INSERT INTO bank_details (
-                    nanny_id, account_holder_name, bank_name, account_number,
+                    account_holder_name, bank_name, account_number,
                     clabe, account_type, is_primary, is_active
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
             `;
 
-            const result = await executeQuery(query, [
-                nannyId,
-                accountHolderName,
-                bankName,
-                accountNumber,
-                clabe,
-                accountType,
-                isPrimary,
-                isActive
-            ]);
+            const params = [
+                accountHolderName.trim(),
+                bankName.trim(),
+                accountNumber.trim(),
+                clabe ? clabe.trim() : null,
+                accountType && ['checking', 'savings'].includes(accountType) ? accountType : 'checking',
+                isPrimaryValue,
+                isActiveValue
+            ];
+
+            console.log('Parámetros de query:', params);
+
+            const result = await executeQuery(query, params);
 
             if (result.success) {
+                console.log('✅ Datos bancarios creados exitosamente');
                 res.status(201).json({
                     success: true,
                     message: 'Datos bancarios creados exitosamente',
                     data: { id: result.data.insertId }
                 });
             } else {
+                console.error('❌ Error en la creación:', result.error);
                 throw new Error(result.error);
             }
 
         } catch (error) {
-            console.error('Error creando datos bancarios:', error);
+            console.error('❌ Error creando datos bancarios:', error.message);
+            console.error('Stack:', error.stack);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -209,6 +216,37 @@ class BankDetailsController {
                 isActive
             } = req.body;
 
+            console.log('📝 Actualizando datos bancarios ID:', id);
+            console.log('Datos recibidos:', { accountHolderName, bankName, accountNumber, clabe, accountType, isPrimary, isActive });
+
+            // Validar ID
+            if (!id || isNaN(parseInt(id))) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID inválido'
+                });
+            }
+
+            // Validar campos requeridos
+            if (!accountHolderName || !bankName || !accountNumber) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Faltan campos requeridos: nombre titular, banco y número de cuenta'
+                });
+            }
+
+            // Convertir booleanos correctamente
+            let isPrimaryValue = 0;
+            let isActiveValue = 1;
+
+            if (isPrimary !== undefined && isPrimary !== null) {
+                isPrimaryValue = (isPrimary === true || isPrimary === 1 || isPrimary === '1') ? 1 : 0;
+            }
+
+            if (isActive !== undefined && isActive !== null) {
+                isActiveValue = (isActive === true || isActive === 1 || isActive === '1') ? 1 : 0;
+            }
+
             const query = `
                 UPDATE bank_details 
                 SET 
@@ -222,28 +260,35 @@ class BankDetailsController {
                 WHERE id = ?
             `;
 
-            const result = await executeQuery(query, [
-                accountHolderName,
-                bankName,
-                accountNumber,
-                clabe,
-                accountType,
-                isPrimary,
-                isActive,
-                id
-            ]);
+            const params = [
+                accountHolderName.trim(),
+                bankName.trim(),
+                accountNumber.trim(),
+                clabe ? clabe.trim() : null,
+                accountType && ['checking', 'savings'].includes(accountType) ? accountType : 'checking',
+                isPrimaryValue,
+                isActiveValue,
+                parseInt(id)
+            ];
+
+            console.log('Parámetros de query:', params);
+
+            const result = await executeQuery(query, params);
 
             if (result.success) {
+                console.log('✅ Datos bancarios actualizados exitosamente');
                 res.json({
                     success: true,
                     message: 'Datos bancarios actualizados exitosamente'
                 });
             } else {
+                console.error('❌ Error en la actualización:', result.error);
                 throw new Error(result.error);
             }
 
         } catch (error) {
-            console.error('Error actualizando datos bancarios:', error);
+            console.error('❌ Error actualizando datos bancarios:', error.message);
+            console.error('Stack:', error.stack);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -288,6 +333,8 @@ class BankDetailsController {
         try {
             const { id } = req.params;
 
+            console.log('🔄 Alternando estado del registro ID:', id);
+
             const query = `
                 UPDATE bank_details 
                 SET is_active = NOT is_active
@@ -297,11 +344,13 @@ class BankDetailsController {
             const result = await executeQuery(query, [id]);
 
             if (result.success) {
+                console.log('✅ Estado alternado exitosamente');
                 res.json({
                     success: true,
                     message: 'Estado actualizado exitosamente'
                 });
             } else {
+                console.error('❌ Error en la alternancia:', result.error);
                 throw new Error(result.error);
             }
 

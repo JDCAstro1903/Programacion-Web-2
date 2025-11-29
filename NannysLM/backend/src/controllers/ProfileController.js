@@ -1,5 +1,6 @@
 const UserModel = require('../models/User');
 const { executeQuery } = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 /**
  * Controlador para manejo de perfiles específicos
@@ -214,6 +215,7 @@ class ProfileController {
                         is_verified: user.is_verified,
                         is_active: user.is_active,
                         profile_image: user.profile_image,
+                        identification_document: specificProfileData?.identification_document || null,
                         created_at: user.created_at,
                         updated_at: user.updated_at,
                         last_login: user.last_login
@@ -386,7 +388,6 @@ class ProfileController {
             }
 
             // Verificar la contraseña actual
-            const bcrypt = require('bcrypt');
             const isValidPassword = await bcrypt.compare(current_password, user.password_hash);
             
             if (!isValidPassword) {
@@ -424,6 +425,83 @@ class ProfileController {
                 success: false,
                 message: 'Error interno del servidor',
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+
+    /**
+     * Obtener datos completos del perfil (usuario + datos específicos del cliente)
+     */
+    static async getProfileData(req, res) {
+        try {
+            const userId = req.query.userId || req.user?.id;
+
+            if (!userId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'userId es requerido'
+                });
+            }
+
+            console.log(`📋 Obteniendo datos del perfil para userId: ${userId}`);
+
+            // Obtener datos del usuario
+            const { pool } = require('../config/database');
+            const [userRows] = await pool.query(
+                'SELECT id, email, first_name, last_name, phone_number, address, user_type, is_verified, is_active, profile_image, created_at, updated_at, last_login FROM users WHERE id = ?',
+                [userId]
+            );
+
+            if (!userRows || userRows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Usuario no encontrado'
+                });
+            }
+
+            const user = userRows[0];
+
+            // Obtener datos específicos del cliente si existe
+            let clientData = {
+                id: null,
+                user_id: userId,
+                verification_status: 'pending',
+                verification_date: null,
+                identification_document: null,
+                emergency_contact_name: '',
+                emergency_contact_phone: '',
+                number_of_children: 0,
+                special_requirements: '',
+                created_at: null,
+                updated_at: null
+            };
+
+            if (user.user_type === 'client') {
+                const [clientRows] = await pool.query(
+                    'SELECT id, user_id, verification_status, verification_date, identification_document, emergency_contact_name, emergency_contact_phone, number_of_children, special_requirements, created_at, updated_at FROM clients WHERE user_id = ?',
+                    [userId]
+                );
+
+                if (clientRows && clientRows.length > 0) {
+                    clientData = clientRows[0];
+                }
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Datos del perfil obtenidos correctamente',
+                data: {
+                    user_data: user,
+                    client_data: clientData
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Error al obtener datos del perfil:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor al obtener los datos del perfil',
+                error: error.message
             });
         }
     }

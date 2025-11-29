@@ -1,0 +1,243 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ServiceService, ServiceData } from '../../services/service.service';
+import { NannyService } from '../../services/nanny.service';
+import { AuthService } from '../../services/auth.service';
+
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
+@Component({
+  selector: 'app-service-details',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  templateUrl: './service-details.component.html',
+  styleUrl: './service-details.component.css'
+})
+export class ServiceDetailsComponent implements OnInit {
+  serviceId: number | null = null;
+  service: ServiceData | null = null;
+  nannyId: number | null = null;
+  
+  isLoading = true;
+  loadError: string | null = null;
+  isAccepting = false;
+  acceptSuccess = false;
+  acceptError: string | null = null;
+  
+  isCompleting = false;
+  completeSuccess = false;
+  completeError: string | null = null;
+  showCompleteModal = false;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private serviceService: ServiceService,
+    private nannyService: NannyService,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit() {
+    // Obtener el serviceId de la ruta
+    this.route.params.subscribe(params => {
+      this.serviceId = +params['serviceId'];
+      if (this.serviceId) {
+        this.loadServiceDetails();
+        this.loadNannyId();
+      }
+    });
+  }
+
+  loadServiceDetails() {
+    if (!this.serviceId) return;
+
+    this.isLoading = true;
+    this.loadError = null;
+
+    this.serviceService.getServiceById(this.serviceId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.service = response.data;
+          console.log('✅ Detalles del servicio cargados:', this.service);
+        } else {
+          this.loadError = 'No se encontró el servicio';
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error cargando servicio:', error);
+        this.loadError = 'Error al cargar los detalles del servicio';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadNannyId() {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser?.id) return;
+
+    this.nannyService.getNannyByUserId(currentUser.id).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.nannyId = response.data.id;
+          console.log('✅ Nanny ID obtenido:', this.nannyId);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error obteniendo nanny ID:', error);
+      }
+    });
+  }
+
+  acceptService() {
+    if (!this.serviceId || !this.nannyId) {
+      this.acceptError = 'No se puede aceptar el servicio en este momento';
+      return;
+    }
+
+    if (!this.service) {
+      this.acceptError = 'No se encontró el servicio';
+      return;
+    }
+
+    // Verificar que el servicio esté pendiente
+    if (this.service.status !== 'pending') {
+      this.acceptError = 'Este servicio ya no está disponible';
+      return;
+    }
+
+    // Verificar que no tenga nanny asignada
+    if (this.service.nanny_id) {
+      this.acceptError = 'Este servicio ya ha sido aceptado por otra nanny';
+      return;
+    }
+
+    this.isAccepting = true;
+    this.acceptError = null;
+
+    this.serviceService.acceptService(this.serviceId, this.nannyId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('✅ Servicio aceptado exitosamente');
+          this.acceptSuccess = true;
+          
+          // Redirigir a la pestaña de servicios después de 2 segundos
+          setTimeout(() => {
+            this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services' } });
+          }, 2000);
+        } else {
+          this.acceptError = response.message || 'No se pudo aceptar el servicio';
+          this.isAccepting = false;
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error aceptando servicio:', error);
+        this.acceptError = error.error?.message || 'Error al aceptar el servicio. Es posible que otra nanny lo haya aceptado primero.';
+        this.isAccepting = false;
+      }
+    });
+  }
+
+  declineService() {
+    // Redirigir a la pestaña de servicios
+    this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services' } });
+  }
+
+  goToAvailableServices() {
+    // Redirigir al dashboard con la vista de servicios, filtrando por pendientes
+    this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services', filter: 'available' } });
+  }
+
+  getServiceTypeName(type: string): string {
+    const types: { [key: string]: string } = {
+      'hourly': 'Niñeras a domicilio',
+      'daily': 'Niñeras por día',
+      'weekly': 'Niñeras por semana',
+      'overnight': 'Niñeras nocturnas',
+      'event': 'Acompañamiento a eventos',
+      'travel': 'Acompañamiento en viajes',
+      'home-care': 'Niñeras a domicilio',
+      'night-care': 'Cuidado nocturno',
+      'weekly-care': 'Niñeras por semana',
+      'event-care': 'Acompañamiento a eventos',
+      'travel-care': 'Acompañamiento en viajes'
+    };
+    return types[type] || type;
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-MX', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  onBackClick() {
+    this.declineService();
+  }
+
+  openCompleteModal() {
+    this.showCompleteModal = true;
+  }
+
+  closeCompleteModal() {
+    this.showCompleteModal = false;
+    this.completeError = null;
+  }
+
+  completeService() {
+    if (!this.serviceId) {
+      this.completeError = 'No se puede completar el servicio en este momento';
+      return;
+    }
+
+    if (!this.service) {
+      this.completeError = 'No se encontró el servicio';
+      return;
+    }
+
+    // Verificar que el servicio esté confirmado
+    if (this.service.status !== 'confirmed') {
+      this.completeError = 'Este servicio no puede ser completado en este estado';
+      return;
+    }
+
+    this.isCompleting = true;
+    this.completeError = null;
+
+    this.serviceService.completeService(this.serviceId).subscribe({
+      next: (response: ApiResponse<any>) => {
+        if (response.success) {
+          console.log('✅ Servicio completado exitosamente');
+          this.completeSuccess = true;
+          
+          // Actualizar el estado del servicio localmente
+          if (this.service) {
+            this.service.status = 'completed';
+          }
+          
+          // Redirigir a la pestaña de servicios después de 2 segundos
+          setTimeout(() => {
+            this.router.navigate(['/nanny/dashboard'], { queryParams: { view: 'services' } });
+          }, 2000);
+        } else {
+          this.completeError = response.message || 'No se pudo completar el servicio';
+          this.isCompleting = false;
+        }
+      },
+      error: (error: any) => {
+        console.error('❌ Error completando servicio:', error);
+        this.completeError = error.error?.message || 'Error al completar el servicio';
+        this.isCompleting = false;
+      }
+    });
+  }
+}

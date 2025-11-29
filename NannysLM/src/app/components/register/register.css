@@ -104,7 +104,7 @@
   max-width: 550px;
   margin: 20px auto;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .form-container h2 {
@@ -524,7 +524,7 @@
   text-decoration: underline;
 }
 
-/* Botón de regreso móvil - oculto por defecto */
+/* Botón de regreso móvil - oculto por defecto en desktop */
 .mobile-back-button {
   display: none;
 }
@@ -540,14 +540,36 @@
     display: none; /* Ocultar sección promocional en móvil */
   }
   
-  /* Reposicionar el botón de regreso para móvil */
-  .back-button {
-    position: fixed;
-    top: 2rem;
-    left: 1.5rem;
-    width: 44px;
-    height: 44px;
-    z-index: 100;
+  /* Ocultar botón de desktop */
+  .promo-section .back-button {
+    display: none;
+  }
+  
+  /* Mostrar botón de regreso para móvil */
+  .mobile-back-button {
+    display: flex;
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: rgba(30, 178, 229, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(30, 178, 229, 0.3);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: #1EB2E5;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+  
+  .mobile-back-button:hover {
+    background: rgba(30, 178, 229, 0.2);
+    border-color: rgba(30, 178, 229, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(30, 178, 229, 0.2);
   }
   
   .form-section {
@@ -669,40 +691,53 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeInOverlay 0.4s ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes fadeInOverlay {
   from {
     opacity: 0;
+    backdrop-filter: blur(0px);
   }
   to {
     opacity: 1;
+    backdrop-filter: blur(12px);
   }
 }
 
 .success-modal {
-  background: white;
-  padding: 2.5rem 2rem;
-  border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  padding: 0;
+  border-radius: 24px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   text-align: center;
-  max-width: 400px;
+  max-width: 480px;
   width: 90%;
   position: relative;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUpSuccess 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
 }
 
-@keyframes slideUp {
+.success-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
+}
+
+@keyframes slideUpSuccess {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(40px) scale(0.92);
   }
   to {
     opacity: 1;
@@ -711,21 +746,20 @@
 }
 
 .success-icon {
-  margin: 0 auto 1.5rem auto;
+  margin: 2.5rem auto 2rem auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: checkmark 0.6s ease-out 0.3s both;
+  animation: bounceCheckmark 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both;
 }
 
-@keyframes checkmark {
+@keyframes bounceCheckmark {
   0% {
     transform: scale(0);
     opacity: 0;
   }
   50% {
-    transform: scale(1.1);
-    opacity: 1;
+    transform: scale(1.2);
   }
   100% {
     transform: scale(1);
@@ -733,41 +767,71 @@
   }
 }
 
+.success-icon svg {
+  filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.3));
+}
+
 .success-modal h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 1rem;
-  font-family: 'Poppins', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 1.2rem 0;
+  padding: 0 2rem;
+  letter-spacing: -0.5px;
 }
 
 .success-modal p {
-  color: #64748b;
+  color: #475569;
   font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 2rem;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  padding: 0 2rem;
+  font-weight: 500;
+}
+
+.success-modal p strong {
+  color: #10B981;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.success-modal > p:last-of-type {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 2.5rem;
+  font-weight: 400;
 }
 
 .modal-buttons {
   display: flex;
+  gap: 12px;
   justify-content: center;
+  padding: 0 2rem 2.5rem 2rem;
 }
 
 .success-button {
-  background: linear-gradient(135deg, #1EB2E5 0%, #E31B7E 100%);
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   color: white;
   border: none;
-  padding: 14px 24px;
+  padding: 14px 28px;
   border-radius: 12px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  flex: 1;
 }
 
 .success-button::before {
@@ -777,13 +841,13 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
 }
 
 .success-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(30, 178, 229, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
 
 .success-button:hover::before {
@@ -791,27 +855,86 @@
 }
 
 .success-button:active {
-  transform: translateY(0);
+  transform: translateY(-1px);
+}
+
+/* Botón secundario (Cerrar) */
+.success-button[style*="background:#94a3b8"] {
+  background: #cbd5e1 !important;
+  box-shadow: 0 4px 15px rgba(203, 213, 225, 0.3) !important;
+  color: #334155;
+}
+
+.success-button[style*="background:#94a3b8"]:hover {
+  background: #b0b8c0 !important;
+  box-shadow: 0 8px 25px rgba(203, 213, 225, 0.4) !important;
 }
 
 /* Responsive para modal */
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .success-modal {
-    padding: 2rem 1.5rem;
-    margin: 1rem;
-    max-width: none;
+    max-width: 90%;
+    padding: 0;
   }
   
   .success-modal h3 {
-    font-size: 1.3rem;
+    font-size: 1.5rem;
+    padding: 0 1.5rem;
+    margin-top: 2rem;
   }
   
   .success-modal p {
     font-size: 0.95rem;
+    padding: 0 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .success-modal > p:last-of-type {
+    margin-bottom: 2rem;
+  }
+  
+  .modal-buttons {
+    padding: 0 1.5rem 2rem 1.5rem;
+    flex-direction: column;
+    gap: 10px;
   }
   
   .success-button {
     padding: 12px 20px;
     font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .success-modal {
+    margin: 1rem;
+  }
+  
+  .success-icon {
+    margin: 2rem auto 1.5rem auto;
+  }
+  
+  .success-icon svg {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .success-modal h3 {
+    font-size: 1.35rem;
+    padding: 0 1.2rem;
+  }
+  
+  .success-modal p {
+    font-size: 0.9rem;
+    padding: 0 1.2rem;
+  }
+  
+  .modal-buttons {
+    padding: 0 1.2rem 1.8rem 1.2rem;
+  }
+  
+  .success-button {
+    padding: 11px 16px;
+    font-size: 0.9rem;
   }
 }

@@ -1,110 +1,182 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject, interval } from 'rxjs';
+import { switchMap, tap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { Notification } from '../shared/components/header/header.component';
 
 export interface NotificationResponse {
   success: boolean;
   data: Notification[];
-  meta?: {
-    total: number;
-    userId: string;
-    unreadOnly: boolean;
-  };
-}
-
-export interface UnreadCountResponse {
-  success: boolean;
-  data: {
-    unread_count: number;
-  };
+  message?: string;
+  count?: number;
 }
 
 export interface NotificationActionResponse {
   success: boolean;
   message: string;
-  data?: any;
+  affectedRows?: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  private apiUrl = 'http://localhost:8000/api/notifications';
+  private apiUrl = 'http://localhost:8000/api/v1/notifications';
+  
+  // BehaviorSubject para mantener las notificaciones en memoria
+  private notificationsSubject = new BehaviorSubject<Notification[]>([]);
+  public notifications$ = this.notificationsSubject.asObservable();
+  
+  // Suscripción al polling (para limpiarla después)
+  private pollingSubscription: any = null;
 
-  constructor(private http: HttpClient) {}
-
-  /**
-   * Obtener todas las notificaciones de un usuario
-   */
-  getNotifications(userId: number, unreadOnly: boolean = false, limit: number = 50): Observable<NotificationResponse> {
-    let params = new HttpParams()
-      .set('userId', userId.toString())
-      .set('limit', limit.toString());
-
-    if (unreadOnly) {
-      params = params.set('unread', 'true');
-    }
-
-    return this.http.get<NotificationResponse>(this.apiUrl, { params });
+  constructor(private http: HttpClient) {
+    console.log('🔔 NotificationService inicializado con endpoint:', this.apiUrl);
   }
 
   /**
-   * Obtener el conteo de notificaciones no leídas
+   * Obtener todas las notificaciones del usuario autenticado
    */
-  getUnreadCount(userId: number): Observable<UnreadCountResponse> {
-    const params = new HttpParams().set('userId', userId.toString());
-    return this.http.get<UnreadCountResponse>(`${this.apiUrl}/unread-count`, { params });
+  getNotifications(): Observable<Notification[]> {
+    console.log('📋 Obteniendo notificaciones...');
+    
+    return this.http.get<NotificationResponse>(this.apiUrl).pipe(
+      tap((response) => {
+        console.log(`✅ Se obtuvieron ${response.data?.length || 0} notificaciones`);
+        if (response.data) {
+          this.notificationsSubject.next(response.data);
+        }
+      }),
+      switchMap((response) => of(response.data || [])),
+      catchError((error) => {
+        console.error('❌ Error al obtener notificaciones:', error);
+        return of([]);
+      })
+    );
   }
 
   /**
-   * Obtener una notificación específica
-   */
-  getNotificationById(id: number): Observable<{ success: boolean; data: Notification }> {
-    return this.http.get<{ success: boolean; data: Notification }>(`${this.apiUrl}/${id}`);
-  }
-
-  /**
-   * Crear una nueva notificación
-   */
-  createNotification(notification: {
-    user_id: number;
-    title: string;
-    message: string;
-    type?: 'info' | 'success' | 'warning' | 'error' | 'service' | 'payment';
-    action_url?: string;
-    related_id?: number;
-    related_type?: string;
-  }): Observable<NotificationActionResponse> {
-    return this.http.post<NotificationActionResponse>(this.apiUrl, notification);
-  }
-
-  /**
-   * Marcar una notificación como leída
+   * Marcar una notificación específica como leída
    */
   markAsRead(notificationId: number): Observable<NotificationActionResponse> {
-    return this.http.put<NotificationActionResponse>(`${this.apiUrl}/${notificationId}/read`, {});
+    console.log(`📖 Marcando notificación ${notificationId} como leída...`);
+    
+    return this.http.put<NotificationActionResponse>(`${this.apiUrl}/${notificationId}/read`, {}).pipe(
+      tap((response) => {
+        console.log(`✅ Notificación ${notificationId} marcada como leída`);
+        
+        // Actualizar en el BehaviorSubject
+        const currentNotifications = this.notificationsSubject.value;
+        const updated = currentNotifications.map(n => 
+          n.id === notificationId ? { ...n, is_read: true } : n
+        );
+        this.notificationsSubject.next(updated);
+      }),
+      catchError((error) => {
+        console.error('❌ Error al marcar como leída:', error);
+        return of({ success: false, message: 'Error' });
+      })
+    );
   }
 
   /**
-   * Marcar todas las notificaciones de un usuario como leídas
+   * Marcar todas las notificaciones como leídas
    */
-  markAllAsRead(userId: number): Observable<NotificationActionResponse> {
-    return this.http.put<NotificationActionResponse>(`${this.apiUrl}/read-all`, { userId });
+  markAllAsRead(): Observable<NotificationActionResponse> {
+    console.log('📖 Marcando todas las notificaciones como leídas...');
+    
+    return this.http.put<NotificationActionResponse>(`${this.apiUrl}/mark-all-read`, {}).pipe(
+      tap((response) => {
+        console.log('✅ Todas las notificaciones marcadas como leídas');
+        
+        // Actualizar en el BehaviorSubject
+        const currentNotifications = this.notificationsSubject.value;
+        const updated = currentNotifications.map(n => ({ ...n, is_read: true }));
+        this.notificationsSubject.next(updated);
+      }),
+      catchError((error) => {
+        console.error('❌ Error al marcar todas como leídas:', error);
+        return of({ success: false, message: 'Error' });
+      })
+    );
   }
 
   /**
    * Eliminar una notificación
    */
   deleteNotification(notificationId: number): Observable<NotificationActionResponse> {
-    return this.http.delete<NotificationActionResponse>(`${this.apiUrl}/${notificationId}`);
+    console.log(`🗑️ Eliminando notificación ${notificationId}...`);
+    
+    return this.http.delete<NotificationActionResponse>(`${this.apiUrl}/${notificationId}`).pipe(
+      tap((response) => {
+        console.log(`✅ Notificación ${notificationId} eliminada`);
+        
+        // Actualizar en el BehaviorSubject
+        const currentNotifications = this.notificationsSubject.value;
+        const updated = currentNotifications.filter(n => n.id !== notificationId);
+        this.notificationsSubject.next(updated);
+      }),
+      catchError((error) => {
+        console.error('❌ Error al eliminar notificación:', error);
+        return of({ success: false, message: 'Error' });
+      })
+    );
   }
 
   /**
-   * Eliminar todas las notificaciones leídas de un usuario
+   * Obtener el número de notificaciones sin leer
    */
-  clearReadNotifications(userId: number): Observable<NotificationActionResponse> {
-    return this.http.delete<NotificationActionResponse>(`${this.apiUrl}/clear-read?userId=${userId}`);
+  getUnreadCount(): number {
+    const notifications = this.notificationsSubject.value;
+    return notifications.filter(n => !n.is_read).length;
+  }
+
+  /**
+   * Obtener observador del conteo de notificaciones sin leer
+   */
+  getUnreadCount$(): Observable<number> {
+    return this.notifications$.pipe(
+      switchMap((notifications) => of(notifications.filter(n => !n.is_read).length))
+    );
+  }
+
+  /**
+   * Iniciar polling automático de notificaciones
+   * @param intervalMs Intervalo en milisegundos (default: 30000 = 30 segundos)
+   */
+  startPolling(intervalMs: number = 30000): void {
+    console.log(`⏱️ Iniciando polling de notificaciones cada ${intervalMs}ms`);
+    
+    this.pollingSubscription = interval(intervalMs)
+      .pipe(
+        switchMap(() => this.getNotifications())
+      )
+      .subscribe({
+        next: (notifications) => {
+          console.log(`✅ Polling completado: ${notifications.length} notificaciones`);
+        },
+        error: (error) => {
+          console.error('❌ Error en polling de notificaciones:', error);
+        }
+      });
+  }
+
+  /**
+   * Detener el polling automático
+   */
+  stopPolling(): void {
+    if (this.pollingSubscription) {
+      console.log('⏹️ Deteniendo polling de notificaciones');
+      this.pollingSubscription.unsubscribe();
+      this.pollingSubscription = null;
+    }
+  }
+
+  /**
+   * Obtener notificaciones actuales del BehaviorSubject
+   */
+  getCurrentNotifications(): Notification[] {
+    return this.notificationsSubject.value;
   }
 }

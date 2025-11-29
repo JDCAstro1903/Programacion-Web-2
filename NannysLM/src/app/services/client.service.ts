@@ -58,17 +58,24 @@ export interface ClientServiceData {
 export interface ClientPayment {
   id: number;
   service_id: number;
-  service_title: string;
-  service_date: string;
-  service_time: string;
   amount: number;
+  payment_status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
   platform_fee: number;
   nanny_amount: number;
-  payment_status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
-  transaction_id?: string;
-  payment_date?: string;
   receipt_url?: string;
+  payment_date?: string;
   created_at: string;
+  nanny_first_name?: string;
+  nanny_last_name?: string;
+  start_date?: string;
+  title?: string;
+  service?: { name?: string; id?: number; title?: string };
+  client_id?: number;
+  nanny_id?: number;
+  service_title?: string;
+  service_date?: string;
+  service_time?: string;
+  transaction_id?: string;
   nanny?: {
     name: string;
   };
@@ -171,5 +178,20 @@ export class ClientService {
    */
   updateClientProfile(profileData: Partial<ClientInfo>): Observable<ApiResponse<any>> {
     return this.http.put<ApiResponse<any>>(`${this.apiUrl}/profile`, profileData);
+  }
+
+  /**
+   * Enviar calificación de un servicio
+   */
+  rateService(ratingData: {
+    service_id: number;
+    rating: number;
+    review?: string;
+    punctuality_rating?: number;
+    communication_rating?: number;
+    care_quality_rating?: number;
+    would_recommend?: boolean;
+  }): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/rate-service`, ratingData);
   }
 }

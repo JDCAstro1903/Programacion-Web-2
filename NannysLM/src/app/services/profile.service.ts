@@ -17,6 +17,7 @@ export interface ProfileStatusResponse {
       address?: string;
       is_verified: boolean;
       profile_image?: string;
+      identification_document?: string;
       created_at?: string;
       updated_at?: string;
       last_login?: string;
