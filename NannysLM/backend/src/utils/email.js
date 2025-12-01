@@ -4,22 +4,26 @@ const nodemailer = require('nodemailer');
  * Verificar si la configuración SMTP está disponible
  */
 const isSMTPConfigured = () => {
-    return !!(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS);
+    return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
 };
 
 /**
- * Crear transporter de nodemailer con manejo de errores
+ * Crear transporter de nodemailer optimizado para Gmail en Railway
  */
 const createTransporter = () => {
     try {
         const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT, 10),
-            secure: parseInt(process.env.SMTP_PORT, 10) === 465,
+            service: 'gmail',
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS
-            }
+            },
+            tls: {
+                rejectUnauthorized: false
+            },
+            connectionTimeout: 30000,
+            greetingTimeout: 30000,
+            socketTimeout: 30000
         });
         return transporter;
     } catch (error) {
@@ -131,9 +135,6 @@ const getActivationEmailTemplate = (toName, activationLink) => {
  * Si no hay configuración SMTP, hace un log con el link de activación (útil en desarrollo).
  */
 const sendActivationEmail = async (toEmail, toName, activationLink) => {
-    // Leer configuración desde env
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
 
@@ -141,21 +142,16 @@ const sendActivationEmail = async (toEmail, toName, activationLink) => {
     const html = getActivationEmailTemplate(toName, activationLink);
 
     // Si no hay credenciales SMTP, hacer fallback a console.log
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log('📨 Activación (sin SMTP): Enlace de activación:', activationLink);
         return { success: true, message: 'Activation link logged to console (SMTP not configured)' };
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465, // true for 465, false for other ports
-            auth: {
-                user,
-                pass
-            }
-        });
+        const transporter = createTransporter();
+        if (!transporter) {
+            throw new Error('No se pudo crear el transporter SMTP');
+        }
 
         const info = await transporter.sendMail({
             from: process.env.MAIL_FROM || `NannysLM <${user}>`,
@@ -168,7 +164,7 @@ const sendActivationEmail = async (toEmail, toName, activationLink) => {
         return { success: true, message: 'Email sent', info };
     } catch (error) {
         console.error('❌ Error sending activation email:', error);
-        return { success: false, message: error.message };
+        throw error; // Propagar el error para que el controlador lo maneje
     }
 };
 
@@ -293,26 +289,22 @@ const getPasswordResetEmailTemplate = (toName, resetLink) => {
  * Enviar correo para restablecer contraseña
  */
 const sendPasswordResetEmail = async (toEmail, toName, resetLink) => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
 
     const subject = '🔑 Restablece tu contraseña en NannysLM';
     const html = getPasswordResetEmailTemplate(toName, resetLink);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log('📨 Password reset (sin SMTP): Enlace de restablecimiento:', resetLink);
         return { success: true, message: 'Password reset link logged to console (SMTP not configured)' };
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
+        const transporter = createTransporter();
+        if (!transporter) {
+            throw new Error('No se pudo crear el transporter SMTP');
+        }
 
         const info = await transporter.sendMail({
             from: process.env.MAIL_FROM || `NannysLM <${user}>`,
@@ -325,7 +317,7 @@ const sendPasswordResetEmail = async (toEmail, toName, resetLink) => {
         return { success: true, message: 'Email sent', info };
     } catch (error) {
         console.error('❌ Error sending password reset email:', error);
-        return { success: false, message: error.message };
+        throw error;
     }
 };
 
@@ -478,18 +470,16 @@ const sendNannyCredentialsEmail = async (toEmail, toName, password, loginLink) =
     const subject = '🎉 Bienvenida a NannysLM - Tus Credenciales de Acceso';
     const html = getNannyCredentialsEmailTemplate(toName, toEmail, password, loginLink);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log('📨 Nanny credentials (sin SMTP): Email:', toEmail, 'Password:', password);
         return { success: true, message: 'Nanny credentials logged to console (SMTP not configured)' };
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
+        const transporter = createTransporter();
+        if (!transporter) {
+            throw new Error('No se pudo crear el transporter SMTP');
+        }
 
         const info = await transporter.sendMail({
             from: process.env.MAIL_FROM || `NannysLM <${user}>`,
@@ -502,7 +492,7 @@ const sendNannyCredentialsEmail = async (toEmail, toName, password, loginLink) =
         return { success: true, message: 'Credentials email sent', info };
     } catch (error) {
         console.error('❌ Error sending nanny credentials email:', error);
-        return { success: false, message: error.message };
+        throw error;
     }
 };
 
@@ -625,7 +615,7 @@ const getServiceNotificationEmailTemplate = (nannyName, serviceData) => {
 
                     <!-- Botón de acción -->
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="http://localhost:4200/nanny/service-details/${serviceData.id}" style="display: inline-block; background: linear-gradient(135deg, #E31B7E 0%, #C01568 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(227, 27, 126, 0.3);">
+                        <a href="https://programacion-web-2-two.vercel.app/nanny/service-details/${serviceData.id}" style="display: inline-block; background: linear-gradient(135deg, #E31B7E 0%, #C01568 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(227, 27, 126, 0.3);">
                             ✓ Ver y Aceptar Servicio
                         </a>
                     </div>
@@ -653,26 +643,22 @@ const getServiceNotificationEmailTemplate = (nannyName, serviceData) => {
  * Enviar notificación de servicio disponible a una nanny
  */
 const sendServiceNotificationEmail = async (toEmail, nannyName, serviceData) => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
 
     const subject = '🎯 Nuevo servicio disponible - ¡Acéptalo ahora!';
     const html = getServiceNotificationEmailTemplate(nannyName, serviceData);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log('📨 Service notification (sin SMTP): Email:', toEmail, 'Service:', serviceData.title);
         return { success: true, message: 'Service notification logged to console (SMTP not configured)' };
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
+        const transporter = createTransporter();
+        if (!transporter) {
+            throw new Error('No se pudo crear el transporter SMTP');
+        }
 
         const info = await transporter.sendMail({
             from: process.env.MAIL_FROM || `NannysLM <${user}>`,
@@ -685,7 +671,7 @@ const sendServiceNotificationEmail = async (toEmail, nannyName, serviceData) => 
         return { success: true, message: 'Service notification email sent', info };
     } catch (error) {
         console.error('❌ Error sending service notification email:', error);
-        return { success: false, message: error.message };
+        throw error;
     }
 };
 
@@ -743,7 +729,7 @@ const getVerificationApprovedEmailTemplate = (clientName) => {
 
                     <!-- Botón principal -->
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="http://localhost:4200/client/dashboard" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                        <a href="https://programacion-web-2-two.vercel.app/client/dashboard" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
                             → Ir a mi Dashboard
                         </a>
                     </div>
@@ -831,7 +817,7 @@ const getVerificationRejectedEmailTemplate = (clientName) => {
 
                     <!-- Botón para reenviar -->
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="http://localhost:4200/client/dashboard" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                        <a href="https://programacion-web-2-two.vercel.app/client/dashboard" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
                             ↻ Reenviar Documento
                         </a>
                     </div>
@@ -862,26 +848,22 @@ const getVerificationRejectedEmailTemplate = (clientName) => {
  * Enviar correo de verificación aprobada
  */
 const sendVerificationApprovedEmail = async (toEmail, clientName) => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
 
     const subject = '✓ Tu verificación ha sido aprobada';
     const html = getVerificationApprovedEmailTemplate(clientName);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log('📨 Verification approved email (sin SMTP):', toEmail);
         return { success: true, message: 'Verification approved email logged to console (SMTP not configured)' };
     }
 
     try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
+        const transporter = createTransporter();
+        if (!transporter) {
+            throw new Error('No se pudo crear el transporter SMTP');
+        }
 
         const info = await transporter.sendMail({
             from: process.env.MAIL_FROM || `NannysLM <${user}>`,
@@ -910,7 +892,7 @@ const sendVerificationRejectedEmail = async (toEmail, clientName) => {
     const subject = 'Verificación rechazada - Por favor reintenta';
     const html = getVerificationRejectedEmailTemplate(clientName);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log('📨 Verification rejected email (sin SMTP):', toEmail);
         return { success: true, message: 'Verification rejected email logged to console (SMTP not configured)' };
     }
@@ -1277,7 +1259,7 @@ const sendPaymentApprovedEmail = async (toEmail, clientName, serviceName, amount
     const subject = '✓ Tu Pago ha sido Aprobado';
     const html = getPaymentApprovedEmailTemplate(clientName, serviceName, amount, nannyName);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log(`📨 Payment approved email (sin SMTP): Email: ${toEmail}, Amount: $${amount}`);
         return { success: true, message: 'Payment approved email logged to console (SMTP not configured)' };
     }
@@ -1317,7 +1299,7 @@ const sendPaymentRejectedEmail = async (toEmail, clientName, serviceName, amount
     const subject = '✗ Tu Pago ha sido Rechazado';
     const html = getPaymentRejectedEmailTemplate(clientName, serviceName, amount, nannyName, reason);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log(`📨 Payment rejected email (sin SMTP): Email: ${toEmail}, Amount: $${amount}`);
         return { success: true, message: 'Payment rejected email logged to console (SMTP not configured)' };
     }
@@ -1357,7 +1339,7 @@ const sendNewPaymentNotificationEmail = async (adminEmail, adminName, clientName
     const subject = '💰 Nuevo Pago Pendiente de Revisión';
     const html = getNewPaymentNotificationEmailTemplate(adminName, clientName, serviceName, amount, nannyName);
 
-    if (!host || !port || !user || !pass) {
+    if (!user || !pass) {
         console.log(`📨 New payment notification email (sin SMTP): Email: ${adminEmail}, Amount: $${amount}`);
         return { success: true, message: 'New payment notification email logged to console (SMTP not configured)' };
     }
@@ -1429,7 +1411,7 @@ const getNewVerificationRequestEmailTemplate = (adminName, clientName, clientEma
                     </p>
 
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/admin/verifications" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                        <a href="${process.env.FRONTEND_URL || 'https://programacion-web-2-two.vercel.app'}/admin/verifications" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
                             📋 Ver Panel de Verificaciones
                         </a>
                     </div>
@@ -1492,7 +1474,7 @@ const getNannyAcceptedServiceEmailTemplate = (clientName, nannyName, serviceName
                     </p>
 
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/client/services" style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                        <a href="${process.env.FRONTEND_URL || 'https://programacion-web-2-two.vercel.app'}/client/services" style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
                             📋 Ver Mis Servicios
                         </a>
                     </div>
@@ -1556,7 +1538,7 @@ const getServiceReminderEmailTemplate = (nannyName, serviceName, serviceDate, da
                     </p>
 
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/nanny/services" style="display: inline-block; background: ${urgencyGradient}; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                        <a href="${process.env.FRONTEND_URL || 'https://programacion-web-2-two.vercel.app'}/nanny/services" style="display: inline-block; background: ${urgencyGradient}; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
                             📋 Ver Detalles del Servicio
                         </a>
                     </div>
@@ -1619,7 +1601,7 @@ const getServiceCompletedEmailTemplate = (clientName, nannyName, serviceName, se
                     </p>
 
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/client/services" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                        <a href="${process.env.FRONTEND_URL || 'https://programacion-web-2-two.vercel.app'}/client/services" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
                             ⭐ Calificar Servicio
                         </a>
                     </div>
@@ -1816,7 +1798,7 @@ const getNannyRatingReceivedEmailTemplate = (nannyName, clientName, rating, serv
                     </p>
 
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:4200'}/nanny/ratings" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                        <a href="${process.env.FRONTEND_URL || 'https://programacion-web-2-two.vercel.app'}/nanny/ratings" style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
                             📊 Ver Todas Mis Calificaciones
                         </a>
                     </div>
