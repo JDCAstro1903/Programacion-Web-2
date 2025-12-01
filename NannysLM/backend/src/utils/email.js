@@ -1,34 +1,40 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
+
+// Configurar SendGrid API Key
+if (process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 /**
- * Verificar si la configuración SMTP está disponible
+ * Verificar si SendGrid está configurado
  */
-const isSMTPConfigured = () => {
-    return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+const isSendGridConfigured = () => {
+    return !!(process.env.SENDGRID_API_KEY && process.env.SENDGRID_FROM_EMAIL);
 };
 
 /**
- * Crear transporter de nodemailer optimizado para Gmail en Railway
+ * Enviar email usando SendGrid
  */
-const createTransporter = () => {
+const sendEmailWithSendGrid = async (to, subject, html) => {
+    if (!isSendGridConfigured()) {
+        console.log('📨 Email (sin SendGrid):', { to, subject });
+        return { success: true, message: 'Email logged to console (SendGrid not configured)' };
+    }
+
     try {
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            },
-            tls: {
-                rejectUnauthorized: false
-            },
-            connectionTimeout: 30000,
-            greetingTimeout: 30000,
-            socketTimeout: 30000
-        });
-        return transporter;
+        const msg = {
+            to,
+            from: process.env.SENDGRID_FROM_EMAIL,
+            subject,
+            html
+        };
+
+        await sgMail.send(msg);
+        console.log('✅ Email sent via SendGrid:', to);
+        return { success: true, message: 'Email sent via SendGrid' };
     } catch (error) {
-        console.error('❌ Error al crear transporter SMTP:', error.message);
-        return null;
+        console.error('❌ Error sending email via SendGrid:', error.message);
+        throw error;
     }
 };
 
@@ -131,41 +137,13 @@ const getActivationEmailTemplate = (toName, activationLink) => {
 };
 
 /**
- * Enviar correo de activación. Usa variables de entorno para la configuración SMTP.
- * Si no hay configuración SMTP, hace un log con el link de activación (útil en desarrollo).
+ * Enviar correo de activación usando SendGrid
  */
 const sendActivationEmail = async (toEmail, toName, activationLink) => {
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '✓ Activa tu cuenta en NannysLM';
     const html = getActivationEmailTemplate(toName, activationLink);
-
-    // Si no hay credenciales SMTP, hacer fallback a console.log
-    if (!user || !pass) {
-        console.log('📨 Activación (sin SMTP): Enlace de activación:', activationLink);
-        return { success: true, message: 'Activation link logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = createTransporter();
-        if (!transporter) {
-            throw new Error('No se pudo crear el transporter SMTP');
-        }
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Activation email sent:', info.messageId);
-        return { success: true, message: 'Email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending activation email:', error);
-        throw error; // Propagar el error para que el controlador lo maneje
-    }
+    
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
@@ -289,36 +267,10 @@ const getPasswordResetEmailTemplate = (toName, resetLink) => {
  * Enviar correo para restablecer contraseña
  */
 const sendPasswordResetEmail = async (toEmail, toName, resetLink) => {
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '🔑 Restablece tu contraseña en NannysLM';
     const html = getPasswordResetEmailTemplate(toName, resetLink);
-
-    if (!user || !pass) {
-        console.log('📨 Password reset (sin SMTP): Enlace de restablecimiento:', resetLink);
-        return { success: true, message: 'Password reset link logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = createTransporter();
-        if (!transporter) {
-            throw new Error('No se pudo crear el transporter SMTP');
-        }
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Password reset email sent:', info.messageId);
-        return { success: true, message: 'Email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending password reset email:', error);
-        throw error;
-    }
+    
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
@@ -462,38 +414,10 @@ const getNannyCredentialsEmailTemplate = (toName, email, password, loginLink) =>
  * Enviar correo con credenciales a nueva nanny
  */
 const sendNannyCredentialsEmail = async (toEmail, toName, password, loginLink) => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '🎉 Bienvenida a NannysLM - Tus Credenciales de Acceso';
     const html = getNannyCredentialsEmailTemplate(toName, toEmail, password, loginLink);
-
-    if (!user || !pass) {
-        console.log('📨 Nanny credentials (sin SMTP): Email:', toEmail, 'Password:', password);
-        return { success: true, message: 'Nanny credentials logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = createTransporter();
-        if (!transporter) {
-            throw new Error('No se pudo crear el transporter SMTP');
-        }
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Nanny credentials email sent:', info.messageId);
-        return { success: true, message: 'Credentials email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending nanny credentials email:', error);
-        throw error;
-    }
+    
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
@@ -643,36 +567,10 @@ const getServiceNotificationEmailTemplate = (nannyName, serviceData) => {
  * Enviar notificación de servicio disponible a una nanny
  */
 const sendServiceNotificationEmail = async (toEmail, nannyName, serviceData) => {
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '🎯 Nuevo servicio disponible - ¡Acéptalo ahora!';
     const html = getServiceNotificationEmailTemplate(nannyName, serviceData);
-
-    if (!user || !pass) {
-        console.log('📨 Service notification (sin SMTP): Email:', toEmail, 'Service:', serviceData.title);
-        return { success: true, message: 'Service notification logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = createTransporter();
-        if (!transporter) {
-            throw new Error('No se pudo crear el transporter SMTP');
-        }
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Service notification email sent:', info.messageId);
-        return { success: true, message: 'Service notification email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending service notification email:', error);
-        throw error;
-    }
+    
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
