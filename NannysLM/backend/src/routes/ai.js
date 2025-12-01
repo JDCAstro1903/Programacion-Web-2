@@ -2,6 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 
+// Polyfill para fetch en Node.js < 18
+const fetch = require('node-fetch');
+if (!globalThis.fetch) {
+  globalThis.fetch = fetch;
+}
+
 // Importar directamente la función
 const getNannyTips = async (req, res) => {
   try {
