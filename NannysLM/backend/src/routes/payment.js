@@ -11,28 +11,9 @@ const { verifyToken } = require('../middleware/auth');
  * Base: /api/v1/payments
  */
 
-// Configurar multer para subir recibos de pago
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/receipts');
-    
-    // Crear directorio si no existe
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Generar nombre único con timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'receipt-' + uniqueSuffix + ext);
-  }
-});
-
+// Configurar multer para subir recibos de pago (usar memoryStorage para Cloudinary)
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB
   },

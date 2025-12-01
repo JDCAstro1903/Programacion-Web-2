@@ -1,6 +1,7 @@
 const UserModel = require('../models/User');
 const { executeQuery } = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { uploadImage, deleteImage, extractPublicId } = require('../config/cloudinary');
 
 /**
  * Controlador para manejo de perfiles específicos
@@ -258,8 +259,22 @@ class ProfileController {
             // Manejar la imagen de perfil si se subió una
             let profile_image = null;
             if (req.file) {
-                profile_image = `/uploads/${req.file.filename}`;
-                console.log('📝 Imagen de perfil guardada:', profile_image);
+                try {
+                    // Subir a Cloudinary
+                    const result = await uploadImage(
+                        req.file.buffer,
+                        'nannys-lm/profiles',
+                        `profile_${userId}`
+                    );
+                    profile_image = result.secure_url;
+                    console.log('📝 Imagen de perfil guardada en Cloudinary:', profile_image);
+                } catch (error) {
+                    console.error('❌ Error subiendo imagen a Cloudinary:', error);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Error al subir la imagen de perfil'
+                    });
+                }
             }
 
             // Construir la consulta de actualización

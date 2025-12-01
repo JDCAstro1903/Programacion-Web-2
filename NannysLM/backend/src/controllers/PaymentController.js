@@ -5,6 +5,7 @@ const {
     sendNewPaymentNotificationEmail 
 } = require('../utils/email');
 const notificationSystem = require('../utils/NotificationSystem');
+const { uploadImage, deleteImage, extractPublicId } = require('../config/cloudinary');
 
 /**
  * Controlador para gestión de pagos
@@ -483,7 +484,6 @@ class PaymentController {
 
             console.log('📄 Archivo recibido:', {
                 name: req.file.originalname,
-                filename: req.file.filename,
                 mimetype: req.file.mimetype,
                 size: req.file.size
             });
@@ -514,9 +514,25 @@ class PaymentController {
                 });
             }
 
+            // Subir recibo a Cloudinary
+            let receiptUrl;
+            try {
+                const cloudinaryResult = await uploadImage(
+                    req.file.buffer,
+                    'nannys-lm/receipts',
+                    `receipt_${paymentId}_${Date.now()}`
+                );
+                receiptUrl = cloudinaryResult.secure_url;
+                console.log('📤 Recibo subido a Cloudinary:', receiptUrl);
+            } catch (error) {
+                console.error('❌ Error subiendo recibo a Cloudinary:', error);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error al subir el comprobante de pago'
+                });
+            }
+
             // Actualizar registro de pago con URL del comprobante
-            // req.file.filename es el nombre único generado por multer
-            const receiptUrl = `/uploads/receipts/${req.file.filename}`;
             const updateQuery = `
                 UPDATE payments 
                 SET receipt_url = ?, payment_status = 'processing', updated_at = NOW()
