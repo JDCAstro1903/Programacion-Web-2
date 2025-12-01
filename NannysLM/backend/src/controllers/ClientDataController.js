@@ -160,9 +160,10 @@ const upsertClientData = async (req, res) => {
           const clientName = `${userData[0].first_name} ${userData[0].last_name}`;
           const clientEmail = userData[0].email;
           
-          // Buscar admin (role_id = 1)
+          // Buscar admin (user_type = 'admin')
           const [adminData] = await pool.query(
-            'SELECT id, first_name, email FROM users WHERE role_id = 1 LIMIT 1'
+            'SELECT id, first_name, email FROM users WHERE user_type = ? LIMIT 1',
+            ['admin']
           );
           
           if (adminData.length > 0) {
