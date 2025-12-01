@@ -2,15 +2,29 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { HeaderComponent, HeaderConfig, Notification } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
+import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
+import { WhatsappButtonComponent } from '../../shared/components/whatsapp-button/whatsapp-button.component';
 import { UserConfigService } from '../../shared/services/user-config.service';
 import { AuthService } from '../../services/auth.service';
 import { ClientService as ClientApiService, ClientInfo, ClientServiceData, ClientPayment, ClientStats } from '../../services/client.service';
 import { NotificationService } from '../../services/notification.service';
 import { ServiceService, ServiceData } from '../../services/service.service';
 import { BankDetailsService, BankDetail } from '../../services/bank-details.service';
+import { PaymentService, Payment } from '../../services/payment.service';
+
+// Interfaz mejorada para servicios del cliente con información de nanny
+interface ClientServiceComplete extends ServiceData {
+  showRating?: boolean;
+  tempRating?: number;
+  isRated?: boolean;
+  nanny_profile_image?: string;
+  nanny_full_name?: string;
+  service_type_name?: string; // Nombre legible del tipo de servicio
+}
 
 // Interfaz para definir la estructura de un servicio del cliente (legacy)
 interface ClientService {
@@ -31,6 +45,13 @@ interface ExtendedClientService extends ClientServiceData {
   isRated?: boolean;
   instructions?: string; // Para compatibilidad con template legacy
   service?: { name: string }; // Para compatibilidad con template legacy
+  service_type_name?: string; // Nombre legible del tipo de servicio
+  nanny_id?: number;
+  nanny_profile_image?: string;
+  nanny_full_name?: string;
+  nanny_phone?: string;
+  nanny_email?: string;
+  paymentInitiated?: boolean; // Indica si hay un pago en progreso
 }
 
 // Interfaces para datos del perfil
@@ -67,7 +88,16 @@ interface ClientProfileData {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SidebarComponent, HeaderComponent, LogoutModalComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    RouterModule, 
+    SidebarComponent, 
+    HeaderComponent, 
+    LogoutModalComponent, 
+    NotificationsPanelComponent, 
+    WhatsappButtonComponent
+  ],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.css'
 })
@@ -90,6 +120,33 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Estado del modal de datos bancarios
   showBankDetailsModal: boolean = false;
 
+  // Estado del modal de creación de servicio
+  showServiceModal: boolean = false;
+  serviceModalType: 'loading' | 'success' | 'error' | 'warning' = 'loading';
+  serviceModalTitle: string = '';
+  serviceModalMessage: string = '';
+  serviceModalErrors: string[] = [];
+
+  // Estado del modal de cancelación de servicio
+  showCancelModal: boolean = false;
+  serviceToCancel: any = null;
+
+  // Estado del modal de cambio de fecha
+  showChangeDateModal: boolean = false;
+  serviceToChangeDate: any = null;
+  
+  // Calendario para cambio de fecha
+  changeDateCalendarMonth: number = new Date().getMonth();
+  changeDateCalendarYear: number = new Date().getFullYear();
+  selectedNewDate: Date | null = null;
+  selectedNewStartTime: string = '';
+  selectedNewEndTime: string = '';
+  minSelectableDate: Date | null = null;
+
+  // Estado del modal de perfil de niñera
+  private nannyProfileSubject = new BehaviorSubject<any>(null);
+  showNannyProfileModal$ = this.nannyProfileSubject.asObservable();
+
   // Datos bancarios activos para mostrar en el modal
   currentBankData: any = null;
 
@@ -97,12 +154,22 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   showServiceDetails: boolean = false;
   createdService: any = null;
 
+  // Estado para modal de confirmación de pago
+  showConfirmPaymentModal: boolean = false;
+  selectedServiceForPayment: any = null;
+  isCreatingPayment: boolean = false;
+
   // Datos dinámicos del cliente
   clientInfo: ClientInfo | null = null;
   contractedServices: ExtendedClientService[] = [];
-  clientPayments: ClientPayment[] = [];
+  clientPayments: Payment[] = [];
   clientStats: ClientStats | null = null;
   notifications: Notification[] = [];
+  
+  // Filtros de pagos
+  selectedPaymentStatus: string = '';
+  sortPaymentsBy: string = 'recent';
+  showFiltersMenu: boolean = false;
   
   // Estado para ver detalles de servicio
   selectedService: any = null;
@@ -151,6 +218,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Archivo de identificación
   identificationDocumentFile: File | null = null;
+
+  // Preview del documento de identificación
+  identificationPreviewUrl: string | null = null;
+  identificationPreviewType: 'image' | 'pdf' | null = null;
 
   // ID del usuario actual (en producción vendría del JWT)
   currentUserId: number = 2; // Default, se actualiza en ngOnInit
@@ -268,7 +339,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   selectedEndTime: string = '';
   selectedServiceType: string = '';
   selectedChildren: number = 1;
-  selectedNannys: number = 1;
   currentMonth: number = new Date().getMonth();
   currentYear: number = new Date().getFullYear();
   availableTimes: string[] = [
@@ -391,7 +461,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     private clientApiService: ClientApiService,
     private notificationService: NotificationService,
     private serviceService: ServiceService,
-    private bankDetailsService: BankDetailsService
+    private bankDetailsService: BankDetailsService,
+    private paymentService: PaymentService
   ) {
     // Configurar sidebar específico para cliente con tema rosa
     this.sidebarConfig = {
@@ -412,10 +483,15 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           label: 'Pagos',
           icon: 'dollar-sign'
         },
-        {
+         {
           id: 'client-info',
-          label: 'Información del Cliente',
+          label: 'Cliente',
           icon: 'user-check'
+        },
+        {
+          id: 'notifications',
+          label: 'Notificaciones',
+          icon: 'bell'
         }
       ]
     };
@@ -431,43 +507,29 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  ngOnInit() {
-    console.log('🎯 Iniciando ClientDashboardComponent...');
-    
+  ngOnInit() {    
     // Debug del localStorage
-    console.log('💾 LocalStorage user:', localStorage.getItem('user'));
-    console.log('💾 LocalStorage token:', localStorage.getItem('token'));
     
     // Obtener el usuario actual desde el AuthService
     const currentUser = this.authService.getCurrentUser();
-    console.log('👤 Usuario desde AuthService:', currentUser);
     
     if (currentUser && currentUser.id) {
       this.currentUserId = currentUser.id;
-      console.log('✅ Usuario actual detectado:', currentUser);
-      console.log('🔑 ID del usuario establecido:', this.currentUserId);
     } else {
-      console.warn('⚠️ No se pudo obtener el usuario actual desde AuthService');
-      console.log('🔄 Intentando cargar desde localStorage directamente...');
       
       // Intentar obtener desde localStorage directamente
       try {
-        const userStr = localStorage.getItem('user');
+        const userStr = localStorage.getItem('current_user');
         if (userStr) {
           const user = JSON.parse(userStr);
-          console.log('📋 Usuario desde localStorage:', user);
           if (user.id) {
             this.currentUserId = user.id;
-            console.log('🆔 ID obtenido desde localStorage:', this.currentUserId);
           }
         }
       } catch (error) {
-        console.error('❌ Error al parsear usuario desde localStorage:', error);
       }
     }
-    
-    console.log(`🎪 Cargando datos para usuario ID: ${this.currentUserId}`);
-    
+        
     // Actualizar headerConfig con datos del usuario
     this.updateHeaderConfigFromUser(currentUser);
     
@@ -493,18 +555,19 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     // Limpiar listeners
     window.removeEventListener('storage', this.handleStorageChange.bind(this));
     document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    
+    // Limpiar Object URLs del preview
+    this.clearIdentificationPreview();
   }
 
   private handleStorageChange(event: StorageEvent) {
     if (event.key === 'currentUser') {
-      console.log('🔄 Detectado cambio en currentUser, actualizando header...');
       this.loadClientInfo();
     }
   }
 
   private handleVisibilityChange() {
     if (!document.hidden) {
-      console.log('👁️ Página visible de nuevo, actualizando datos...');
       // Recargar la información del cliente cuando la página vuelva a ser visible
       this.loadClientInfo();
     }
@@ -558,17 +621,21 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientInfo() {
     this.isLoadingClientInfo = true;
-    console.log(`📋 Cargando información del cliente para ID: ${this.currentUserId}`);
     this.clientApiService.getClientInfo(this.currentUserId).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client info completa:', JSON.stringify(response, null, 2));
         if (response.success) {
           this.clientInfo = response.data;
-          console.log('✅ clientInfo actualizado:', JSON.stringify(this.clientInfo, null, 2));
           if (this.clientInfo && this.clientInfo.profile_image) {
-            console.log('✅ profile_image específico:', this.clientInfo.profile_image);
           } else {
-            console.log('⚠️ profile_image no disponible');
+          }
+          
+          // ⭐ SINCRONIZAR is_verified con profileData para que el overlay funcione
+          if (this.clientInfo) {
+            this.profileData.is_verified = this.clientInfo.is_verified || false;
+            this.profileData.first_name = this.clientInfo.first_name;
+            this.profileData.last_name = this.clientInfo.last_name;
+            this.profileData.email = this.clientInfo.email;
+            this.profileData.profile_image = this.clientInfo.profile_image || '';
           }
           
           // Actualizar headerConfig con la información del cliente
@@ -576,21 +643,17 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
             const userName = `${this.clientInfo.first_name} ${this.clientInfo.last_name}`.trim();
             let avatarUrl = '/assets/logo.png';
             
-            console.log('🔍 Header - profile_image value:', this.clientInfo.profile_image);
             
             if (this.clientInfo.profile_image) {
               if (this.clientInfo.profile_image.startsWith('http')) {
                 avatarUrl = this.clientInfo.profile_image;
-                console.log('🌐 Header - URL completa:', avatarUrl);
               } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
                 avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
-                console.log('📁 Header - Ruta /uploads/:', avatarUrl);
               } else {
                 avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
-                console.log('📦 Header - URL construida:', avatarUrl);
               }
-            } else {
-              console.log('⚠️ Header - No hay profile_image, usando logo por defecto');
+            } else 
+              {
             }
             
             this.headerConfig = {
@@ -600,15 +663,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               userAvatar: avatarUrl,
               showProfileOption: true,
               showLogoutOption: true
-            };
-            
-            console.log('✅ Header config actualizado:', this.headerConfig);
+            }; 
           }
         }
         this.isLoadingClientInfo = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando información del cliente:', error);
         this.isLoadingClientInfo = false;
       }
     });
@@ -616,22 +676,106 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientServices() {
     this.isLoadingServices = true;
-    console.log(`📋 Cargando servicios del cliente para userId: ${this.currentUserId}`);
     this.clientApiService.getClientServices(this.currentUserId).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client services:', response);
         if (response.success) {
-          this.contractedServices = response.data.map((service: ClientServiceData) => ({
-            ...service,
-            showRating: false,
-            tempRating: 0,
-            isRated: service.rating.given
-          }));
+          this.contractedServices = response.data.map((service: any) => {
+            // Construir nombre completo de la nanny
+            const nanny_full_name = service.nanny ? 
+              `${service.nanny.first_name || ''} ${service.nanny.last_name || ''}`.trim() : 
+              '';
+            
+            // Construir URL de la imagen de la nanny
+            let nanny_profile_image = 'assets/logo.png';
+            if (service.nanny?.profile_image) {
+              const img = service.nanny.profile_image;
+              if (img.startsWith('http')) {
+                nanny_profile_image = img;
+              } else if (img.startsWith('/uploads/')) {
+                nanny_profile_image = `http://localhost:8000${img}`;
+              } else {
+                nanny_profile_image = `http://localhost:8000/uploads/${img}`;
+              }
+            }
+            
+            // Obtener nombre legible del tipo de servicio
+            const service_type_name = this.getServiceTypeName(service.service_type);
+            
+            // Procesar el servicio con fechas parseadas correctamente
+            const processedService: any = {
+              ...service,
+              nanny_full_name,
+              nanny_profile_image,
+              nanny_phone: service.nanny?.phone_number,
+              nanny_email: service.nanny?.email,
+              service_type_name,
+              showRating: false,
+              tempRating: 0,
+              isRated: (service.rating && service.rating.rating && service.rating.rating > 0) ? true : false,
+              rating: service.rating || { rating: 0 }
+            };
+            
+            // Convertir strings de fecha a Date objects para Angular date pipe
+            if (service.start_date) {
+              try {
+                if (typeof service.start_date === 'string') {
+                  // Puede venir como 'YYYY-MM-DD' o 'YYYY-MM-DDTHH:MM:SS.sssZ'
+                  const dateStr = service.start_date.split('T')[0]; // Tomar solo la parte de fecha
+                  const parts = dateStr.split('-');
+                  if (parts.length === 3) {
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // Mes en JavaScript es 0-indexed
+                    const day = parseInt(parts[2]);
+                    processedService.start_date = new Date(year, month, day);
+                  } else {
+                    processedService.start_date = null;
+                  }
+                } else if (service.start_date instanceof Date) {
+                  processedService.start_date = new Date(service.start_date);
+                } else {
+                  processedService.start_date = null;
+                }
+              } catch (e) {
+                processedService.start_date = null;
+              }
+            } else {
+              processedService.start_date = null;
+            }
+            
+            if (service.end_date) {
+              try {
+                if (typeof service.end_date === 'string') {
+                  // Puede venir como 'YYYY-MM-DD' o 'YYYY-MM-DDTHH:MM:SS.sssZ'
+                  const dateStr = service.end_date.split('T')[0]; // Tomar solo la parte de fecha
+                  const parts = dateStr.split('-');
+                  if (parts.length === 3) {
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // Mes en JavaScript es 0-indexed
+                    const day = parseInt(parts[2]);
+                    processedService.end_date = new Date(year, month, day);
+                  } else {
+                    processedService.end_date = null;
+                  }
+                } else if (service.end_date instanceof Date) {
+                  processedService.end_date = new Date(service.end_date);
+                } else {
+                  processedService.end_date = null;
+                }
+              } catch (e) {
+                processedService.end_date = null;
+              }
+            }
+            
+           
+            // Agregar propiedad para control de pago
+            processedService.paymentInitiated = false;
+            
+            return processedService as ClientServiceComplete;
+          });
         }
         this.isLoadingServices = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando servicios:', error);
         this.isLoadingServices = false;
       }
     });
@@ -639,17 +783,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientPayments() {
     this.isLoadingPayments = true;
-    console.log(`📋 Cargando pagos del cliente para userId: ${this.currentUserId}`);
-    this.clientApiService.getClientPayments(this.currentUserId).subscribe({
+    this.paymentService.getClientPayments().subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client payments:', response);
-        if (response.success) {
+        if (response.success && response.data) {
           this.clientPayments = response.data;
         }
         this.isLoadingPayments = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando pagos:', error);
         this.isLoadingPayments = false;
       }
     });
@@ -657,17 +798,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   private loadClientStats() {
     this.isLoadingStats = true;
-    console.log(`📋 Cargando estadísticas del cliente para userId: ${this.currentUserId}`);
     this.clientApiService.getClientStats(this.currentUserId).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta client stats:', response);
         if (response.success) {
           this.clientStats = response.data;
         }
         this.isLoadingStats = false;
       },
       error: (error: any) => {
-        console.error('❌ Error cargando estadísticas:', error);
         this.isLoadingStats = false;
       }
     });
@@ -717,27 +855,60 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.selectedTime = '';
     this.selectedServiceType = '';
     this.selectedChildren = 1;
-    this.selectedNannys = 1;
   }
 
   // Transformar datos del servicio para la vista
   private transformServiceData(serviceData: any): any {
-    return {
+
+    // Construir URL de la imagen correctamente
+    let nanny_profile_image = 'assets/logo.png';
+    if (serviceData.nanny_profile_image) {
+      const img = serviceData.nanny_profile_image;
+      if (img.startsWith('http')) {
+        nanny_profile_image = img;
+      } else if (img.startsWith('/uploads/')) {
+        nanny_profile_image = `http://localhost:8000${img}`;
+      } else {
+        nanny_profile_image = `http://localhost:8000/uploads/${img}`;
+      }
+    }
+
+    // Intentar obtener email del nanny - puede venir en diferentes formatos
+    const nannyEmail = serviceData.nanny_email || 
+                       serviceData.nanny?.email || 
+                       serviceData.user?.email ||
+                       serviceData.user_email ||
+                       '';
+
+    // Intentar obtener phone del nanny - el backend retorna como 'nanny_phone'
+    const nannyPhoneNumber = serviceData.nanny_phone || 
+                            serviceData.nanny_phone_number || 
+                            serviceData.nanny?.phone_number ||
+                            serviceData.nanny?.phone ||
+                            serviceData.user?.phone_number ||
+                            serviceData.user_phone ||
+                            serviceData.user_phone_number ||
+                            '';
+
+    const result = {
       ...serviceData,
       nanny: serviceData.nanny_id ? {
         id: serviceData.nanny_id,
         name: `${serviceData.nanny_first_name || ''} ${serviceData.nanny_last_name || ''}`.trim(),
         first_name: serviceData.nanny_first_name,
         last_name: serviceData.nanny_last_name,
-        profile_image: serviceData.nanny_profile_image || null,
+        profile_image: nanny_profile_image,
+        phone_number: nannyPhoneNumber,
+        email: nannyEmail,
         rating: parseFloat(serviceData.nanny_rating) || 0
       } : null
     };
+  
+    return result;
   }
 
   // Ver detalles de un servicio existente
   viewServiceDetails(serviceId: number) {
-    console.log('Cargando detalles del servicio:', serviceId);
     
     // Hacer llamada al API para obtener los detalles completos del servicio
     this.serviceService.getServiceById(serviceId).subscribe({
@@ -747,13 +918,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           this.selectedService = this.transformServiceData(response.data);
           this.serviceInstructions = response.data.special_instructions || '';
           this.currentView = 'service-details';
-          console.log('✅ Servicio cargado y transformado:', this.selectedService);
-        } else {
-          console.error('No se encontró el servicio');
+        } 
+        else {
         }
       },
       error: (error: any) => {
-        console.error('Error cargando detalles del servicio:', error);
       }
     });
   }
@@ -776,7 +945,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   saveInstructions() {
     if (!this.selectedService) return;
 
-    console.log('Guardando indicaciones:', this.serviceInstructions);
     
     // Actualizar en el backend
     this.serviceService.updateService(this.selectedService.id, {
@@ -786,7 +954,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         if (response.success) {
           this.selectedService.special_instructions = this.serviceInstructions;
           this.isEditingInstructions = false;
-          console.log('✅ Indicaciones guardadas correctamente');
           alert('Indicaciones actualizadas correctamente');
           
           // Recargar servicios para reflejar los cambios
@@ -794,7 +961,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         }
       },
       error: (error: any) => {
-        console.error('❌ Error guardando indicaciones:', error);
         alert('Error al guardar las indicaciones. Por favor intenta nuevamente.');
       }
     });
@@ -809,7 +975,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Abrir modal para cambiar fecha/hora
   openChangeDateTime() {
     // TODO: Implementar modal de cambio de fecha/hora
-    console.log('Abrir modal de cambio de fecha/hora');
     alert('Función de cambio de fecha/hora próximamente disponible');
   }
 
@@ -820,18 +985,19 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.rateService(this.selectedService.id);
   }
 
-  // Abrir modal de cancelación
-  openCancelModal() {
-    if (!this.selectedService) return;
-    
-    const confirmCancel = confirm(
-      `¿Estás seguro de que deseas cancelar el servicio "${this.selectedService.title}"?\n\n` +
-      `Esta acción no se puede deshacer.`
-    );
-
-    if (confirmCancel) {
-      this.cancelServiceById(this.selectedService.id);
+  // Confirmar cancelación de servicio
+  confirmCancelService() {
+    if (!this.selectedService) {
+      return;
     }
+    
+    this.serviceToCancel = this.selectedService;
+    this.showCancelModal = true;
+  }
+
+  // Abrir modal de cancelación (Legacy - mantener por compatibilidad)
+  openCancelModal() {
+    this.confirmCancelService();
   }
 
   // Cancelar servicio por ID
@@ -839,26 +1005,91 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.serviceService.deleteService(serviceId).subscribe({
       next: (response: any) => {
         if (response.success) {
-          console.log('✅ Servicio cancelado correctamente');
-          alert('El servicio ha sido cancelado correctamente');
+          // Cerrar modal de cancelación
+          this.closeCancelModal();
+          
+          // Mostrar mensaje de éxito
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = '✓ Servicio Cancelado';
+          this.serviceModalMessage = 'El servicio ha sido cancelado correctamente';
+          this.showServiceModal = true;
           
           // Volver a la lista y recargar servicios
-          this.backToServices();
-          this.loadClientServices();
+          setTimeout(() => {
+            this.closeServiceModal();
+            this.backToServices();
+            this.loadClientServices();
+          }, 2000);
         }
       },
       error: (error: any) => {
-        console.error('❌ Error cancelando servicio:', error);
-        alert('Error al cancelar el servicio. Por favor intenta nuevamente.');
+        this.closeCancelModal();
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al Cancelar';
+        this.serviceModalMessage = error.error?.message || 'Error al cancelar el servicio. Por favor intenta nuevamente.';
+        this.showServiceModal = true;
       }
     });
   }
 
-  // Ver perfil de la niñera
-  viewNannyProfile(nannyId?: number) {
-    console.log('Ver perfil de niñera:', nannyId);
-    // TODO: Implementar navegación al perfil de la niñera
-    alert('Visualización de perfil de niñera próximamente disponible');
+  // Cerrar modal de cancelación
+  closeCancelModal() {
+    this.showCancelModal = false;
+    this.serviceToCancel = null;
+  }
+
+  // Procesar cancelación desde modal
+  processCancelService() {
+    if (!this.serviceToCancel) return;
+    this.cancelServiceById(this.serviceToCancel.id);
+  }
+
+  // Método helper para abrir perfil desde servicio
+  openNannyProfile(service: any) {
+    if (!service) {
+      return;
+    }
+
+    const nannyData = {
+      name: service.nanny_full_name || service.nanny?.first_name || 'Sin nombre',
+      profile_image: service.nanny_profile_image || service.nanny?.profile_image || 'assets/logo.png',
+      phone_number: service.nanny_phone || service.nanny?.phone_number || service.nanny?.phone || '',
+      email: service.nanny_email || service.nanny?.email || '',
+      rating: service.nanny?.rating || 0,
+      reviews_count: service.nanny?.reviews_count || 0,
+      bio: service.nanny?.bio || '',
+      experience: service.nanny?.experience || '',
+      specialties: service.nanny?.specialties || []
+    };
+
+    this.showNannyProfileModal(nannyData);
+  }
+
+  // Ver perfil de la niñera - Abre el modal
+  showNannyProfileModal(nanny: any) {
+    if (!nanny) {
+      return;
+    }
+    
+    // Normalizar el objeto nanny para asegurar que tiene todas las propiedades
+    const normalizedNanny = {
+      name: nanny.name || nanny.first_name || 'Sin nombre',
+      profile_image: nanny.profile_image || nanny.nanny_profile_image || 'assets/logo.png',
+      phone_number: nanny.phone_number || nanny.phone || nanny.nanny_phone || '',
+      email: nanny.email || nanny.nanny_email || '',
+      rating: nanny.rating || 0,
+      reviews_count: nanny.reviews_count || 0,
+      bio: nanny.bio || '',
+      experience: nanny.experience || '',
+      specialties: nanny.specialties || []
+    };
+    
+    this.nannyProfileSubject.next(normalizedNanny);
+  }
+
+  // Cerrar modal de perfil de niñera
+  closeNannyProfileModal() {
+    this.nannyProfileSubject.next(null);
   }
 
   // Actualizar indicaciones del servicio (método legacy - mantener por compatibilidad)
@@ -872,18 +1103,71 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Métodos para manejar eventos del header
   onHeaderLogout() {
-    console.log('onHeaderLogout called - Opening logout modal');
     this.openLogoutModal();
   }
 
   onHeaderProfileClick() {
     // Este método ya no es necesario porque el header navega directamente a /profile
-    console.log('onHeaderProfileClick called - Navegando a perfil...');
+  }
+
+  /**
+   * Manejar click en una notificación - Navega a la vista de notificaciones
+   */
+  handleNotificationClick(notification: Notification) {
+    const timestamp = new Date().toLocaleTimeString('es-CO', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
+    
+    // Marcar como leída si no está leída
+    if (!notification.is_read) {
+      this.notificationService.markAsRead(notification.id).subscribe({
+        next: () => {
+          // Actualizar en la lista local
+          const notif = this.notifications.find(n => n.id === notification.id);
+          if (notif) {
+            notif.is_read = true;
+          }
+        },
+        error: (error) => {
+        }
+      });
+    }
+    
+    // Navegar a la vista de notificaciones en el dashboard
+    this.currentView = 'notifications';
+  }
+
+  /**
+   * Manejar click en notificación desde el panel en la vista de notificaciones
+   */
+  handleNotificationPanelClick(notification: Notification) {
+    // Si es una notificación de servicio, navegar a la vista de servicios
+    if (notification.type === 'success' && notification.related_type === 'service') {
+      this.currentView = 'services';
+      this.servicesView = 'services-history';
+      // Cargar servicios para que se muestre el servicio confirmado
+      this.loadClientServices();
+    }
+  }
+
+  /**
+   * Marcar todas las notificaciones como leídas
+   */
+  markAllNotificationsAsRead() {
+    
+    this.notificationService.markAllAsRead().subscribe({
+      next: (response) => {
+        // Las notificaciones se actualizan automáticamente en el BehaviorSubject
+      },
+      error: (error) => {
+      }
+    });
   }
 
   // Métodos para el modal de logout
   openLogoutModal() {
-    console.log('openLogoutModal called - Setting showLogoutModal to true');
     this.showLogoutModal = true;
   }
 
@@ -894,12 +1178,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   confirmLogout() {
     this.showLogoutModal = false;
     this.router.navigate(['/']);
-    console.log('Cliente cerró sesión');
   }
 
   // Métodos para manejar servicios (para futuras implementaciones)
   requestService() {
-    console.log('Solicitar nuevo servicio');
     // Aquí se implementaría la lógica para solicitar un servicio
   }
 
@@ -952,6 +1234,23 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Manejadores de eventos para los combobox de hora
+  onStartTimeChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const time = target.value;
+    if (time) {
+      this.selectStartTime(time);
+    }
+  }
+
+  onEndTimeChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const time = target.value;
+    if (time) {
+      this.selectEndTime(time);
+    }
+  }
+
   getAvailableEndTimes(): string[] {
     return this.getAvailableTimesForService();
   }
@@ -987,24 +1286,141 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     const [startHour, startMin] = this.selectedStartTime.split(':').map(Number);
     const [endHour, endMin] = this.selectedEndTime.split(':').map(Number);
     
-    let hours = endHour - startHour;
-    let minutes = endMin - startMin;
-    
-    // Si la hora de fin es menor, significa que cruza medianoche
-    if (hours < 0) {
-      hours += 24;
+    // Si no hay rango de fechas, es un solo día
+    if (!this.selectedDate || !this.selectedEndDate) {
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      if (minutesPerDay === 0) {
+        return `${hoursPerDay} hora${hoursPerDay !== 1 ? 's' : ''}`;
+      }
+      
+      return `${hoursPerDay}h ${minutesPerDay}min`;
     }
     
-    if (minutes < 0) {
-      hours -= 1;
-      minutes += 60;
+    // Calcular con rango de fechas
+    const startDateObj = new Date(this.selectedDate);
+    const endDateObj = new Date(this.selectedEndDate);
+    const numberOfDays = Math.floor((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (numberOfDays === 0) {
+      // Mismo día
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      return `${hoursPerDay}h ${minutesPerDay}min`;
     }
     
-    if (minutes === 0) {
-      return `${hours} hora${hours !== 1 ? 's' : ''}`;
+    // Múltiples días
+    const firstDayHours = 24 - startHour - (startMin / 60);
+    const lastDayHours = endHour + (endMin / 60);
+    const middleDays = numberOfDays - 1;
+    
+    const firstDayHoursInt = Math.floor(firstDayHours);
+    const firstDayMins = Math.round((firstDayHours - firstDayHoursInt) * 60);
+    
+    const lastDayHoursInt = Math.floor(lastDayHours);
+    const lastDayMins = Math.round((lastDayHours - lastDayHoursInt) * 60);
+    
+    let result = `Día 1: ${startHour}:${String(startMin).padStart(2, '0')} a 24:00 (${firstDayHoursInt}h${firstDayMins > 0 ? ` ${firstDayMins}min` : ''})`;
+    
+    if (middleDays > 0) {
+      result += ` + ${middleDays} día${middleDays > 1 ? 's' : ''} completo${middleDays > 1 ? 's' : ''} (${middleDays * 24}h)`;
     }
     
-    return `${hours}h ${minutes}min`;
+    result += ` + Día ${numberOfDays + 1}: 00:00 a ${endHour}:${String(endMin).padStart(2, '0')} (${lastDayHoursInt}h${lastDayMins > 0 ? ` ${lastDayMins}min` : ''})`;
+    
+    return result;
+  }
+
+  /**
+   * Calcula el total de horas en formato decimal para cálculos de cobro
+   * Fórmula correcta: 
+   * - Primer día: 24 - hora_inicio - minutos_inicio/60
+   * - Días intermedios: (número de días - 1) × 24
+   * - Último día: hora_fin + minutos_fin/60
+   */
+  calculateTotalHoursDecimal(): number {
+    if (!this.selectedStartTime || !this.selectedEndTime) return 0;
+    
+    const [startHour, startMin] = this.selectedStartTime.split(':').map(Number);
+    const [endHour, endMin] = this.selectedEndTime.split(':').map(Number);
+    
+    const startMinFraction = startMin / 60;
+    const endMinFraction = endMin / 60;
+    
+    // Si no hay rango de fechas, calcular solo para un día
+    if (!this.selectedDate || !this.selectedEndDate) {
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      return Math.round((hoursPerDay + (minutesPerDay / 60)) * 100) / 100;
+    }
+    
+    // Calcular con rango de fechas
+    const startDateObj = new Date(this.selectedDate);
+    const endDateObj = new Date(this.selectedEndDate);
+    const numberOfDays = Math.floor((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (numberOfDays === 0) {
+      // Mismo día
+      let hoursPerDay = endHour - startHour;
+      let minutesPerDay = endMin - startMin;
+      
+      if (hoursPerDay < 0) {
+        hoursPerDay += 24;
+      }
+      
+      if (minutesPerDay < 0) {
+        hoursPerDay -= 1;
+        minutesPerDay += 60;
+      }
+      
+      return Math.round((hoursPerDay + (minutesPerDay / 60)) * 100) / 100;
+    }
+    
+    // Múltiples días - Cálculo correcto
+    // Primer día: desde hora_inicio hasta las 24:00
+    const firstDayHours = 24 - startHour - startMinFraction;
+    
+    // Últmo día: desde las 00:00 hasta hora_fin
+    const lastDayHours = endHour + endMinFraction;
+    
+    // Días completos en el medio (24 horas cada uno)
+    const middleDaysCount = numberOfDays - 1;
+    const middleDaysHours = middleDaysCount * 24;
+    
+    // Total
+    const totalHours = firstDayHours + middleDaysHours + lastDayHours;
+    
+    return Math.round(totalHours * 100) / 100; // Redondear a 2 decimales
   }
 
   selectServiceType(serviceType: string) {
@@ -1051,17 +1467,99 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     return `${startDate} - ${endDate} (${daysDiff} días)`;
   }
 
-  formatDate(date: Date | string): string {
-    // Convertir string a Date si es necesario
-    const dateObj = typeof date === 'string' ? new Date(date + 'T00:00:00') : date;
-    
-    const day = dateObj.getDate();
-    const monthNames = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    const month = monthNames[dateObj.getMonth()];
-    return `${day} de ${month}`;
+  /**
+   * Formatear fecha completa con día de la semana en español
+   */
+  formatDateLong(date: Date | string | null | undefined): string {
+    if (!date) return 'Fecha no disponible';
+
+    try {
+      let dateObj: Date;
+      
+      if (typeof date === 'string') {
+        const dateStr = date.split('T')[0];
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          dateObj = new Date(year, month, day);
+        } else {
+          dateObj = new Date(date);
+        }
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        return 'Tipo inválido';
+      }
+
+      if (isNaN(dateObj.getTime())) {
+        return 'Fecha inválida';
+      }
+
+      const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+
+      const dayName = dayNames[dateObj.getDay()];
+      const day = dateObj.getDate();
+      const month = monthNames[dateObj.getMonth()];
+      const year = dateObj.getFullYear();
+
+      return `${dayName}, ${day} de ${month} de ${year}`;
+    } catch (error) {
+      return 'Error al formatear';
+    }
+  }
+
+  /**
+   * Formatear fecha corta sin año
+   */
+  formatDate(date: Date | string | null | undefined): string {
+    // Validar que la fecha exista
+    if (!date) {
+      return 'Fecha no disponible';
+    }
+
+    try {
+      let dateObj: Date;
+      
+      if (typeof date === 'string') {
+        // Manejar formato 'YYYY-MM-DD' o 'YYYY-MM-DDTHH:MM:SS'
+        const dateStr = date.split('T')[0]; // Tomar solo la parte de fecha
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[0]);
+          const month = parseInt(parts[1]) - 1; // Mes 0-indexed
+          const day = parseInt(parts[2]);
+          dateObj = new Date(year, month, day);
+        } else {
+          return 'Formato inválido';
+        }
+      } else if (date instanceof Date) {
+        dateObj = date;
+      } else {
+        return 'Tipo inválido';
+      }
+
+      // Validar que el Date object sea válido
+      if (isNaN(dateObj.getTime())) {
+        return 'Fecha inválida';
+      }
+
+      const day = dateObj.getDate();
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      const month = monthNames[dateObj.getMonth()];
+      
+      return `${day} de ${month}`;
+    } catch (error) {
+      return 'Error al formatear';
+    }
   }
 
   getAvailableTimesForService(): string[] {
@@ -1079,30 +1577,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   onChildrenChange(event: Event) {
     const target = event.target as HTMLSelectElement;
     this.selectedChildren = parseInt(target.value, 10);
-    
-    // Auto-sugerir número de nannys basado en número de niños
-    if (this.selectedChildren >= 3 && this.selectedNannys < 2) {
-      this.selectedNannys = 2;
-    }
-  }
-
-  onNannysChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    this.selectedNannys = parseInt(target.value, 10);
-  }
-
-  // Verificar si mostrar la alerta de recomendación
-  shouldShowNannyRecommendation(): boolean {
-    return this.selectedChildren >= 3 && this.selectedNannys < 2;
   }
 
   // Generar opciones para los combobox
   getChildrenOptions(): number[] {
     return Array.from({length: 8}, (_, i) => i + 1); // 1-8 niños
-  }
-
-  getNannysOptions(): number[] {
-    return Array.from({length: 5}, (_, i) => i + 1); // 1-5 nannys
   }
 
   getDaysInMonth(): number[] {
@@ -1130,6 +1609,14 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
     return monthNames[this.currentMonth];
+  }
+
+  getMonthYearDisplay(): string {
+    return `${this.getMonthName()} ${this.currentYear}`;
+  }
+
+  get currentMonthDays(): number[] {
+    return this.getDaysInMonth();
   }
 
   getDayNames(): string[] {
@@ -1228,87 +1715,112 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   }
 
   confirmReservation() {
-    if (!this.selectedDate || !this.selectedStartTime || !this.selectedEndTime || !this.selectedServiceType || !this.selectedChildren || !this.selectedNannys) {
-      alert('Por favor completa todos los campos requeridos');
+    // Validar campos requeridos
+    const validationErrors: string[] = [];
+    
+    if (!this.selectedDate) validationErrors.push('Debes seleccionar una fecha');
+    if (!this.selectedStartTime) validationErrors.push('Debes seleccionar una hora de inicio');
+    if (!this.selectedEndTime) validationErrors.push('Debes seleccionar una hora de fin');
+    if (!this.selectedServiceType) validationErrors.push('Debes seleccionar un tipo de servicio');
+    if (!this.selectedChildren || this.selectedChildren < 1) validationErrors.push('Debes indicar al menos 1 niño');
+    
+    if (validationErrors.length > 0) {
+      this.showServiceModalWithErrors('warning', '⚠️ Campos incompletos', 'Por favor completa todos los campos requeridos', validationErrors);
       return;
     }
 
     // Obtener el client_id del cliente logueado
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      alert('Error: No se encontró información del usuario');
-      return;
-    }
-
-    let clientId: number;
-    try {
-      const userData = JSON.parse(userStr);
-      clientId = this.clientInfo?.id || userData.client_id;
-      
-      if (!clientId) {
-        alert('Error: No se pudo obtener el ID del cliente');
+    let clientId: number | undefined;
+    
+    // Primero intentar obtener desde clientInfo (ya cargado)
+    if (this.clientInfo?.id) {
+      clientId = this.clientInfo.id;
+    } else {
+      // Si clientInfo no está disponible, intentar desde localStorage
+      const userStr = localStorage.getItem('current_user');
+      if (!userStr) {
+        this.showServiceModalWithErrors('error', '❌ Error de usuario', 'No se encontró información del usuario', ['Inicia sesión nuevamente']);
         return;
       }
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      alert('Error al procesar los datos del usuario');
-      return;
+
+      try {
+        const userData = JSON.parse(userStr);
+        // El userData solo tiene user_id, necesitamos esperar a que clientInfo se cargue
+        this.showServiceModalWithErrors('error', '❌ Información incompleta', 'Todavía se está cargando tu información. Por favor, espera unos segundos e intenta de nuevo.', ['Intenta de nuevo']);
+        return;
+      } catch (error) {
+        this.showServiceModalWithErrors('error', '❌ Error al procesar datos', 'Hubo un problema procesando tu información', ['Inicia sesión nuevamente']);
+        return;
+      }
     }
+
+    // Mostrar modal de carga
+    this.showServiceModal = true;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = '⏳ Creando servicio...';
+    this.serviceModalMessage = 'Por favor espera mientras procesamos tu solicitud';
+    this.serviceModalErrors = [];
 
     // Obtener el nombre del servicio desde serviceTypes
     const selectedService = this.serviceTypes.find(s => s.id === this.selectedServiceType);
     const serviceTitle = selectedService ? selectedService.name : 'Servicio de cuidado';
 
-    // Preparar datos del servicio - usar los tiempos seleccionados por el usuario
+    // Preparar datos del servicio (selectedDate ya fue validado arriba)
     const serviceData: ServiceData = {
-      client_id: clientId,
-      title: `${serviceTitle} - ${this.selectedDate.getDate()} de ${this.getMonthName()}`,
+      client_id: clientId!,
+      title: `${serviceTitle} - ${this.selectedDate!.getDate()} de ${this.getMonthName()}`,
       service_type: this.getServiceTypeEnum(this.selectedServiceType),
       description: `Servicio de ${serviceTitle} para ${this.selectedChildren} niño(s)`,
-      start_date: this.serviceService.formatDate(this.selectedDate),
+      start_date: this.serviceService.formatDate(this.selectedDate!),
       end_date: this.selectedEndDate ? this.serviceService.formatDate(this.selectedEndDate) : undefined,
       start_time: this.selectedStartTime,
       end_time: this.selectedEndTime,
       number_of_children: this.selectedChildren,
       special_instructions: '',
-      address: this.clientInfo?.address || ''
+      address: this.clientInfo?.address || 'Dirección no proporcionada'
     };
 
-    console.log('📤 Enviando servicio al backend:', serviceData);
 
     // Llamar al servicio para crear el servicio
     this.serviceService.createService(serviceData).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          console.log('✅ Servicio creado exitosamente:', response.data);
           
-          // Mostrar mensaje de éxito
-          alert(`¡Servicio creado exitosamente!\n\nNanny asignada: ${response.data.nannyAssigned.name}\nCalificación: ${response.data.nannyAssigned.rating}⭐\nHoras totales: ${response.data.totalHours}h\nCosto total: $${response.data.totalAmount}`);
+          // Mostrar modal de éxito
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = ' ¡Servicio creado exitosamente!';
+          this.serviceModalMessage = `Tu servicio ha sido confirmado para el ${this.formatSelectedDate()} de ${this.selectedStartTime} a ${this.selectedEndTime}.\n\nUna nanny ha sido asignada y recibirá una notificación sobre tu solicitud.`;
+          this.serviceModalErrors = [];
 
-          // Obtener detalles completos del servicio y mostrarlo
-          this.serviceService.getServiceById(response.data.serviceId).subscribe({
-            next: (detailResponse) => {
-              if (detailResponse.success && detailResponse.data) {
-                // Transformar datos para que coincidan con el formato esperado
-                this.selectedService = this.transformServiceData(detailResponse.data);
-                this.serviceInstructions = detailResponse.data.special_instructions || '';
-                this.currentView = 'service-details';
-                
-                console.log('✅ Detalles del servicio cargados:', this.selectedService);
+          // Después de 3 segundos, cargar detalles del servicio
+          setTimeout(() => {
+            if (response.data?.serviceId) {
+              this.serviceService.getServiceById(response.data.serviceId).subscribe({
+                next: (detailResponse) => {
+                  if (detailResponse.success && detailResponse.data) {
+                    // Transformar datos para que coincidan con el formato esperado
+                    this.selectedService = this.transformServiceData(detailResponse.data);
+                    this.serviceInstructions = detailResponse.data.special_instructions || '';
+                    this.currentView = 'service-details';
+                    
 
-                // Recargar la lista de servicios en background
-                this.loadClientServices();
-              }
-            },
-            error: (error) => {
-              console.error('Error cargando detalles del servicio:', error);
-              // Aunque haya error cargando detalles, el servicio se creó exitosamente
-              // Llevar al usuario a la lista de servicios
-              this.currentView = 'services';
-              this.servicesView = 'services-history';
-              this.loadClientServices();
+                    // Cerrar modal
+                    this.closeServiceModal();
+
+                    // Recargar la lista de servicios en background
+                    this.loadClientServices();
+                  }
+                },
+                error: (error) => {
+                  // Aunque haya error cargando detalles, el servicio se creó exitosamente
+                  this.currentView = 'services';
+                  this.servicesView = 'services-history';
+                  this.closeServiceModal();
+                  this.loadClientServices();
+                }
+              });
             }
-          });
+          }, 2000);
 
           // Limpiar la selección del formulario
           this.selectedDate = null;
@@ -1316,25 +1828,55 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           this.selectedTime = '';
           this.selectedServiceType = '';
           this.selectedChildren = 1;
-          this.selectedNannys = 1;
         }
       },
       error: (error) => {
-        console.error('❌ Error creando servicio:', error);
         
-        let errorMessage = 'Error al crear el servicio. Por favor intenta de nuevo.';
+        let errorTitle = ' Error al crear servicio';
+        let errorMessage = 'Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.';
+        const errorDetails: string[] = [];
         
         if (error.error && error.error.message) {
           errorMessage = error.error.message;
         } else if (error.status === 400) {
-          errorMessage = 'No hay nannys disponibles para las fechas y horarios solicitados. Por favor, intenta con otro horario o fecha.';
+          errorTitle = '⚠️ No hay nannys disponibles';
+          errorMessage = 'No hay nannys disponibles para las fechas y horarios solicitados.';
+          errorDetails.push('Intenta con otro horario o fecha');
         } else if (error.status === 500) {
-          errorMessage = 'Error del servidor. Por favor contacta al administrador.';
+          errorTitle = '❌ Error del servidor';
+          errorMessage = 'Hubo un error interno del servidor.';
+          errorDetails.push('Por favor contacta al administrador');
+        } else if (error.status === 0) {
+          errorTitle = '❌ Error de conexión';
+          errorMessage = 'No se pudo conectar con el servidor.';
+          errorDetails.push('Verifica tu conexión a internet');
         }
         
-        alert(`Error al crear el servicio:\n\n${errorMessage}\n\nDetalles técnicos:\nFecha: ${this.selectedDate ? this.serviceService.formatDate(this.selectedDate) : 'Sin fecha'}\nHora inicio: ${this.selectedStartTime}\nHora fin: ${this.selectedEndTime}\nNiños: ${this.selectedChildren}`);
+        this.showServiceModalWithErrors('error', errorTitle, errorMessage, errorDetails);
       }
     });
+  }
+
+  /**
+   * Muestra modal de servicio con mensajes de error
+   */
+  private showServiceModalWithErrors(type: 'loading' | 'success' | 'error' | 'warning', title: string, message: string, errors: string[] = []) {
+    this.showServiceModal = true;
+    this.serviceModalType = type;
+    this.serviceModalTitle = title;
+    this.serviceModalMessage = message;
+    this.serviceModalErrors = errors;
+  }
+
+  /**
+   * Cierra el modal de servicio
+   */
+  closeServiceModal() {
+    this.showServiceModal = false;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = '';
+    this.serviceModalMessage = '';
+    this.serviceModalErrors = [];
   }
 
   /**
@@ -1372,7 +1914,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
    */
   loadServices() {
     if (!this.clientInfo?.id) {
-      console.warn('No se puede cargar servicios: clientInfo.id no disponible');
       return;
     }
 
@@ -1381,13 +1922,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.serviceService.getServices(this.clientInfo.id).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          console.log('✅ Servicios cargados desde API:', response.data);
           // Aquí podrías mapear los servicios a tu formato local si es necesario
           this.isLoadingServices = false;
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando servicios:', error);
         this.isLoadingServices = false;
       }
     });
@@ -1418,15 +1957,206 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.currentView = 'booking';
   }
 
-  // Cambiar fecha del servicio
+  // Cambiar fecha del servicio (desde vista de detalles)
   changeServiceDate() {
-    this.showServiceDetails = false;
-    this.currentView = 'booking';
-    // Mantener el servicio para facilitar el cambio
-    if (this.createdService?.service) {
-      this.selectedServiceType = this.createdService.service.id;
+    if (!this.selectedService) return;
+    
+    this.serviceToChangeDate = this.selectedService;
+    
+    // Calcular fecha mínima seleccionable (día siguiente al servicio actual)
+    const currentServiceDate = new Date(this.selectedService.start_date);
+    this.minSelectableDate = new Date(currentServiceDate);
+    this.minSelectableDate.setDate(this.minSelectableDate.getDate() + 1);
+    
+    // Inicializar calendario en el mes de la fecha mínima
+    this.changeDateCalendarMonth = this.minSelectableDate.getMonth();
+    this.changeDateCalendarYear = this.minSelectableDate.getFullYear();
+    
+    // Limpiar selecciones previas
+    this.selectedNewDate = null;
+    this.selectedNewStartTime = '';
+    this.selectedNewEndTime = '';
+    
+    this.showChangeDateModal = true;
+  }
+
+  // Cerrar modal de cambio de fecha
+  closeChangeDateModal() {
+    this.showChangeDateModal = false;
+    this.serviceToChangeDate = null;
+    this.selectedNewDate = null;
+    this.selectedNewStartTime = '';
+    this.selectedNewEndTime = '';
+    this.minSelectableDate = null;
+  }
+
+  // Procesar cambio de fecha - cancela el servicio actual y abre el pool
+  async processChangeDateService() {
+    if (!this.serviceToChangeDate) return;
+    
+    // Validar que se haya seleccionado nueva fecha y horarios
+    if (!this.selectedNewDate) {
+      this.serviceModalType = 'warning';
+      this.serviceModalTitle = '⚠️ Fecha requerida';
+      this.serviceModalMessage = 'Por favor selecciona una nueva fecha para el servicio.';
+      this.showServiceModal = true;
+      return;
     }
-    this.createdService = null;
+    
+    if (!this.selectedNewStartTime || !this.selectedNewEndTime) {
+      this.serviceModalType = 'warning';
+      this.serviceModalTitle = '⚠️ Horarios requeridos';
+      this.serviceModalMessage = 'Por favor selecciona la hora de inicio y fin del servicio.';
+      this.showServiceModal = true;
+      return;
+    }
+
+    const serviceId = this.serviceToChangeDate.id;
+    const serviceType = this.serviceToChangeDate.service_type;
+    const numberOfChildren = this.serviceToChangeDate.number_of_children || 1;
+    const specialInstructions = this.serviceToChangeDate.special_instructions || '';
+    
+    // Guardar las selecciones antes de cerrar el modal
+    const newDate = this.selectedNewDate;
+    const newStartTime = this.selectedNewStartTime;
+    const newEndTime = this.selectedNewEndTime;
+    
+    try {
+      // Paso 1: Cerrar modal de cambio de fecha y mostrar progreso
+      this.closeChangeDateModal();
+      this.serviceModalType = 'loading';
+      this.serviceModalTitle = 'Procesando cambio de fecha...';
+      this.serviceModalMessage = 'Eliminando servicio anterior y creando nueva solicitud. La nanny asignada será notificada de la cancelación.';
+      this.showServiceModal = true;
+
+      // Paso 2: Eliminar PERMANENTEMENTE el servicio anterior de la BD
+      await new Promise<void>((resolve, reject) => {
+        this.serviceService.deleteService(serviceId, true).subscribe({
+          next: (response: any) => {
+            console.log('✅ Servicio eliminado permanentemente:', response);
+            if (response.success) {
+              resolve();
+            } else {
+              reject(new Error(response.message || 'Error al eliminar el servicio'));
+            }
+          },
+          error: (error) => {
+            console.error('❌ Error al eliminar servicio:', error);
+            reject(error);
+          }
+        });
+      });
+
+      // Paso 3: Actualizar mensaje - servicio eliminado exitosamente
+      this.serviceModalMessage = 'Servicio anterior eliminado. Creando nuevo servicio con la fecha seleccionada...';
+
+      // Paso 4: Recargar servicios del cliente
+      await new Promise<void>((resolve) => {
+        this.clientApiService.getClientServices(this.currentUserId).subscribe({
+          next: (response: any) => {
+            if (response.success && response.data) {
+              this.contractedServices = response.data
+                .filter((service: any) => service.status !== 'cancelled')
+                .map((service: any) => this.transformServiceData(service));
+            }
+            resolve();
+          },
+          error: () => resolve() // Continuar aunque falle la recarga
+        });
+      });
+
+      // Paso 5: Actualizar mensaje de progreso
+      this.serviceModalMessage = 'Servicio anterior eliminado. Creando nueva solicitud para todas las nannys disponibles...';
+
+      // Paso 6: Preparar datos del nuevo servicio con la fecha y horarios seleccionados
+      
+      // Obtener el nombre del servicio desde serviceTypes
+      const serviceTypeMapping: { [key: string]: string } = {
+        'hourly': 'home-care',
+        'overnight': 'night-care',
+        'weekly': 'weekly-care',
+        'event': 'event-care',
+        'travel': 'travel-care'
+      };
+      
+      const mappedServiceType = serviceTypeMapping[serviceType] || 'home-care';
+      const selectedServiceObj = this.serviceTypes.find(s => s.id === mappedServiceType);
+      const serviceTitle = selectedServiceObj ? selectedServiceObj.name : 'Servicio de cuidado';
+      
+      // Formatear la fecha seleccionada
+      const monthNames = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      ];
+      const newServiceTitle = `${serviceTitle} - ${newDate.getDate()} de ${monthNames[newDate.getMonth()]}`;
+      
+      // Preparar datos del nuevo servicio
+      const newServiceData: ServiceData = {
+        client_id: this.clientInfo!.id,
+        title: newServiceTitle,
+        service_type: serviceType,
+        description: `Servicio de ${serviceTitle} para ${numberOfChildren} niño(s)`,
+        start_date: this.serviceService.formatDate(newDate),
+        start_time: newStartTime,
+        end_time: newEndTime,
+        number_of_children: numberOfChildren,
+        special_instructions: specialInstructions,
+        address: this.clientInfo?.address || 'Dirección no proporcionada'
+      };
+      
+      // Paso 7: Crear el nuevo servicio
+      await new Promise<void>((resolve, reject) => {
+        this.serviceService.createService(newServiceData).subscribe({
+          next: (response) => {
+            if (response.success) {
+              resolve();
+            } else {
+              reject(new Error(response.message || 'Error al crear servicio'));
+            }
+          },
+          error: (error) => reject(error)
+        });
+      });
+      
+      // Paso 8: Recargar servicios con loadClientServices para actualizar la vista correctamente
+      this.loadClientServices();
+      
+      // Esperar un momento para que la recarga se complete
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 500));
+      
+      // Paso 9: Mostrar mensaje de éxito final
+      this.serviceModalType = 'success';
+      this.serviceModalTitle = '✓ Fecha Cambiada Exitosamente';
+      this.serviceModalMessage = `¡Perfecto! Tu servicio ha sido reprogramado para el ${newDate.getDate()} de ${monthNames[newDate.getMonth()]} de ${newStartTime} a ${newEndTime}.\n\nTodas las nannys disponibles han sido notificadas por correo electrónico sobre tu nueva solicitud. Una de ellas aceptará el servicio pronto.`;
+      
+      // Paso 10: Después de 3 segundos, cerrar modal y volver a la lista
+      setTimeout(() => {
+        this.closeServiceModal();
+        this.closeChangeDateModal();
+        
+        // Salir de la vista de detalles
+        this.selectedService = null;
+        this.isEditingInstructions = false;
+        
+        // Volver a la lista de servicios
+        this.currentView = 'services';
+        this.servicesView = 'services-history';
+        
+        // Recargar una vez más para asegurar que la vista esté actualizada
+        this.loadClientServices();
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('❌ Error en processChangeDateService:', error);
+      this.serviceModalType = 'error';
+      this.serviceModalTitle = 'Error al Cambiar Fecha';
+      this.serviceModalMessage = error.error?.message || error.message || 'No se pudo procesar el cambio de fecha. Por favor intenta nuevamente.';
+      
+      // Agregar detalles del error si están disponibles
+      if (error.error?.error) {
+        this.serviceModalErrors = [error.error.error];
+      }
+    }
   }
 
   // Formatear fecha del servicio
@@ -1453,7 +2183,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Agregar indicaciones
   addInstructions() {
-    console.log('Indicaciones agregadas:', this.createdService?.instructions);
   }
 
   // Formatear fecha de servicio contratado
@@ -1478,7 +2207,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.selectedTime = '';
     this.selectedServiceType = '';
     this.selectedChildren = 1;
-    this.selectedNannys = 1;
   }
 
   hasValidReservation(): boolean {
@@ -1487,19 +2215,16 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       this.selectedStartTime && 
       this.selectedEndTime && 
       this.selectedServiceType && 
-      this.selectedChildren && 
-      this.selectedNannys
+      this.selectedChildren
     );
   }
 
   viewContractedServices() {
-    console.log('Ver servicios contratados');
     this.currentView = 'contracted-services';
   }
 
   // Calificar servicio
   rateService(serviceId: number) {
-    console.log('Calificar servicio:', serviceId);
     // Aquí se implementaría la lógica para calificar el servicio
     const service = this.contractedServices.find(s => s.id === serviceId);
     if (service) {
@@ -1510,18 +2235,47 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Establecer calificación con estrellas
   setRating(serviceId: number, rating: number) {
+    if (rating === 0) return; // No permitir enviar sin seleccionar
+
     const service = this.contractedServices.find(s => s.id === serviceId);
-    if (service) {
-      service.rating = {
-        given: true,
-        rating: rating,
-        review: service.rating.review
-      };
-      service.isRated = true;
-      service.showRating = false;
-      service.tempRating = 0;
-      console.log(`Servicio ${serviceId} calificado con ${rating} estrellas`);
-    }
+    if (!service) return;
+
+    // Enviar la calificación al backend
+    const ratingData = {
+      service_id: serviceId,
+      rating: rating,
+      review: '', // El usuario podría agregar una reseña más adelante
+      punctuality_rating: rating,
+      communication_rating: rating,
+      care_quality_rating: rating,
+      would_recommend: rating >= 4
+    };
+
+    this.clientApiService.rateService(ratingData).subscribe({
+      next: (response) => {
+        
+        // Actualizar la interfaz
+        service.rating = {
+          given: true,
+          rating: rating
+        };
+        service.isRated = true;
+        service.showRating = false;
+        service.tempRating = 0;
+        
+        // Mostrar mensaje de éxito
+        this.showServiceModal = true;
+        this.serviceModalType = 'success';
+        this.serviceModalTitle = '✓ Calificación guardada';
+        this.serviceModalMessage = `Gracias por calificar este servicio con ${rating} ${rating === 1 ? 'estrella' : 'estrellas'}`;
+      },
+      error: (error) => {
+        this.showServiceModal = true;
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al calificar';
+        this.serviceModalMessage = 'No pudimos guardar tu calificación. Por favor intenta de nuevo.';
+      }
+    });
   }
 
   // Cancelar calificación
@@ -1566,6 +2320,24 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Método para obtener el nombre del tipo de servicio
+  getServiceTypeName(serviceType: string): string {
+    const typeNames: { [key: string]: string } = {
+      'hourly': 'Niñeras a domicilio',
+      'daily': 'Niñeras por día',
+      'weekly': 'Niñeras por semana',
+      'overnight': 'Niñeras nocturnas',
+      'event': 'Acompañamiento a eventos',
+      'travel': 'Acompañamiento en viajes',
+      'home-care': 'Niñeras a domicilio',
+      'night-care': 'Cuidado nocturno',
+      'weekly-care': 'Niñeras por semana',
+      'event-care': 'Acompañamiento a eventos',
+      'travel-care': 'Acompañamiento en viajes'
+    };
+    return typeNames[serviceType] || serviceType;
+  }
+
   // Método para verificar si no hay servicios
   hasNoServices(): boolean {
     return this.services.upcoming.length === 0 && this.services.past.length === 0;
@@ -1578,46 +2350,41 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   // Métodos helper para datos dinámicos
   get currentUser() {
-    console.log('🔍 Header - currentUser getter llamado');
-    console.log('🔍 Header - clientInfo:', this.clientInfo);
+   
+    // Preferir clientInfo si está disponible, sino usar profileData
+    const userData = this.clientInfo || this.profileData;
     
-    if (this.clientInfo) {
+    if (userData && userData.first_name) {
       // Construir URL completa de la imagen de perfil para el header
       let avatarUrl = 'assets/logo.png';
-      console.log('🖼️ Header - Profile image desde clientInfo:', this.clientInfo.profile_image);
-      console.log('🖼️ Header - Tipo de profile_image:', typeof this.clientInfo.profile_image);
-      console.log('🖼️ Header - Valor completo de clientInfo:', JSON.stringify(this.clientInfo, null, 2));
+      const profileImage = userData.profile_image || (this.profileData?.profile_image);
       
-      if (this.clientInfo.profile_image) {
-        if (this.clientInfo.profile_image.startsWith('http')) {
-          avatarUrl = this.clientInfo.profile_image;
-          console.log('🌐 Header - Usando URL completa:', avatarUrl);
-        } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
+      if (profileImage) {
+        if (profileImage.startsWith('http')) {
+          avatarUrl = profileImage;
+        } else if (profileImage.startsWith('/uploads/')) {
           // Si ya incluye /uploads/, solo agregar el host
-          avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
-          console.log('🔗 Header - URL con ruta completa:', avatarUrl);
+          avatarUrl = `http://localhost:8000${profileImage}`;
         } else {
           // Si es solo el nombre del archivo
-          avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
-          console.log('🔗 Header - URL construida:', avatarUrl);
+          avatarUrl = `http://localhost:8000/uploads/${profileImage}`;
         }
       } else {
-        console.log('❌ Header - No hay profile_image en clientInfo');
-        console.log('❌ Header - clientInfo.profile_image es:', this.clientInfo.profile_image);
       }
       
       return {
-        name: `${this.clientInfo.first_name} ${this.clientInfo.last_name}`,
+        name: `${userData.first_name} ${userData.last_name}`.trim(),
         role: 'Cliente',
-        first_name: this.clientInfo.first_name,
-        last_name: this.clientInfo.last_name,
-        email: this.clientInfo.email,
-        phone: this.clientInfo.phone_number,
-        address: this.clientInfo.address,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        email: userData.email,
+        phone: userData.phone_number,
+        address: userData.address,
         avatar: avatarUrl,
-        isVerified: this.clientInfo.is_verified
+        isVerified: userData.is_verified
       };
     }
+    
     return {
       name: 'Usuario',
       role: 'Cliente',
@@ -1630,25 +2397,19 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     if (this.profileData && this.profileData.first_name) {
       // Construir URL completa de la imagen de perfil si existe
       let avatarUrl = 'assets/logo.png';
-      
-      console.log('🖼️ Profile image desde BD:', this.profileData.profile_image);
-      
+            
       if (this.profileData.profile_image) {
         // Si la imagen ya es una URL completa, usarla tal como está
         if (this.profileData.profile_image.startsWith('http')) {
           avatarUrl = this.profileData.profile_image;
-          console.log('🌐 Usando URL completa:', avatarUrl);
         } else if (this.profileData.profile_image.startsWith('/uploads/')) {
           // Si ya incluye /uploads/, solo agregar el host
           avatarUrl = `http://localhost:8000${this.profileData.profile_image}`;
-          console.log('🔗 URL con ruta completa:', avatarUrl);
         } else {
           // Si es solo el nombre del archivo
           avatarUrl = `http://localhost:8000/uploads/${this.profileData.profile_image}`;
-          console.log('🔗 URL construida:', avatarUrl);
         }
       } else {
-        console.log('❌ No hay profile_image en profileData, usando imagen por defecto');
       }
 
       return {
@@ -1683,13 +2444,13 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   get paymentsList() {
     return this.clientPayments.map(payment => ({
       id: payment.id,
-      session: payment.service_title,
+      session: payment.title || 'Servicio',
       amount: payment.amount.toFixed(2),
       status: payment.payment_status === 'completed' ? 'pagado' : 
               payment.payment_status === 'pending' ? 'Sin verificar' : 
               payment.payment_status,
-      date: new Date(payment.service_date),
-      nanny: payment.nanny?.name || 'No asignada',
+      date: new Date(payment.start_date || new Date()),
+      nanny: payment.nanny_first_name ? `${payment.nanny_first_name} ${payment.nanny_last_name}` : 'No asignada',
       receiptUrl: payment.receipt_url
     }));
   }
@@ -1745,32 +2506,252 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLInputElement;
     if (target.files && target.files.length > 0) {
       const file = target.files[0];
-      console.log('Comprobante seleccionado:', file.name);
-      // Aquí se implementaría la lógica para subir el comprobante
-      alert(`Comprobante "${file.name}" subido exitosamente. Será verificado en las próximas 24 horas.`);
+      const paymentId = (target as any).dataset.paymentId;
+      
+      if (paymentId) {
+        // Si viene de openUploadReceiptModal, hacer upload
+        this.uploadPaymentReceipt(parseInt(paymentId), file);
+      } else {
+        // Mostrar error
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error';
+        this.serviceModalMessage = 'No se pudo asociar el comprobante al pago. Por favor intenta de nuevo.';
+      }
+      
+      // Limpiar el input
+      target.value = '';
+      (target as any).dataset.paymentId = '';
     }
   }
 
+  /**
+   * Crear pago para un servicio completado
+   */
+  createPaymentForService(serviceId: number) {
+    
+    this.showServiceModal = true;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = 'Inicializando Pago';
+    this.serviceModalMessage = 'Preparando el pago para este servicio...';
+
+    this.paymentService.initializePayment(serviceId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = 'Pago Inicializado';
+          this.serviceModalMessage = `Pago de $${response.data.amount} creado exitosamente. Realiza la transferencia bancaria y sube el comprobante en tu sección de pagos.`;
+          
+          // Recargar la lista de pagos
+          this.loadClientPayments();
+          
+          // Esperar 2 segundos y luego ir a la sección de pagos
+          setTimeout(() => {
+            this.closeServiceModal();
+            this.currentView = 'payments';
+          }, 2000);
+        }
+      },
+      error: (error) => {
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al Crear Pago';
+        this.serviceModalMessage = error.error?.message || 'Hubo un error al crear el pago';
+      }
+    });
+  }
+
+  /**
+   * Abrir modal para subir comprobante de pago
+   */
+  openUploadReceiptModal(paymentId: number) {
+    
+    // Aquí podrías mostrar un modal específico para subir el comprobante
+    // Por ahora, simularemos haciendo clic en el input de archivo
+    const fileInput = document.getElementById('receiptUpload') as HTMLInputElement;
+    if (fileInput) {
+      // Guardamos el paymentId para usarlo cuando se seleccione el archivo
+      (fileInput as any).dataset.paymentId = paymentId;
+      fileInput.click();
+    }
+  }
+
+  /**
+   * Subir comprobante de pago
+   */
+  uploadPaymentReceipt(paymentId: number, file: File) {
+    
+    this.showServiceModal = true;
+    this.serviceModalType = 'loading';
+    this.serviceModalTitle = 'Subiendo Comprobante';
+    this.serviceModalMessage = `Subiendo ${file.name}...`;
+
+    this.paymentService.uploadPaymentReceipt(paymentId, file).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.serviceModalType = 'success';
+          this.serviceModalTitle = 'Comprobante Subido';
+          this.serviceModalMessage = 'Tu comprobante ha sido recibido. El administrador lo verificará pronto.';
+          
+          // Recargar pagos
+          this.loadClientPayments();
+        }
+      },
+      error: (error) => {
+        this.serviceModalType = 'error';
+        this.serviceModalTitle = 'Error al Subir Comprobante';
+        this.serviceModalMessage = error.error?.message || 'Error al subir el comprobante';
+      }
+    });
+  }
+
+  /**
+   * Cargar pagos del cliente
+   */
   getPaymentStatusClass(status: string): string {
     return status === 'pagado' ? 'status-paid' : 'status-pending';
   }
 
   // Métodos para el apartado de pagos mejorado
+
+  /**
+   * Contar pagos completados
+   */
+  getCompletedPaymentsCount(): number {
+    return this.clientPayments?.filter(p => p.payment_status === 'completed').length || 0;
+  }
+
+  /**
+   * Contar pagos pendientes
+   */
+  getPendingPaymentsCount(): number {
+    return this.clientPayments?.filter(p => p.payment_status === 'pending').length || 0;
+  }
+
+  /**
+   * Contar pagos en procesamiento
+   */
+  getProcessingPaymentsCount(): number {
+    return this.clientPayments?.filter(p => p.payment_status === 'processing').length || 0;
+  }
+
+  /**
+   * Obtener cantidad de pagos completados (legacy)
+   */
   getPaidPaymentsCount(): number {
     return this.paymentsList.filter(payment => payment.status === 'pagado').length;
   }
 
-  getPendingPaymentsCount(): number {
-    return this.paymentsList.filter(payment => payment.status !== 'pagado').length;
+  /**
+   * Formatear estado del pago
+   */
+  formatPaymentStatus(status: string): string {
+    const statusMap: any = {
+      'pending': 'Pendiente de Pago',
+      'processing': 'En Verificación',
+      'completed': 'Pago Completado',
+      'failed': 'Pago Rechazado',
+      'pagado': 'Pagado'
+    };
+    return statusMap[status] || status;
   }
 
-  // Nuevos métodos que usan clientPayments (datos reales del API)
-  getCompletedPaymentsCount(): number {
-    return this.clientPayments?.filter(payment => payment.payment_status === 'completed').length || 0;
+  /**
+   * Filtrar pagos según estado y ordenamiento
+   */
+  getFilteredPayments(): any[] {
+    if (!this.clientPayments) return [];
+    
+    let filtered = [...this.clientPayments];
+    
+    // Filtrar por estado si se selecciona uno
+    if (this.selectedPaymentStatus && this.selectedPaymentStatus !== '') {
+      filtered = filtered.filter(p => p.payment_status === this.selectedPaymentStatus);
+    }
+    
+    // Ordenar por fecha
+    if (this.sortPaymentsBy === 'oldest') {
+      filtered.sort((a, b) => {
+        const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
+        const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
+        return dateA - dateB;
+      });
+    } else {
+      filtered.sort((a, b) => {
+        const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
+        const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
+    
+    return filtered;
   }
 
-  getPendingPaymentsCountFromArray(): number {
-    return this.clientPayments?.filter(payment => payment.payment_status !== 'completed').length || 0;
+  /**
+   * Expandir/contraer tarjeta de pago
+   */
+  expandedPayments: Set<number> = new Set();
+
+  togglePaymentExpanded(paymentId: number) {
+    if (this.expandedPayments.has(paymentId)) {
+      this.expandedPayments.delete(paymentId);
+    } else {
+      this.expandedPayments.add(paymentId);
+    }
+  }
+
+  isPaymentExpanded(paymentId: number): boolean {
+    return this.expandedPayments.has(paymentId);
+  }
+
+  /**
+   * Obtener URL correcta del comprobante con manejo de rutas
+   */
+  getProperReceiptUrl(receiptUrl: string): string {
+    if (!receiptUrl) return '';
+    
+    // Si ya tiene protocolo, devolverlo como está
+    if (receiptUrl.startsWith('http://') || receiptUrl.startsWith('https://')) {
+      return receiptUrl;
+    }
+    
+    // Si empieza con /uploads, agregar el localhost:8000
+    if (receiptUrl.startsWith('/uploads/')) {
+      return `http://localhost:8000${receiptUrl}`;
+    }
+    
+    // Si no, asumir que va en /uploads/
+    return `http://localhost:8000/uploads/${receiptUrl}`;
+  }
+
+  /**
+   * Manejar error de carga de imagen del comprobante
+   */
+  onReceiptImageError(event: any, paymentId: number) {
+    // Aquí puedes agregar lógica para mostrar un ícono de error
+  }
+
+  /**
+   * Verificar si el archivo es imagen
+   */
+  isImageReceipt(url: string): boolean {
+    if (!url) return false;
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const ext = url.split('.').pop()?.toLowerCase() || '';
+    return imageExtensions.includes(ext);
+  }
+
+  /**
+   * Verificar si el archivo es PDF
+   */
+  isPdfReceipt(url: string): boolean {
+    if (!url) return false;
+    return url.toLowerCase().endsWith('.pdf');
+  }
+
+  /**
+   * Trackby para ngFor de pagos
+   */
+  trackByPayment(index: number, payment: any): number {
+    return payment.id;
   }
 
   getTotalAmount(): string {
@@ -1778,10 +2759,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       .filter(payment => payment.status === 'pagado')
       .reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
     return total.toFixed(2);
-  }
-
-  trackByPayment(index: number, payment: any): any {
-    return payment.id;
   }
 
   getPaymentIconClass(status: string): string {
@@ -1806,7 +2783,6 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   uploadReceiptForPayment(payment: any): void {
     if (payment.status === 'pagado') return;
     
-    console.log('Subir comprobante para:', payment.session);
     this.triggerReceiptUpload();
   }
 
@@ -1843,7 +2819,6 @@ CLABE: 014320123456789012
       document.execCommand('copy');
       alert('Datos bancarios copiados al portapapeles');
     } catch (err) {
-      console.error('Error al copiar al portapapeles:', err);
       alert('No se pudieron copiar los datos. Por favor, cópialos manualmente.');
     }
     
@@ -1852,8 +2827,6 @@ CLABE: 014320123456789012
 
   // Función para abrir modal de datos bancarios con datos específicos de la nanny
   openBankDetailsModal(nannyId?: number): void {
-    console.log('🏦 Abriendo modal de datos bancarios para nanny ID:', nannyId);
-    console.log('🔍 Tipo de nannyId:', typeof nannyId, 'Valor:', nannyId);
     
     // Si no se proporciona nannyId, intentar obtener el primero disponible
     // (útil para vista general sin servicio específico)
@@ -1862,46 +2835,33 @@ CLABE: 014320123456789012
     
     this.bankDetailsService.getBankDetails().subscribe({
       next: (response) => {
-        console.log('📊 Respuesta de API completa:', response);
         
         const allBankDetails = response.data;
-        console.log('📊 Datos bancarios recibidos:', allBankDetails);
-        console.log('📊 Total de registros:', allBankDetails.length);
-        
         let nannyBankDetail;
         
         if (nannyId) {
           // Buscar datos de la nanny específica
-          console.log('🔎 Buscando nanny con ID:', nannyId);
           nannyBankDetail = allBankDetails.find((bd: any) => {
-            console.log('  Comparando:', bd.nannyId, '===', nannyId, '?', bd.nannyId === nannyId);
             return bd.nannyId === nannyId && bd.isActive;
           });
         } else {
           // Si no hay nannyId específico, tomar el primero activo
-          console.log('⚠️ No se proporcionó nannyId, buscando primer registro activo');
           nannyBankDetail = allBankDetails.find((bd: any) => bd.isActive);
         }
         
         if (nannyBankDetail) {
-          console.log('✅ Datos bancarios encontrados:', nannyBankDetail);
           
-          // Mapear de camelCase (API) a snake_case (template)
           this.currentBankData = {
-            nanny_nombre: nannyBankDetail.nanny.name || 'Nanny',
             banco: nannyBankDetail.bankName,
             numero_cuenta: nannyBankDetail.accountNumber,
             numero_cuenta_oculto: this.maskAccountNumber(nannyBankDetail.accountNumber),
             clabe: nannyBankDetail.clabe || 'N/A',
             nombre_titular: nannyBankDetail.accountHolderName,
             tipo_cuenta: nannyBankDetail.accountType === 'checking' ? 'corriente' : 
-                        nannyBankDetail.accountType === 'savings' ? 'ahorro' : 
                         nannyBankDetail.accountType,
             es_activa: nannyBankDetail.isActive
           };
-          console.log('💳 Datos mapeados para mostrar:', this.currentBankData);
         } else {
-          console.warn('⚠️ No se encontraron datos bancarios' + (nannyId ? ` para nanny ID: ${nannyId}` : ' activos'));
           this.currentBankData = {
             nanny_nombre: nannyId ? 'Nanny' : 'NannysLM',
             banco: 'Información bancaria no disponible',
@@ -1917,8 +2877,7 @@ CLABE: 014320123456789012
         this.isLoadingBankData = false;
       },
       error: (error) => {
-        console.error('❌ Error al cargar datos bancarios:', error);
-        console.error('❌ Detalles del error:', error.message);
+       
         this.currentBankData = {
           nanny_nombre: 'Error',
           banco: 'Error al cargar información',
@@ -1973,6 +2932,137 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     }
     return null;
   }
+  
+  // ===============================================
+  // MÉTODOS PARA CALENDARIO DE CAMBIO DE FECHA
+  // ===============================================
+  
+  /**
+   * Obtener días del mes para el calendario de cambio de fecha
+   */
+  getChangeDateCalendarDays(): number[] {
+    const daysInMonth = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, 1).getDay();
+    
+    const days: number[] = [];
+    
+    // Agregar espacios vacíos para los días anteriores al primer día del mes
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push(0);
+    }
+    
+    // Agregar los días del mes
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+    
+    return days;
+  }
+  
+  /**
+   * Obtener nombre del mes del calendario de cambio de fecha
+   */
+  getChangeDateMonthName(): string {
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return monthNames[this.changeDateCalendarMonth];
+  }
+  
+  /**
+   * Navegar al mes anterior en el calendario de cambio de fecha
+   */
+  previousChangeDateMonth() {
+    if (this.changeDateCalendarMonth === 0) {
+      this.changeDateCalendarMonth = 11;
+      this.changeDateCalendarYear--;
+    } else {
+      this.changeDateCalendarMonth--;
+    }
+  }
+  
+  /**
+   * Navegar al mes siguiente en el calendario de cambio de fecha
+   */
+  nextChangeDateMonth() {
+    if (this.changeDateCalendarMonth === 11) {
+      this.changeDateCalendarMonth = 0;
+      this.changeDateCalendarYear++;
+    } else {
+      this.changeDateCalendarMonth++;
+    }
+  }
+  
+  /**
+   * Seleccionar fecha en el calendario de cambio de fecha
+   */
+  selectChangeDateDay(day: number) {
+    if (day === 0) return;
+    
+    const selectedDate = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, day);
+    
+    // Verificar si la fecha es seleccionable
+    if (this.isChangeDateDayDisabled(day)) {
+      return;
+    }
+    
+    this.selectedNewDate = selectedDate;
+  }
+  
+  /**
+   * Verificar si un día está seleccionado
+   */
+  isChangeDateDaySelected(day: number): boolean {
+    if (day === 0 || !this.selectedNewDate) return false;
+    
+    const checkDate = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, day);
+    return this.selectedNewDate.getFullYear() === checkDate.getFullYear() &&
+           this.selectedNewDate.getMonth() === checkDate.getMonth() &&
+           this.selectedNewDate.getDate() === checkDate.getDate();
+  }
+  
+  /**
+   * Verificar si un día está deshabilitado (antes de la fecha mínima)
+   */
+  isChangeDateDayDisabled(day: number): boolean {
+    if (day === 0) return true;
+    
+    const checkDate = new Date(this.changeDateCalendarYear, this.changeDateCalendarMonth, day);
+    
+    // Deshabilitar si es antes de la fecha mínima seleccionable
+    if (this.minSelectableDate) {
+      const minDate = new Date(this.minSelectableDate.getFullYear(), this.minSelectableDate.getMonth(), this.minSelectableDate.getDate());
+      const currentDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+      return currentDate < minDate;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Formatear la fecha seleccionada para mostrar
+   */
+  getSelectedNewDateText(): string {
+    if (!this.selectedNewDate) return 'Selecciona una fecha';
+    
+    const day = this.selectedNewDate.getDate();
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const month = monthNames[this.selectedNewDate.getMonth()];
+    const year = this.selectedNewDate.getFullYear();
+    
+    return `${day} de ${month} de ${year}`;
+  }
+  
+  /**
+   * Verificar si se puede proceder con el cambio de fecha
+   */
+  canProceedWithDateChange(): boolean {
+    return !!(this.selectedNewDate && this.selectedNewStartTime && this.selectedNewEndTime);
+  }
 
   // ===============================================
   // MÉTODOS PARA PERFIL
@@ -1984,7 +3074,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     
     try {
       // Obtener datos del perfil desde el backend con el ID del usuario actual
-      console.log(`🔄 Cargando datos del perfil para usuario ID: ${this.currentUserId}`);
       
       const response = await fetch(`http://localhost:8000/api/v1/profile/data?userId=${this.currentUserId}`, {
         method: 'GET',
@@ -1995,11 +3084,9 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         }
       });
 
-      console.log('📡 Respuesta del servidor:', response.status, response.statusText);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📦 Datos recibidos del servidor:', result);
         
         if (result.success) {
           // Cargar datos del usuario
@@ -2018,9 +3105,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
             updated_at: result.data.user_data.updated_at
           };
 
-          console.log('✅ Datos del perfil cargados:', this.profileData);
-          console.log('🖼️ Profile image específica:', this.profileData.profile_image);
-
           // Cargar datos específicos del cliente
           this.clientData = {
             id: result.data.client_data.id,
@@ -2035,20 +3119,33 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
             updated_at: result.data.client_data.updated_at
           };
 
-          console.log('👨‍👩‍👧‍👦 Datos del cliente cargados:', this.clientData);
-
-          console.log('✅ Datos del perfil cargados exitosamente:', { 
-            userData: this.profileData, 
-            clientData: this.clientData 
-          });
-          console.log(`👤 Usuario: ${this.profileData.first_name} ${this.profileData.last_name}`);
+          // Sincronizar clientInfo con profileData si clientInfo no está disponible
+          // Esto asegura que el getter currentUser siempre tenga datos disponibles
+          if (!this.clientInfo && this.profileData) {
+            this.clientInfo = {
+              id: this.profileData.id || 0,
+              user_id: this.profileData.id || 0,
+              first_name: this.profileData.first_name,
+              last_name: this.profileData.last_name,
+              email: this.profileData.email,
+              phone_number: this.profileData.phone_number,
+              address: this.profileData.address,
+              profile_image: this.profileData.profile_image,
+              is_verified: this.profileData.is_verified,
+              emergency_contact_name: '',
+              emergency_contact_phone: '',
+              number_of_children: 0,
+              verification_status: this.clientData?.verification_status || 'pending',
+              identification_document: this.clientData?.identification_document || '',
+              created_at: this.profileData.created_at || new Date().toISOString(),
+              client_since: this.profileData.created_at || new Date().toISOString()
+            } as ClientInfo;
+          }
         }
       } else {
-        console.error('Error al cargar datos del perfil:', response.status);
         this.loadFallbackData();
       }
     } catch (error) {
-      console.error('Error de conexión al cargar perfil:', error);
       this.loadFallbackData();
     } finally {
       this.isLoadingClientData = false;
@@ -2090,7 +3187,10 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         // Validar tamaño (10MB max)
         if (file.size <= 10 * 1024 * 1024) {
           this.identificationDocumentFile = file;
-          console.log('✅ Documento de identificación seleccionado:', file.name);
+          
+          // Generar preview
+          this.generateIdentificationPreview(file);
+        
         } else {
           this.clientInfoErrorMessage = 'El archivo no debe superar los 10MB';
           setTimeout(() => this.clientInfoErrorMessage = '', 5000);
@@ -2104,6 +3204,33 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     }
   }
 
+  // Generar preview del documento de identificación
+  generateIdentificationPreview(file: File) {
+    // Limpiar preview anterior
+    if (this.identificationPreviewUrl) {
+      URL.revokeObjectURL(this.identificationPreviewUrl);
+    }
+
+    if (file.type.startsWith('image/')) {
+      // Para imágenes, crear Object URL
+      this.identificationPreviewUrl = URL.createObjectURL(file);
+      this.identificationPreviewType = 'image';
+    } else if (file.type === 'application/pdf') {
+      // Para PDFs, también crear Object URL
+      this.identificationPreviewUrl = URL.createObjectURL(file);
+      this.identificationPreviewType = 'pdf';
+    }
+  }
+
+  // Limpiar preview
+  clearIdentificationPreview() {
+    if (this.identificationPreviewUrl) {
+      URL.revokeObjectURL(this.identificationPreviewUrl);
+      this.identificationPreviewUrl = null;
+      this.identificationPreviewType = null;
+    }
+  }
+
   // Cargar datos específicos del cliente (emergency contacts, etc.)
   async loadClientInfoData() {
     this.isLoadingClientData = true;
@@ -2113,13 +3240,11 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       const token = this.authService.getToken();
       
       if (!token) {
-        console.error('❌ No hay token disponible');
         this.clientInfoErrorMessage = 'Sesión no válida. Por favor inicia sesión nuevamente.';
         this.isLoadingClientData = false;
         return;
       }
 
-      console.log('🔐 Token disponible, realizando petición a /api/v1/client/data');
       
       const response = await fetch('http://localhost:8000/api/v1/client/data', {
         method: 'GET',
@@ -2129,11 +3254,9 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         }
       });
 
-      console.log('📡 Respuesta recibida:', response.status, response.statusText);
 
       if (response.status === 404) {
         // Cliente no tiene datos todavía, inicializar con valores vacíos
-        console.log('ℹ️ Cliente sin datos previos (404), inicializando formulario vacío');
         this.clientData = {
           verification_status: 'pending',
           identification_document: '',
@@ -2146,7 +3269,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         this.clientInfoErrorMessage = '';
       } else if (response.ok) {
         const data = await response.json();
-        console.log('✅ Datos específicos del cliente cargados:', data);
         
         if (data.success && data.data) {
           this.clientData = {
@@ -2157,22 +3279,18 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         // Limpiar el mensaje de error en caso de éxito
         this.clientInfoErrorMessage = '';
       } else if (response.status === 401) {
-        console.error('❌ Sesión expirada (401) al cargar datos del cliente');
         this.authService.forceLogout();
         this.router.navigate(['/login']);
       } else {
         // Intentar leer el mensaje de error del servidor
         try {
           const errorData = await response.json();
-          console.error('❌ Error del servidor:', errorData);
           this.clientInfoErrorMessage = errorData.message || `Error del servidor: ${response.status}`;
         } catch (e) {
-          console.error('❌ Error al cargar datos del cliente (status:', response.status, ')');
           this.clientInfoErrorMessage = `Error del servidor (${response.status}). Por favor intenta nuevamente.`;
         }
       }
     } catch (error: any) {
-      console.error('❌ Error de red o excepción al cargar datos del cliente:', error);
       this.clientInfoErrorMessage = error.message || 'Error de conexión al cargar la información del cliente';
     } finally {
       this.isLoadingClientData = false;
@@ -2234,7 +3352,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       const data = await response.json();
 
       if (response.ok && data.success) {
-        console.log('✅ Datos del cliente guardados:', data);
         this.clientInfoSuccessMessage = data.message || 'Información guardada correctamente';
         this.identificationDocumentFile = null;
         
@@ -2243,7 +3360,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         
         setTimeout(() => this.clientInfoSuccessMessage = '', 5000);
       } else if (response.status === 401) {
-        console.error('❌ Sesión expirada al guardar datos del cliente');
         this.authService.forceLogout();
         this.router.navigate(['/login']);
       } else if (response.status === 400 && data.errors) {
@@ -2253,7 +3369,6 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         this.clientInfoErrorMessage = data.message || 'Error al guardar la información';
       }
     } catch (error) {
-      console.error('❌ Error al guardar datos del cliente:', error);
       this.clientInfoErrorMessage = 'Error de conexión al guardar la información';
     } finally {
       this.isSavingClientData = false;
@@ -2326,109 +3441,26 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     return this.clientData.identification_document.toLowerCase().endsWith('.pdf');
   }
 
-  // Métodos para manejar notificaciones
-  handleNotificationClick(notification: Notification) {
-    console.log('Notification clicked:', notification);
-    
-    // Marcar como leída en el backend
-    if (!notification.is_read) {
-      this.notificationService.markAsRead(notification.id).subscribe({
-        next: (response) => {
-          if (response.success) {
-            // Actualizar localmente
-            const index = this.notifications.findIndex(n => n.id === notification.id);
-            if (index !== -1) {
-              this.notifications[index].is_read = true;
-              this.notifications[index].read_at = new Date().toISOString();
-            }
-            console.log('✅ Notificación marcada como leída');
-          }
-        },
-        error: (error) => {
-          console.error('❌ Error marcando notificación como leída:', error);
-        }
-      });
-    }
-
-    // Navegar a la URL de acción si existe
-    if (notification.action_url) {
-      // Extraer la vista del action_url (ej: 'services', 'payments')
-      const view = notification.action_url.replace('/', '');
-      if (view) {
-        this.currentView = view;
-      }
-    }
-  }
-
-  markAllNotificationsAsRead() {
-    console.log('Marking all notifications as read');
-    this.notificationService.markAllAsRead(this.currentUserId).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.notifications = this.notifications.map(n => ({
-            ...n,
-            is_read: true,
-            read_at: n.read_at || new Date().toISOString()
-          }));
-          console.log('✅ Todas las notificaciones marcadas como leídas');
-        }
-      },
-      error: (error) => {
-        console.error('❌ Error marcando notificaciones como leídas:', error);
-      }
-    });
-  }
-
   // Método para cargar notificaciones desde el backend
   private loadNotifications() {
-    console.log('📋 Cargando notificaciones...');
-    this.notificationService.getNotifications(this.currentUserId, false, 50).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.notifications = response.data;
-          console.log('✅ Notificaciones cargadas:', this.notifications.length);
-        }
+    
+    // Obtener notificaciones del servidor
+    this.notificationService.getNotifications().subscribe({
+      next: (notifications) => {
+        this.notifications = notifications;
+        
+        // Actualizar el header config con las notificaciones
+        this.headerConfig = {
+          ...this.headerConfig,
+          showNotifications: true
+        };
       },
       error: (error) => {
-        console.error('❌ Error cargando notificaciones:', error);
-        // Si hay error, usar datos de ejemplo para desarrollo
-        this.notifications = [
-          {
-            id: 1,
-            title: 'Nuevo servicio confirmado',
-            message: 'Tu servicio de cuidado para el 15 de noviembre ha sido confirmado.',
-            type: 'service',
-            is_read: false,
-            action_url: 'contracted-services',
-            related_id: 123,
-            related_type: 'service',
-            created_at: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 2,
-            title: 'Pago procesado exitosamente',
-            message: 'Tu pago de $450.00 ha sido procesado correctamente.',
-            type: 'payment',
-            is_read: false,
-            action_url: 'payments',
-            related_id: 456,
-            related_type: 'payment',
-            created_at: new Date(Date.now() - 7200000).toISOString()
-          },
-          {
-            id: 3,
-            title: 'Recuerda calificar tu servicio',
-            message: 'Tu opinión es importante. Califica el servicio completado el 10 de noviembre.',
-            type: 'info',
-            is_read: true,
-            action_url: 'contracted-services',
-            related_id: 789,
-            related_type: 'service',
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            read_at: new Date(Date.now() - 43200000).toISOString()
-          }
-        ];
+        this.notifications = [];
       }
     });
+    
+    // Iniciar polling automático cada 30 segundos para actualizar notificaciones
+    this.notificationService.startPolling(300000);
   }
 }

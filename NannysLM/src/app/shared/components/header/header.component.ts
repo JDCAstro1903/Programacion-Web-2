@@ -55,47 +55,39 @@ export class HeaderComponent implements OnChanges {
   }
 
   getAvatarUrl(): string {
-    console.log('🎨 getAvatarUrl llamado con:', this.config?.userAvatar);
     
     if (!this.config?.userAvatar) {
-      console.log('❌ No hay userAvatar, usando logo por defecto');
       return '/assets/logo.png';
     }
 
     // Si ya es una URL completa
     if (this.config.userAvatar.startsWith('http')) {
       const url = `${this.config.userAvatar}?t=${this.imageTimestamp}`;
-      console.log('🌐 URL completa detectada:', url);
       return url;
     }
 
     // Si es data:image (base64)
     if (this.config.userAvatar.startsWith('data:image')) {
-      console.log('📸 Imagen base64 detectada');
       return this.config.userAvatar;
     }
 
     // Si empieza con /uploads/
     if (this.config.userAvatar.startsWith('/uploads/')) {
       const url = `http://localhost:8000${this.config.userAvatar}?t=${this.imageTimestamp}`;
-      console.log('📁 Ruta /uploads/ detectada, URL construida:', url);
       return url;
     }
 
     // Si es solo el nombre del archivo
     if (this.config.userAvatar && !this.config.userAvatar.startsWith('/')) {
       const url = `http://localhost:8000/uploads/${this.config.userAvatar}?t=${this.imageTimestamp}`;
-      console.log('📄 Solo nombre de archivo, URL construida:', url);
       return url;
     }
 
     // Caso por defecto
-    console.log('⚠️ No coincide con ningún patrón, usando logo por defecto');
     return '/assets/logo.png';
   }
 
   toggleUserMenu() {
-    console.log('Toggle menu clicked');
     this.showUserMenu = !this.showUserMenu;
     if (this.showUserMenu) {
       this.showNotificationsMenu = false;
@@ -103,12 +95,10 @@ export class HeaderComponent implements OnChanges {
   }
 
   closeUserMenu() {
-    console.log('Closing menu');
     this.showUserMenu = false;
   }
 
   toggleNotificationsMenu() {
-    console.log('Toggle notifications menu clicked');
     this.showNotificationsMenu = !this.showNotificationsMenu;
     if (this.showNotificationsMenu) {
       this.showUserMenu = false;
@@ -116,18 +106,15 @@ export class HeaderComponent implements OnChanges {
   }
 
   closeNotificationsMenu() {
-    console.log('Closing notifications menu');
     this.showNotificationsMenu = false;
   }
 
   handleNotificationClick(notification: Notification) {
-    console.log('Notification clicked:', notification);
     this.onNotificationClick.emit(notification);
     this.closeNotificationsMenu();
   }
 
   markAllAsRead() {
-    console.log('Mark all as read');
     this.onMarkAllAsRead.emit();
   }
 
@@ -172,19 +159,15 @@ export class HeaderComponent implements OnChanges {
   }
 
   goToProfile() {
-    console.log('goToProfile called - Starting navigation');
     this.closeUserMenu();
     // Navegar a la vista de perfil genérica
     this.router.navigate(['/profile']).then(success => {
-      console.log('Navigation to /profile result:', success);
       this.onProfileClick.emit();
     }).catch(err => {
-      console.error('Navigation error:', err);
     });
   }
 
   logout() {
-    console.log('logout called - Emitting logout event');
     this.closeUserMenu();
     this.onLogout.emit();
   }

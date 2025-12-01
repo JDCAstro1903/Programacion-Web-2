@@ -427,8 +427,46 @@ header {
   }
 
   .notifications-dropdown {
-    width: 320px;
-    right: -1rem;
+    width: 340px;
+    right: 0;
+    max-height: 65vh;
+    top: calc(100% + 0.5rem);
+  }
+
+  .notifications-header {
+    padding: 0.875rem 1rem;
+  }
+
+  .notifications-header h3 {
+    font-size: 0.95rem;
+  }
+
+  .mark-read-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .notifications-list {
+    max-height: calc(65vh - 100px);
+  }
+
+  .notification-item {
+    padding: 0.875rem 1rem;
+    gap: 0.625rem;
+  }
+
+  .notification-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+
+  .notification-content h4 {
+    font-size: 0.875rem;
+  }
+
+  .notification-content p {
+    font-size: 0.8125rem;
   }
 
   .user-name,
@@ -465,9 +503,95 @@ header {
 }
 
 @media (max-width: 480px) {
+  header {
+    padding: 0.625rem 0.75rem;
+  }
+
   .notifications-dropdown {
-    width: calc(100vw - 2rem);
-    right: -0.5rem;
+    position: fixed;
+    top: 60px;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 70px);
+    border-radius: 0 0 16px 16px;
+    transform: none;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .notifications-header {
+    padding: 1rem 1rem 0.75rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .notifications-header h3 {
+    font-size: 1rem;
+  }
+
+  .mark-read-btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .notifications-list {
+    max-height: calc(85vh - 100px);
+  }
+
+  .notification-item {
+    padding: 0.875rem 1rem;
+    gap: 0.625rem;
+  }
+
+  .notification-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .notification-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .notification-content h4 {
+    font-size: 0.875rem;
+    white-space: normal;
+  }
+
+  .notification-content p {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .notification-time {
+    font-size: 0.75rem;
+  }
+
+  .notifications-empty {
+    padding: 2.5rem 1rem;
+  }
+
+  .notifications-empty svg {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.75rem;
+  }
+
+  .notifications-empty p {
+    font-size: 0.875rem;
   }
 
   .brand-info h1 {
@@ -480,5 +604,32 @@ header {
 
   .logo-section {
     gap: 0.5rem;
+  }
+
+  .logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .user-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .notifications-button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .notification-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.625rem;
+    top: 3px;
+    right: 3px;
+  }
+
+  .dropdown-overlay {
+    background: rgba(0, 0, 0, 0.5);
   }
 }

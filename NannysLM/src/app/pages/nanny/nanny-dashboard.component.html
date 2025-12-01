@@ -2,8 +2,11 @@
   <!-- Header Genérico -->
   <app-header 
     [config]="headerConfig"
+    [notifications]="notifications"
     (onLogout)="onHeaderLogout()"
-    (onProfileClick)="onHeaderProfileClick()">
+    (onProfileClick)="onHeaderProfileClick()"
+    (onNotificationClick)="handleNotificationClick($event)"
+    (onMarkAllAsRead)="markAllNotificationsAsRead()">
   </app-header>
 
   <!-- Layout principal -->
@@ -17,6 +20,19 @@
 
     <!-- Contenido principal -->
     <main class="main-content">
+      <!-- Mensaje de error de carga -->
+      <div *ngIf="loadError" style="background: #fef2f2; border: 2px solid #f87171; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="#dc2626"/>
+          </svg>
+          <div>
+            <h3 style="color: #dc2626; margin: 0 0 0.5rem 0; font-weight: 600;">Error al cargar datos</h3>
+            <p style="color: #991b1b; margin: 0;">{{ loadError }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Vista Inicio -->
       <div *ngIf="currentView === 'dashboard'" class="dashboard-home">
         <div class="content-header">
@@ -48,10 +64,13 @@
             <div class="hero-illustration">
               <div class="floating-card">
                 <div class="floating-content">
-                  <div class="service-preview">
+                  <div class="service-preview" *ngIf="nextService">
                     <h4>{{ nextService.date }}</h4>
                     <p>{{ nextService.time }}</p>
                     <span class="client-name">{{ nextService.client }}</span>
+                  </div>
+                  <div class="service-preview" *ngIf="!nextService" style="text-align: center; color: rgba(255,255,255,0.8);">
+                    <p>Sin servicios</p>
                   </div>
                 </div>
               </div>
@@ -65,8 +84,11 @@
           <div class="overview-card next-service">
             <div class="card-header">
               <div class="card-icon services">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19ZM7 10H9V12H7V10ZM11 10H13V12H11V10ZM15 10H17V12H15V10Z"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
               </div>
               <div class="card-title">
@@ -74,7 +96,7 @@
                 <p>Tu siguiente trabajo programado</p>
               </div>
             </div>
-            <div class="card-content">
+            <div class="card-content" *ngIf="nextService">
               <div class="service-details-compact">
                 <div class="service-date-large">{{ nextService.date }}</div>
                 <div class="service-time-highlight">{{ nextService.time }}</div>
@@ -83,12 +105,15 @@
                 </div>
                 <div class="service-location-brief">{{ nextService.location }}</div>
               </div>
-              <button class="card-action-btn" (click)="getMoreInfo(1)">
+              <button class="card-action-btn" (click)="services.upcoming[0] && getMoreInfo(services.upcoming[0].id)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2C13.65 2 15 3.35 15 5C15 6.65 13.65 8 12 8C10.35 8 9 6.65 9 5C9 3.35 10.35 2 12 2ZM21 9V7L15 1V3H9V1L3 7V9H21Z"/>
                 </svg>
                 Ver detalles
               </button>
+            </div>
+            <div class="card-content" *ngIf="!nextService" style="text-align: center; color: #64748b; padding: 2rem;">
+              <p>No tienes servicios programados</p>
             </div>
           </div>
 
@@ -96,8 +121,8 @@
           <div class="overview-card rating-summary">
             <div class="card-header">
               <div class="card-icon rating">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 1L15.09 10H24L17 15L19.09 24L12 19L5 24L7 15L0 10H8.91L12 1Z"/>
                 </svg>
               </div>
               <div class="card-title">
@@ -107,13 +132,14 @@
             </div>
             <div class="card-content">
               <div class="rating-display-large">
-                <div class="rating-number">{{ stats.rating }}</div>
+                <div class="rating-number">{{ stats.rating.toFixed(1) }}</div>
                 <div class="rating-stars-row">
-                  <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= stats.rating" class="star-icon" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= stats.rating" class="star-icon" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" [attr.fill]="star <= stats.rating ? '#fbbf24' : '#e5e7eb'">
                     <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                   </svg>
                 </div>
-                <span class="rating-label">Excelente trabajo</span>
+                <span class="rating-label" *ngIf="stats.rating > 0">{{ getRatingText(Math.round(stats.rating)) }}</span>
+                <span class="rating-label" *ngIf="stats.rating === 0" style="color: #94a3b8;">Sin calificaciones aún</span>
               </div>
             </div>
           </div>
@@ -122,9 +148,9 @@
           <div class="overview-card services-summary">
             <div class="card-header">
               <div class="card-icon completed">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" fill="none"/>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="16 12 12 8 8 12"/>
                 </svg>
               </div>
               <div class="card-title">
@@ -150,68 +176,6 @@
                 Ver todos
               </button>
             </div>
-          </div>
-        </div>
-
-        <!-- Sección de acceso rápido -->
-        <div class="quick-access-section">
-          <div class="section-header">
-            <h3>Acceso Rápido</h3>
-            <p>Funciones más utilizadas</p>
-          </div>
-          
-          <div class="quick-access-grid">
-            <button class="quick-access-item" (click)="currentView = 'services'">
-              <div class="access-icon primary">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19Z"/>
-                </svg>
-              </div>
-              <div class="access-content">
-                <h4>Mis Servicios</h4>
-                <p>Ver programación completa</p>
-              </div>
-              <div class="access-arrow">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" fill="none"/>
-                </svg>
-              </div>
-            </button>
-
-            <button class="quick-access-item" (click)="setServiceFilter('upcoming')">
-              <div class="access-icon secondary">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C13.65 2 15 3.35 15 5C15 6.65 13.65 8 12 8C10.35 8 9 6.65 9 5C9 3.35 10.35 2 12 2Z"/>
-                </svg>
-              </div>
-              <div class="access-content">
-                <h4>Próximos Servicios</h4>
-                <p>Trabajos programados</p>
-              </div>
-              <div class="access-arrow">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" fill="none"/>
-                </svg>
-              </div>
-            </button>
-
-            <button class="quick-access-item" (click)="setServiceFilter('past')">
-              <div class="access-icon tertiary">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" stroke-width="2" fill="none"/>
-                </svg>
-              </div>
-              <div class="access-content">
-                <h4>Historial</h4>
-                <p>Servicios completados</p>
-              </div>
-              <div class="access-arrow">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2" fill="none"/>
-                </svg>
-              </div>
-            </button>
           </div>
         </div>
 
@@ -370,7 +334,117 @@
           </div>
         </div>
       </div>
+
+      <!-- Vista Notificaciones -->
+      <div *ngIf="currentView === 'notificaciones'" class="notifications-view">
+        <div class="content-header">
+          <h2>Mis Notificaciones</h2>
+          <p>Gestiona tus notificaciones y actualizaciones</p>
+        </div>
+        
+        <app-notifications-panel 
+          [title]="''"
+          [showHeader]="false"
+          [showFilters]="true"
+          (notificationClicked)="handleNotificationClick($event)">
+        </app-notifications-panel>
+      </div>
     </main>
+  </div>
+
+  <!-- Modal de cliente -->
+  <div *ngIf="showClientModal && selectedClient" class="client-modal-overlay" (click)="closeClientModal()">
+    <div class="client-modal-content" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="modal-header-client">
+        <h2>Perfil del Cliente</h2>
+        <button class="modal-close-btn" (click)="closeClientModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido -->
+      <div class="modal-body-client">
+        <!-- Imagen de perfil del cliente -->
+        <div class="client-profile-image-section" *ngIf="selectedClient.profileImage">
+          <img [src]="selectedClient.profileImage" 
+               alt="{{ selectedClient.client }}" 
+               class="client-profile-image"
+               (error)="onProfileImageError($event)">
+          <div *ngIf="isLoadingClientData" class="image-loading-overlay">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- Cliente -->
+        <div class="client-info-section">
+          <div class="section-title">Cliente</div>
+          <div class="info-value">{{ selectedClient.client }}</div>
+        </div>
+
+        <!-- Email (si está disponible) -->
+        <div class="client-info-section" *ngIf="selectedClient.email">
+          <div class="section-title">Email</div>
+          <div class="info-value">{{ selectedClient.email }}</div>
+        </div>
+
+        <!-- Teléfono (si está disponible) -->
+        <div class="client-info-section" *ngIf="selectedClient.phone">
+          <div class="section-title">Teléfono</div>
+          <div class="info-value">{{ selectedClient.phone }}</div>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="client-info-section">
+          <div class="section-title">Ubicación</div>
+          <div class="info-value">{{ selectedClient.location }}</div>
+        </div>
+
+        <!-- Fecha -->
+        <div class="client-info-section">
+          <div class="section-title">Fecha del Servicio</div>
+          <div class="info-value">{{ selectedClient.dateDisplay }} • {{ selectedClient.time }}</div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="client-info-section" *ngIf="selectedClient.instructions">
+          <div class="section-title">Instrucciones Especiales</div>
+          <div class="info-value info-text">{{ selectedClient.instructions }}</div>
+        </div>
+
+        <!-- Contacto de emergencia (si está disponible) -->
+        <div class="client-info-section" *ngIf="selectedClient.emergencyContact">
+          <div class="section-title">Contacto de Emergencia</div>
+          <div class="info-value">{{ selectedClient.emergencyContact }}</div>
+          <div class="info-value" *ngIf="selectedClient.emergencyPhone">{{ selectedClient.emergencyPhone }}</div>
+        </div>
+
+        <!-- Calificación -->
+        <div class="client-info-section" *ngIf="selectedClient.rating">
+          <div class="section-title">Calificación Recibida</div>
+          <div class="rating-display-modal">
+            <div class="rating-stars-modal">
+              <svg *ngFor="let star of [1,2,3,4,5]" [class.filled]="star <= selectedClient.rating" class="star-modal" width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <span class="rating-text-modal">{{ getRatingText(selectedClient.rating) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer-client">
+        <app-whatsapp-button 
+          [phoneNumber]="selectedClient.phone || ''"
+          [message]="'Hola ' + (selectedClient.client || 'Cliente') + ', soy ' + currentUser.name + ', tu niñera. Me gustaría confirmar los detalles de nuestro próximo servicio.'"
+          [buttonText]="'Contactar por WhatsApp'">
+        </app-whatsapp-button>
+        <button class="btn-close-modal" (click)="closeClientModal()">Cerrar</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de logout reutilizable -->

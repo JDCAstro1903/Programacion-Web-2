@@ -1,0 +1,337 @@
+<div class="service-details-page">
+  <!-- Header Simple -->
+  <header class="top-bar">
+    <button class="back-button" (click)="onBackClick()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Volver
+    </button>
+    <h1 class="page-title">Detalles del Servicio</h1>
+    <div class="spacer"></div>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando detalles del servicio...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="loadError && !isLoading" class="error-container">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="#dc2626"/>
+        </svg>
+        <h3>{{ loadError }}</h3>
+        <button class="back-btn" (click)="declineService()">Volver al Dashboard</button>
+      </div>
+
+      <!-- Service Already Taken State -->
+      <div *ngIf="service && service.status === 'confirmed' && service.nanny_id && service.nanny_id !== nannyId && !isLoading" class="service-unavailable-container">
+        <div class="unavailable-icon">
+          <svg width="100" height="100" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" fill="#f1f5f9" opacity="0.5"/>
+            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>Este servicio ya fue asignado</h2>
+        <p class="subtitle">
+          Otra nanny aceptó este servicio primero. No te preocupes, hay más oportunidades disponibles para ti.
+        </p>
+        
+        <div class="info-box">
+          <h4>💡 ¿Qué puedes hacer?</h4>
+          <ul>
+            <li>Revisa otros servicios disponibles en tu dashboard</li>
+            <li>Activa las notificaciones para recibir alertas de nuevos servicios</li>
+            <li>Acepta rápidamente los servicios que te interesen</li>
+          </ul>
+        </div>
+
+        <div class="action-buttons">
+          <button class="action-btn decline" (click)="declineService()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Volver al Dashboard
+          </button>
+          
+          <button class="action-btn accept" (click)="goToAvailableServices()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Ver Servicios Disponibles
+          </button>
+        </div>
+      </div>
+
+      <!-- Success State - Aceptación -->
+      <div *ngIf="acceptSuccess" class="success-container">
+        <div class="success-icon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" fill="#10b981" opacity="0.2"/>
+            <path d="M9 12L11 14L15 10" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>¡Servicio aceptado exitosamente! 🎉</h2>
+        <p>Has sido asignada a este servicio. El cliente recibirá una notificación.</p>
+        <p class="redirect-message">Redirigiendo al dashboard...</p>
+      </div>
+
+      <!-- Success State - Completación -->
+      <div *ngIf="completeSuccess" class="success-container">
+        <div class="success-icon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" fill="#10b981" opacity="0.2"/>
+            <path d="M9 12L11 14L15 10" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2>¡Servicio finalizado correctamente! ✨</h2>
+        <p>El servicio ha sido marcado como completado. Gracias por tu trabajo.</p>
+        <p class="redirect-message">Redirigiendo al dashboard...</p>
+      </div>
+
+      <!-- Service Details -->
+      <div *ngIf="service && !isLoading && !acceptSuccess && !completeSuccess && !(service.status === 'confirmed' && service.nanny_id && service.nanny_id !== nannyId)" class="service-details-container">
+        <!-- Header del servicio -->
+        <div class="service-header">
+          <div class="service-title-section">
+            <h1>{{ service.title }}</h1>
+            <span class="service-badge" [class.pending]="service.status === 'pending'" [class.assigned]="service.nanny_id">
+              {{ service.status === 'pending' ? '⏳ Pendiente' : service.status === 'confirmed' ? '✓ Confirmado' : service.status }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Mensaje de urgencia si está pendiente -->
+        <div *ngIf="service.status === 'pending' && !service.nanny_id" class="urgency-banner">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div>
+            <strong>¡Acción requerida!</strong>
+            <p>Este servicio está disponible para ser aceptado. La primera nanny en aceptar será asignada.</p>
+          </div>
+        </div>
+
+        <!-- Mensaje si ya fue aceptado -->
+        <div *ngIf="service.nanny_id && service.nanny_id !== nannyId" class="info-banner">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div>
+            <strong>Servicio ya asignado</strong>
+            <p>Este servicio ya ha sido aceptado por otra nanny.</p>
+          </div>
+        </div>
+
+        <!-- Grid de detalles -->
+        <div class="details-grid">
+          <!-- Información general -->
+          <div class="detail-card">
+            <div class="card-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="#E31B7E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Fecha y Horario</h3>
+            </div>
+            <div class="card-content">
+              <div class="detail-row">
+                <span class="label">Fecha de llegada:</span>
+                <span class="value">{{ formatDate(service.start_date) }}</span>
+              </div>
+              <div class="detail-row" *ngIf="service.end_date && service.end_date !== service.start_date">
+                <span class="label">Fecha de salida:</span>
+                <span class="value">{{ formatDate(service.end_date) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Hora de inicio:</span>
+                <span class="value">{{ service.start_time }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Hora de fin:</span>
+                <span class="value">{{ service.end_time }}</span>
+              </div>
+              <div class="detail-row" *ngIf="service.total_hours">
+                <span class="label">Duración:</span>
+                <span class="value">{{ service.total_hours }} horas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tipo de servicio -->
+          <div class="detail-card">
+            <div class="card-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="#E31B7E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Detalles del Servicio</h3>
+            </div>
+            <div class="card-content">
+              <div class="detail-row">
+                <span class="label">Tipo:</span>
+                <span class="value">{{ getServiceTypeName(service.service_type) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Niños a cuidar:</span>
+                <span class="value">{{ service.number_of_children || 'No especificado' }}</span>
+              </div>
+              <div class="detail-row" *ngIf="service.total_amount">
+                <span class="label">Monto total:</span>
+                <span class="value amount">${{ service.total_amount }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ubicación -->
+          <div class="detail-card" *ngIf="service.address">
+            <div class="card-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z" stroke="#E31B7E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 22C16 18 20 14.4183 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 14.4183 8 18 12 22Z" stroke="#E31B7E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Ubicación</h3>
+            </div>
+            <div class="card-content">
+              <p class="address-text">{{ service.address }}</p>
+            </div>
+          </div>
+
+          <!-- Cliente -->
+          <div class="detail-card" *ngIf="service.client_first_name">
+            <div class="card-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="#E31B7E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>Información del Cliente</h3>
+            </div>
+            <div class="card-content">
+              <div class="detail-row">
+                <span class="label">Nombre:</span>
+                <span class="value">{{ service.client_first_name }} {{ service.client_last_name }}</span>
+              </div>
+              <div class="detail-row" *ngIf="service.client_phone">
+                <span class="label">Teléfono:</span>
+                <span class="value">{{ service.client_phone }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instrucciones especiales -->
+        <div class="instructions-section" *ngIf="service.special_instructions">
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 5H17M7 12H17M11 19H17M3 5H3.01M3 12H3.01M3 19H3.01" stroke="#E31B7E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Instrucciones Especiales
+          </h3>
+          <p>{{ service.special_instructions }}</p>
+        </div>
+
+        <!-- Descripción -->
+        <div class="instructions-section" *ngIf="service.description">
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="#E31B7E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Descripción del Servicio
+          </h3>
+          <p>{{ service.description }}</p>
+        </div>
+
+        <!-- Error al aceptar -->
+        <div *ngIf="acceptError" class="error-banner">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div>
+            <strong>Error al aceptar</strong>
+            <p>{{ acceptError }}</p>
+          </div>
+        </div>
+
+        <!-- Botones de acción para pendientes -->
+        <div class="actions-section" *ngIf="service.status === 'pending' && !service.nanny_id && !isAccepting">
+          <button class="action-btn decline" (click)="declineService()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            No me interesa
+          </button>
+          
+          <button class="action-btn accept" (click)="acceptService()" [disabled]="isAccepting">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ isAccepting ? 'Aceptando...' : 'Aceptar Servicio' }}
+          </button>
+        </div>
+
+        <!-- Botones de acción para confirmados -->
+        <div class="actions-section" *ngIf="service.status === 'confirmed' && !isCompleting">
+          <button class="action-btn decline" (click)="declineService()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Volver
+          </button>
+          
+          <button class="action-btn accept" (click)="openCompleteModal()" [disabled]="isCompleting">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Finalizar Servicio
+          </button>
+        </div>
+
+        <!-- Estado procesando aceptación -->
+        <div *ngIf="isAccepting" class="processing-overlay">
+          <div class="spinner"></div>
+          <p>Procesando tu aceptación...</p>
+        </div>
+
+        <!-- Estado procesando completación -->
+        <div *ngIf="isCompleting" class="processing-overlay">
+          <div class="spinner"></div>
+          <p>Finalizando el servicio...</p>
+        </div>
+
+        <!-- Modal de confirmación para completar servicio -->
+        <div *ngIf="showCompleteModal" class="modal-overlay" (click)="closeCompleteModal()">
+          <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>¿Finalizar Servicio?</h2>
+              <button class="close-btn" (click)="closeCompleteModal()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="modal-body">
+              <p>Al finalizar este servicio, no podrás hacer cambios posteriores. Asegúrate de que has completado todas las tareas.</p>
+              
+              <div *ngIf="completeError" class="error-message">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p>{{ completeError }}</p>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="action-btn decline" (click)="closeCompleteModal()">
+                Cancelar
+              </button>
+              <button class="action-btn accept" (click)="completeService()" [disabled]="isCompleting">
+                {{ isCompleting ? 'Finalizando...' : 'Confirmar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>

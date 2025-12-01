@@ -433,6 +433,71 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Password Section - Acordeón */
+.password-section {
+  overflow: hidden;
+}
+
+.password-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.5rem 0;
+  margin-bottom: 0;
+  transition: all 0.3s ease;
+}
+
+.password-section-header:hover {
+  opacity: 0.8;
+}
+
+.password-section-header h3 {
+  margin: 0;
+  padding: 0;
+  border-bottom: none;
+}
+
+.toggle-section-btn {
+  background: none;
+  border: none;
+  color: #e31b7e;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  border-radius: 50%;
+}
+
+.toggle-section-btn:hover {
+  background: rgba(227, 27, 126, 0.1);
+}
+
+.toggle-section-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.toggle-section-btn.expanded svg {
+  transform: rotate(180deg);
+}
+
+.password-section-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, opacity 0.3s ease-out;
+  opacity: 0;
+}
+
+.password-section-content.expanded {
+  max-height: 1000px;
+  opacity: 1;
+  transition: max-height 0.4s ease-in, opacity 0.3s ease-in;
+  padding-top: 1rem;
+}
+
 /* Password button wrapper */
 .password-button-wrapper {
   display: flex;
@@ -500,12 +565,25 @@
   margin: 1rem 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
   animation: slideDown 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.password-feedback::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: currentColor;
 }
 
 @keyframes slideDown {
@@ -519,32 +597,75 @@
   }
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
 .feedback-success {
-  background: #d1fae5;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   color: #065f46;
-  border: 1px solid #10b981;
+  border: 2px solid #10b981;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+}
+
+.feedback-success::before {
+  background: #10b981;
 }
 
 .feedback-success svg {
   color: #10b981;
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  animation: pulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3));
 }
 
-.feedback-error {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #ef4444;
+.feedback-success span {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+.feedback-error {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 2px solid #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideDown 0.3s ease, shake 0.5s ease 0.3s;
+}
+
+.feedback-error::before {
+  background: #ef4444;
+}
+
 .feedback-error svg {
   color: #ef4444;
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  animation: pulse 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.3));
+}
+
+.feedback-error span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Responsive */
@@ -614,6 +735,15 @@
   .btn-secondary {
     width: 100%;
   }
+
+  .password-section-header {
+    padding: 0.75rem 0;
+  }
+
+  .toggle-section-btn svg {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -632,6 +762,32 @@
 
   .form-section h3 {
     font-size: 1.125rem;
+  }
+
+  .password-section-header {
+    padding: 0.5rem 0;
+  }
+
+  .password-section-header h3 {
+    font-size: 1rem;
+  }
+
+  .toggle-section-btn {
+    padding: 0.375rem;
+  }
+
+  .toggle-section-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .password-section-content.expanded {
+    padding-top: 0.75rem;
+  }
+
+  .btn-change-password {
+    font-size: 0.875rem;
+    padding: 0.75rem 1.5rem;
   }
 }
 
@@ -962,3 +1118,238 @@
     width: 100%;
   }
 }
+
+/* Estilos para Documento de Identificación */
+.identification-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.identification-display {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.identification-display:hover {
+  border-color: #e31b7e;
+  background: #fef2f8;
+}
+
+/* Preview de imagen de identificación */
+.identification-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.identification-image {
+  max-width: 100%;
+  max-height: 350px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+/* Estilos para PDF */
+.identification-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.pdf-icon {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #e31b7e 0%, #c41668 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.2);
+}
+
+.pdf-icon svg {
+  color: white;
+}
+
+.pdf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e31b7e;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: rgba(227, 27, 126, 0.1);
+  transition: all 0.3s ease;
+}
+
+.pdf-link:hover {
+  background: rgba(227, 27, 126, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Sin documento */
+.no-identification {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  color: #9ca3af;
+}
+
+.no-identification svg {
+  color: #d1d5db;
+}
+
+.no-identification p {
+  margin: 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* Preview del nuevo documento */
+.new-identification-preview {
+  background: white;
+  border: 2px solid #22c55e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.new-identification-preview h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-name {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #6b7280;
+  word-break: break-word;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.file-info p {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #6b7280;
+}
+
+/* Botón de subir identificación */
+.btn-upload-identification {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: white;
+  border: 2px solid #e31b7e;
+  color: #e31b7e;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: center;
+}
+
+.btn-upload-identification:hover {
+  background: #e31b7e;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(227, 27, 126, 0.2);
+}
+
+.btn-upload-identification:active {
+  transform: translateY(0);
+}
+
+/* Responsive para identificación */
+@media (max-width: 768px) {
+  .identification-display {
+    min-height: 200px;
+    padding: 1.5rem 1rem;
+  }
+
+  .identification-image {
+    max-height: 250px;
+  }
+
+  .pdf-icon {
+    width: 80px;
+    height: 80px;
+  }
+
+  .new-identification-preview {
+    padding: 1rem;
+  }
+
+  .preview-image {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .identification-container {
+    gap: 1rem;
+  }
+
+  .identification-display {
+    min-height: 150px;
+    padding: 1rem;
+  }
+
+  .identification-image {
+    max-height: 200px;
+  }
+
+  .pdf-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .btn-upload-identification {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .new-identification-preview {
+    padding: 0.75rem;
+  }
+
+  .preview-image {
+    max-height: 150px;
+  }
+}
+

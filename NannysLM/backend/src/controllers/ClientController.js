@@ -9,6 +9,79 @@ const ClientModel = require('../models/Client');
 
 class ClientController {
   /**
+   * Obtener todos los clientes (para admin)
+   */
+  static async getAllClients(req, res) {
+    try {
+      const getAllClientsQuery = `
+        SELECT 
+          c.id,
+          c.user_id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.phone_number,
+          u.address,
+          u.is_verified,
+          u.profile_image,
+          c.emergency_contact_name,
+          c.emergency_contact_phone,
+          c.number_of_children,
+          c.special_requirements,
+          c.verification_status,
+          c.verification_date,
+          u.created_at as user_created_at,
+          c.created_at as client_since
+        FROM clients c
+        JOIN users u ON c.user_id = u.id
+        ORDER BY c.created_at DESC
+      `;
+
+      const result = await executeQuery(getAllClientsQuery);
+
+      if (result.success) {
+        const clients = result.data.map(client => ({
+          id: client.id,
+          user_id: client.user_id,
+          first_name: client.first_name,
+          last_name: client.last_name,
+          email: client.email,
+          phone_number: client.phone_number,
+          address: client.address,
+          is_verified: client.is_verified,
+          profile_image: client.profile_image,
+          emergency_contact_name: client.emergency_contact_name,
+          emergency_contact_phone: client.emergency_contact_phone,
+          number_of_children: client.number_of_children,
+          special_requirements: client.special_requirements,
+          verification_status: client.verification_status,
+          verification_date: client.verification_date,
+          created_at: client.user_created_at,
+          client_since: client.client_since
+        }));
+
+        res.status(200).json({
+          success: true,
+          data: clients,
+          count: clients.length
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Error al obtener clientes'
+        });
+      }
+    } catch (error) {
+      console.error('Error al obtener todos los clientes:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
    * Actualizar información de perfil del cliente
    */
   static async updateClientProfile(req, res) {
@@ -47,14 +120,19 @@ class ClientController {
    */
   static async getClientInfo(req, res) {
     try {
-      const userId = req.user.id;
+      // Si se proporciona userId en query, usar ese (para niñeras que ven info de clientes)
+      // Si no, usar el ID del usuario autenticado (para clientes que ven su propia info)
+      const targetUserId = req.query.userId ? parseInt(req.query.userId) : req.user.id;
+      const authenticatedUserId = req.user.id;
+      const authenticatedUserType = req.user.user_type;
 
-      // Verificar que el usuario sea cliente
-      const user = await UserModel.findById(userId);
-      if (!user || user.user_type !== 'client') {
+      // Verificar permisos: 
+      // - Clientes solo pueden ver su propia info
+      // - Niñeras pueden ver info de sus clientes
+      if (authenticatedUserType === 'client' && targetUserId !== authenticatedUserId) {
         return res.status(403).json({
           success: false,
-          message: 'Acceso denegado. Solo clientes pueden acceder a esta información'
+          message: 'Acceso denegado. Solo puedes ver tu propia información'
         });
       }
 
@@ -75,7 +153,7 @@ class ClientController {
         WHERE c.user_id = ?
       `;
 
-      const result = await executeQuery(clientQuery, [userId]);
+      const result = await executeQuery(clientQuery, [targetUserId]);
 
       if (result.success && result.data.length > 0) {
         const clientData = result.data[0];
@@ -155,8 +233,7 @@ class ClientController {
           u.last_name as nanny_last_name,
           u.profile_image as nanny_image,
           n.rating_average as nanny_rating,
-          r.rating as service_rating,
-          r.review as service_review
+          r.rating as service_rating
         FROM services s
         LEFT JOIN nannys n ON s.nanny_id = n.id
         LEFT JOIN users u ON n.user_id = u.id
@@ -209,8 +286,7 @@ class ClientController {
           } : null,
           rating: {
             given: !!service.service_rating,
-            rating: service.service_rating,
-            review: service.service_review
+            rating: service.service_rating
           }
         }));
 
@@ -419,14 +495,299 @@ class ClientController {
       });
     }
   }
+
+  /**
+   * Verificar o rechazar cliente (Admin)
+   */
+  static async verifyClient(req, res) {
+    try {
+      const clientId = req.params.id;
+      const { status } = req.body; // 'approved' o 'rejected'
+
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Estado de verificación inválido'
+        });
+      }
+
+      // Obtener datos del cliente
+      const clientQuery = `
+        SELECT u.id, u.email, u.first_name, u.last_name, c.verification_status
+        FROM users u
+        JOIN clients c ON u.id = c.user_id
+        WHERE c.id = ? AND u.user_type = 'client'
+      `;
+
+      const clientResult = await executeQuery(clientQuery, [clientId]);
+
+      if (!clientResult.success || clientResult.data.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      const client = clientResult.data[0];
+      const verificationStatus = status === 'approved' ? 'verified' : 'rejected';
+
+      // Actualizar estado de verificación en tabla clients
+      const updateClientQuery = `
+        UPDATE clients 
+        SET verification_status = ?, verification_date = NOW()
+        WHERE id = ?
+      `;
+
+      const updateClientResult = await executeQuery(updateClientQuery, [verificationStatus, clientId]);
+
+      if (!updateClientResult.success) {
+        throw new Error('Error al actualizar estado de verificación del cliente');
+      }
+
+      // Actualizar is_verified en tabla users solo si es aprobado
+      if (status === 'approved') {
+        const updateUserQuery = `
+          UPDATE users 
+          SET is_verified = 1
+          WHERE id = ?
+        `;
+
+        const updateUserResult = await executeQuery(updateUserQuery, [client.id]);
+
+        if (!updateUserResult.success) {
+          throw new Error('Error al actualizar is_verified del usuario');
+        }
+      }
+
+      // Importar funciones de email
+      const { sendVerificationApprovedEmail, sendVerificationRejectedEmail } = require('../utils/email');
+
+      // Enviar email según el estado
+      const clientName = `${client.first_name} ${client.last_name}`.trim();
+      let emailResult;
+      let notificationMessage;
+      let notificationType;
+
+      if (status === 'approved') {
+        emailResult = await sendVerificationApprovedEmail(client.email, clientName);
+        notificationMessage = '¡Tu cuenta ha sido verificada exitosamente! Ahora puedes acceder a todos los servicios de NannysLM.';
+        notificationType = 'success';
+        console.log('✓ Email de verificación aprobada enviado a:', client.email);
+      } else {
+        emailResult = await sendVerificationRejectedEmail(client.email, clientName);
+        notificationMessage = 'Tu solicitud de verificación ha sido rechazada. Por favor, revisa tu correo para más información y reintenta.';
+        notificationType = 'warning';
+        console.log('✗ Email de verificación rechazada enviado a:', client.email);
+      }
+
+      // Crear notificación en la base de datos
+      const notificationTitle = status === 'approved' ? '¡Cuenta Verificada!' : 'Verificación Rechazada';
+      const createNotificationQuery = `
+        INSERT INTO notifications (user_id, title, message, type, is_read, action_url, related_id, related_type, created_at, read_at)
+        VALUES (?, ?, ?, ?, 0, NULL, ?, 'client', NOW(), NULL)
+      `;
+
+      const notificationResult = await executeQuery(createNotificationQuery, [client.id, notificationTitle, notificationMessage, notificationType, clientId]);
+
+      if (!notificationResult.success) {
+        console.error('Error al crear notificación:', notificationResult.error);
+        // No lanzar error, continuar de todas formas
+      } else {
+        console.log('✓ Notificación creada para el cliente:', client.id);
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Cliente verificación ${status === 'approved' ? 'aprobada' : 'rechazada'} correctamente. Email y notificación enviados a ${client.email}`,
+        data: {
+          clientId,
+          verificationStatus,
+          emailSent: emailResult.success,
+          emailStatus: emailResult.message,
+          notificationSent: notificationResult.success
+        }
+      });
+
+    } catch (error) {
+      console.error('Error al verificar cliente:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Calificar un servicio
+   */
+  static async rateService(req, res) {
+    try {
+      const userId = req.user.id;
+      const { service_id, rating, punctuality_rating, communication_rating, care_quality_rating, would_recommend } = req.body;
+
+      console.log('🔍 Datos de calificación recibidos:', { userId, service_id, rating });
+
+      // Validar datos requeridos
+      if (!service_id || !rating) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere service_id y rating'
+        });
+      }
+
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'La calificación debe estar entre 1 y 5'
+        });
+      }
+
+      // Obtener información del servicio
+      const serviceQuery = 'SELECT * FROM services WHERE id = ?';
+      console.log('🔍 Buscando servicio con query:', serviceQuery, 'params:', [service_id]);
+      
+      const serviceResult = await executeQuery(serviceQuery, [service_id]);
+
+      console.log('🔍 Resultado de búsqueda de servicio:', serviceResult);
+
+      if (!serviceResult.success || serviceResult.data.length === 0) {
+        console.log('❌ Servicio no encontrado. Success:', serviceResult.success, 'Data length:', serviceResult.data?.length);
+        return res.status(404).json({
+          success: false,
+          message: 'Servicio no encontrado'
+        });
+      }
+
+      const service = serviceResult.data[0];
+
+      console.log('✓ Servicio encontrado:', service);
+
+      // Obtener el client_id del usuario actual
+      const clientQuery = 'SELECT id FROM clients WHERE user_id = ?';
+      const clientResult = await executeQuery(clientQuery, [userId]);
+
+      if (!clientResult.success || clientResult.data.length === 0) {
+        console.log('❌ Cliente no encontrado para el usuario:', userId);
+        return res.status(404).json({
+          success: false,
+          message: 'No se encontró un perfil de cliente asociado a tu cuenta'
+        });
+      }
+
+      const userClientId = clientResult.data[0].id;
+      console.log('✓ Client ID del usuario:', userClientId, 'Service client_id:', service.client_id);
+
+      // Verificar que el cliente sea el propietario del servicio
+      if (service.client_id !== userClientId) {
+        console.log('❌ Cliente no autorizado. Service client_id:', service.client_id, 'User client_id:', userClientId);
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permiso para calificar este servicio'
+        });
+      }
+
+      // Verificar que el servicio esté completado
+      if (service.status !== 'completed') {
+        return res.status(400).json({
+          success: false,
+          message: 'Solo se pueden calificar servicios completados'
+        });
+      }
+
+      // Verificar que no exista una calificación previa
+      const existingRatingQuery = 'SELECT id FROM ratings WHERE service_id = ? AND client_id = ?';
+      const existingRating = await executeQuery(existingRatingQuery, [service_id, userClientId]);
+
+      if (existingRating.success && existingRating.data.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Este servicio ya ha sido calificado'
+        });
+      }
+
+      // Crear la calificación
+      const insertQuery = `
+        INSERT INTO ratings (
+          service_id, 
+          client_id, 
+          nanny_id, 
+          rating, 
+          punctuality_rating, 
+          communication_rating, 
+          care_quality_rating, 
+          would_recommend, 
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      `;
+
+      const values = [
+        service_id,
+        userClientId,
+        service.nanny_id,
+        rating,
+        punctuality_rating || rating,
+        communication_rating || rating,
+        care_quality_rating || rating,
+        would_recommend !== undefined ? would_recommend : (rating >= 4)
+      ];
+
+      const insertResult = await executeQuery(insertQuery, values);
+
+      if (!insertResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error al guardar la calificación'
+        });
+      }
+
+      // ⭐ ACTUALIZAR AUTOMÁTICAMENTE EL PROMEDIO DE LA NANNY
+      const avgQuery = `
+        SELECT 
+          AVG(rating) as avg_rating,
+          COUNT(*) as total_ratings
+        FROM ratings
+        WHERE nanny_id = ?
+      `;
+      const avgResult = await executeQuery(avgQuery, [service.nanny_id]);
+      
+      if (avgResult.success && avgResult.data && avgResult.data.length > 0) {
+        const updateQuery = `
+          UPDATE nannys 
+          SET rating_average = ?, total_ratings = ?
+          WHERE id = ?
+        `;
+        const updateResult = await executeQuery(updateQuery, [
+          avgResult.data[0].avg_rating,
+          avgResult.data[0].total_ratings,
+          service.nanny_id
+        ]);
+
+        if (updateResult.success) {
+          console.log(`✓ Rating de nanny ${service.nanny_id} actualizado: ${avgResult.data[0].avg_rating} promedio, ${avgResult.data[0].total_ratings} calificaciones`);
+        }
+      }
+
+      console.log(`✓ Calificación creada para servicio ${service_id} por cliente ${userClientId}`);
+
+      return res.json({
+        success: true,
+        message: 'Calificación guardada exitosamente',
+        data: {
+          rating_id: insertResult.insertId,
+          service_id,
+          rating
+        }
+      });
+    } catch (error) {
+      console.error('Error creating rating:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
-// ...existing code...
-
-module.exports = {
-  updateClientProfile: ClientController.updateClientProfile,
-  getClientInfo: ClientController.getClientInfo,
-  getClientServices: ClientController.getClientServices,
-  getClientPayments: ClientController.getClientPayments,
-  getClientStats: ClientController.getClientStats
-};
+module.exports = ClientController;

@@ -7,6 +7,7 @@ import { HomeComponent } from './components/home/home';
 import { AdminDashboardComponent } from './pages/admin/admin-dashboard.component';
 import { ClientDashboardComponent } from './pages/client/client-dashboard.component';
 import { NannyDashboardComponent } from './pages/nanny/nanny-dashboard.component';
+import { ServiceDetailsComponent } from './pages/nanny/service-details.component';
 import { ProfileViewComponent } from './pages/profile-view/profile-view.component';
 import { CompleteClientProfileComponent } from './components/complete-client-profile/complete-client-profile.component';
 import { AuthGuard } from './guards/auth.guard';
@@ -69,6 +70,12 @@ export const routes: Routes = [
   {
     path: 'nanny/dashboard',
     redirectTo: 'dashboard/nanny'
+  },
+  {
+    path: 'nanny/service-details/:serviceId',
+    component: ServiceDetailsComponent,
+    canActivate: [AuthGuard, RoleGuard],
+    data: { role: 'nanny' }
   },
   {
     path: 'admin/dashboard',

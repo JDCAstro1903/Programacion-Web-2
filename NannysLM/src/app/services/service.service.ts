@@ -76,7 +76,7 @@ export interface CreateServiceResponse {
   providedIn: 'root'
 })
 export class ServiceService {
-  private apiUrl = 'http://localhost:8000/api/services';
+  private apiUrl = 'http://localhost:8000/api/v1/services';
 
   constructor(private http: HttpClient) { }
 
@@ -128,9 +128,11 @@ export class ServiceService {
   /**
    * Cancelar/eliminar un servicio
    * @param serviceId - ID del servicio
+   * @param permanentDelete - Si es true, elimina completamente de la BD (para cambio de fecha)
    */
-  deleteService(serviceId: number): Observable<ApiResponse<any>> {
-    return this.http.delete<ApiResponse<any>>(`${this.apiUrl}/${serviceId}`);
+  deleteService(serviceId: number, permanentDelete: boolean = false): Observable<ApiResponse<any>> {
+    const params = permanentDelete ? new HttpParams().set('permanentDelete', 'true') : new HttpParams();
+    return this.http.delete<ApiResponse<any>>(`${this.apiUrl}/${serviceId}`, { params });
   }
 
   /**
@@ -197,5 +199,29 @@ export class ServiceService {
       'Acompañamiento en viajes': 'travel'
     };
     return codes[name] || 'hourly';
+  }
+
+  /**
+   * Aceptar un servicio por parte de una nanny
+   * @param serviceId - ID del servicio
+   * @param nannyId - ID de la nanny que acepta
+   */
+  acceptService(serviceId: number, nannyId: number): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.apiUrl}/${serviceId}/accept`, { nanny_id: nannyId });
+  }
+
+  /**
+   * Completar un servicio (marcar como finalizado)
+   * @param serviceId - ID del servicio a completar
+   */
+  completeService(serviceId: number): Observable<ApiResponse<any>> {
+    return this.http.put<ApiResponse<any>>(`${this.apiUrl}/${serviceId}/complete`, {});
+  }
+
+  /**
+   * Obtener servicios disponibles (pending) para que las nannys puedan aceptar
+   */
+  getAvailableServices(): Observable<ApiResponse<ServiceData[]>> {
+    return this.getServices(undefined, 'pending', 50);
   }
 }

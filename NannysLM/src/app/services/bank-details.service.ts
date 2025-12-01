@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 
 export interface BankDetail {
   id: number;
-  nannyId: number;
   accountHolderName: string;
   bankName: string;
   accountNumber: string;
@@ -14,16 +13,9 @@ export interface BankDetail {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  nanny: {
-    id: number;
-    name: string;
-    email: string;
-    status: string;
-  };
 }
 
 export interface CreateBankDetailRequest {
-  nannyId: number;
   accountHolderName: string;
   bankName: string;
   accountNumber: string;

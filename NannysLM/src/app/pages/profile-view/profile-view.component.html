@@ -170,11 +170,86 @@
         </div>
       </div>
 
-      <!-- Cambiar contraseña -->
-      <div class="form-section">
-        <h3>Cambiar Contraseña</h3>
+      <!-- Sección de Documento de Identificación -->
+      <div class="form-section" *ngIf="profileData.user_type === 'client'">
+        <h3>Documento de Identificación</h3>
         
-        <!-- Contraseña Actual -->
+        <div class="identification-container">
+          <div class="identification-display">
+            <!-- Si hay documento de identificación -->
+            <div *ngIf="profileData.identification_document && (isIdentificationImage() || identificationPreview)" class="identification-preview">
+              <img [src]="getIdentificationUrl()" alt="Documento de identificación" class="identification-image">
+              <div class="file-info">
+                <p><strong>Documento subido:</strong> {{ profileData.identification_document || 'Sin especificar' }}</p>
+              </div>
+            </div>
+
+            <!-- Si es PDF -->
+            <div *ngIf="profileData.identification_document && isIdentificationPdf()" class="identification-pdf">
+              <div class="pdf-icon">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <text x="12" y="15" text-anchor="middle" font-size="3" fill="currentColor">PDF</text>
+                </svg>
+              </div>
+              <div class="file-info">
+                <p><strong>Documento subido:</strong> {{ profileData.identification_document }}</p>
+                <a [href]="getIdentificationUrl()" target="_blank" rel="noopener noreferrer" class="pdf-link">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Si no hay documento -->
+            <div *ngIf="!profileData.identification_document" class="no-identification">
+              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="8" y1="13" x2="16" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="8" y1="17" x2="16" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <p>No has subido tu documento de identificación</p>
+            </div>
+          </div>
+
+          <!-- Preview del nuevo documento antes de guardar -->
+          <div *ngIf="identificationPreview && identificationFile" class="new-identification-preview">
+            <h4>Nuevo documento a subir:</h4>
+            <img [src]="identificationPreview" alt="Vista previa de identificación" class="preview-image">
+            <p class="file-name">{{ selectedIdentificationName }}</p>
+          </div>
+
+          <!-- Botón para subir -->
+          <button type="button" class="btn-upload-identification" (click)="triggerIdentificationInput()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="17 8 12 3 7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Cambiar documento de identificación</span>
+          </button>
+
+          <input 
+            type="file" 
+            id="identificationUpload" 
+            accept="image/*,.pdf" 
+            style="display: none;"
+            (change)="onIdentificationUpload($event)">
+        </div>
+      </div>
+
+      <!-- Cambiar contraseña (Desplegable) -->
+      <div class="form-section password-section">
+        <div class="password-section-header" (click)="togglePasswordSection()">
+          <h3>Cambiar Contraseña</h3>
+          <button type="button" class="toggle-section-btn" [class.expanded]="isPasswordSectionExpanded">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="password-section-content" [class.expanded]="isPasswordSectionExpanded">
+          <!-- Contraseña Actual -->
         <div class="form-group full-width">
           <label for="current_password">Contraseña Actual *</label>
           <div class="password-input-wrapper">
@@ -264,16 +339,16 @@
         </div>
 
         <!-- Feedback de coincidencia de contraseñas -->
-        <div *ngIf="newPassword && confirmPassword" class="password-feedback">
-          <div *ngIf="newPassword === confirmPassword" class="feedback-success">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div *ngIf="newPassword && confirmPassword">
+          <div *ngIf="newPassword === confirmPassword" class="password-feedback feedback-success">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
               <polyline points="8 12 11 15 16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <span>Las contraseñas coinciden</span>
           </div>
-          <div *ngIf="newPassword !== confirmPassword" class="feedback-error">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div *ngIf="newPassword !== confirmPassword" class="password-feedback feedback-error">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
               <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -300,6 +375,7 @@
               Cambiando...
             </span>
           </button>
+        </div>
         </div>
       </div>
 

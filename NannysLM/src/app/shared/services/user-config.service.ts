@@ -53,6 +53,11 @@ export class UserConfigService {
             id: 'datos-bancarios',
             label: 'Datos Bancarios',
             icon: 'credit-card'
+          },
+          {
+            id: 'notifications',
+            label: 'Notificaciones',
+            icon: 'bell'
           }
         ]
       }

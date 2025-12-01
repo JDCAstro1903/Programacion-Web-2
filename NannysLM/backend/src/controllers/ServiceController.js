@@ -1,4 +1,5 @@
 const Service = require('../models/Service');
+const notificationSystem = require('../utils/NotificationSystem');
 
 class ServiceController {
   /**
@@ -6,9 +7,11 @@ class ServiceController {
    */
   static async getAllServices(req, res) {
     try {
-      const { clientId, status, limit = 100 } = req.query;
+      const { clientId, nannyId, status, limit = 100 } = req.query;
       
-      const result = await Service.getAll(clientId, status, limit);
+      console.log('📋 GET /api/services - Parámetros:', { clientId, nannyId, status, limit });
+      
+      const result = await Service.getAll(clientId, nannyId, status, limit);
       return res.json({ success: true, data: result.data || [] });
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -100,11 +103,80 @@ class ServiceController {
   static async deleteService(req, res) {
     try {
       const { id } = req.params;
+      const { permanentDelete } = req.query; // Nuevo parámetro para eliminación permanente
       
-      const result = await Service.delete(id);
+      // Primero obtener información del servicio antes de eliminarlo
+      const { executeQuery } = require('../config/database');
+      const getServiceQuery = `
+        SELECT s.*, 
+               c.user_id as client_user_id,
+               u_client.first_name as client_first_name,
+               u_client.last_name as client_last_name,
+               n.user_id as nanny_user_id,
+               u_nanny.first_name as nanny_first_name,
+               u_nanny.last_name as nanny_last_name,
+               u_nanny.email as nanny_email
+        FROM services s
+        LEFT JOIN clients c ON s.client_id = c.id
+        LEFT JOIN users u_client ON c.user_id = u_client.id
+        LEFT JOIN nannys n ON s.nanny_id = n.id
+        LEFT JOIN users u_nanny ON n.user_id = u_nanny.id
+        WHERE s.id = ?
+      `;
+      
+      const serviceResult = await executeQuery(getServiceQuery, [id]);
+      
+      if (!serviceResult.success || serviceResult.data.length === 0) {
+        return res.status(404).json({ success: false, message: 'Servicio no encontrado' });
+      }
+      
+      const serviceInfo = serviceResult.data[0];
+      
+      // Eliminar el servicio (permanente si viene el query param)
+      const isPermanent = permanentDelete === 'true';
+      const result = await Service.delete(id, isPermanent);
       
       if (!result.success) {
         return res.status(404).json(result);
+      }
+      
+      // Si había una nanny asignada, notificarla
+      console.log('🔍 Verificando si hay nanny asignada:', {
+        nanny_id: serviceInfo.nanny_id,
+        nanny_email: serviceInfo.nanny_email,
+        status: serviceInfo.status
+      });
+      
+      if (serviceInfo.nanny_id && serviceInfo.nanny_email) {
+        const nannyName = `${serviceInfo.nanny_first_name} ${serviceInfo.nanny_last_name}`;
+        const clientName = `${serviceInfo.client_first_name} ${serviceInfo.client_last_name}`;
+        
+        const serviceDate = new Date(serviceInfo.start_date).toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        console.log('📧 Notificando cancelación a nanny asignada...');
+        console.log(`   Nanny: ${nannyName} (${serviceInfo.nanny_email})`);
+        console.log(`   Cliente: ${clientName}`);
+        console.log(`   Servicio: ${serviceInfo.title}`);
+        console.log(`   Fecha: ${serviceDate}`);
+        
+        await notificationSystem.notifyNannyCancellation(
+          serviceInfo.nanny_email,
+          serviceInfo.nanny_user_id,
+          nannyName,
+          clientName,
+          serviceInfo.title,
+          serviceDate,
+          id
+        );
+        
+        console.log('✅ Notificación de cancelación enviada exitosamente');
+      } else {
+        console.log('ℹ️ No se envió notificación de cancelación: servicio sin nanny asignada (estado: pending)');
       }
       
       return res.json({ success: true, message: 'Servicio cancelado exitosamente' });
@@ -165,6 +237,154 @@ class ServiceController {
       return res.json({ success: true, data: result.data || [] });
     } catch (error) {
       console.error('Error fetching nanny availability:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Aceptar un servicio por parte de una nanny
+   */
+  static async acceptService(req, res) {
+    try {
+      const { serviceId } = req.params;
+      const { nanny_id } = req.body;
+
+      console.log(`🤝 Request to accept service ${serviceId} by nanny ${nanny_id}`);
+
+      if (!nanny_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere el ID de la nanny (nanny_id)'
+        });
+      }
+
+      const result = await Service.acceptService(serviceId, nanny_id);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      return res.json(result);
+    } catch (error) {
+      console.error('Error accepting service:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * Completar un servicio (marcarlo como finalizado)
+   */
+  static async completeService(req, res) {
+    try {
+      const serviceId = req.params.serviceId;
+
+      if (!serviceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere el ID del servicio'
+        });
+      }
+
+      // Primero obtener el servicio para saber qué nanny lo realizó
+      const getServiceQuery = `SELECT nanny_id, status FROM services WHERE id = ?`;
+      const { executeQuery } = require('../config/database');
+      const serviceResult = await executeQuery(getServiceQuery, [serviceId]);
+
+      if (!serviceResult.success || serviceResult.data.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Servicio no encontrado'
+        });
+      }
+
+      const service = serviceResult.data[0];
+      const nannyId = service.nanny_id;
+
+      // Si el servicio ya estaba completado, no hacer nada
+      if (service.status === 'completed') {
+        return res.json({
+          success: true,
+          message: 'El servicio ya estaba completado'
+        });
+      }
+
+      // Actualizar el estado del servicio a completado
+      const updateServiceResult = await Service.update(serviceId, { status: 'completed', completed_at: new Date() });
+
+      if (!updateServiceResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Error al completar el servicio'
+        });
+      }
+
+      // Si hay una nanny asignada, incrementar su contador de servicios completados
+      if (nannyId) {
+        const incrementQuery = `
+          UPDATE nannys 
+          SET services_completed = services_completed + 1
+          WHERE id = ?
+        `;
+        
+        await executeQuery(incrementQuery, [nannyId]);
+        console.log(`✓ Contador de servicios completados incrementado para nanny ${nannyId}`);
+      }
+
+      // Obtener información del servicio completo para notificar al cliente
+      const fullServiceQuery = `
+        SELECT s.*, 
+               c.user_id as client_user_id,
+               u_client.first_name as client_first_name,
+               u_client.last_name as client_last_name,
+               u_client.email as client_email,
+               u_nanny.first_name as nanny_first_name,
+               u_nanny.last_name as nanny_last_name
+        FROM services s
+        JOIN clients c ON s.client_id = c.id
+        JOIN users u_client ON c.user_id = u_client.id
+        LEFT JOIN nannys n ON s.nanny_id = n.id
+        LEFT JOIN users u_nanny ON n.user_id = u_nanny.id
+        WHERE s.id = ?
+      `;
+      
+      const fullServiceResult = await executeQuery(fullServiceQuery, [serviceId]);
+      
+      if (fullServiceResult.success && fullServiceResult.data.length > 0) {
+        const serviceInfo = fullServiceResult.data[0];
+        const clientName = `${serviceInfo.client_first_name} ${serviceInfo.client_last_name}`;
+        const nannyName = serviceInfo.nanny_first_name 
+          ? `${serviceInfo.nanny_first_name} ${serviceInfo.nanny_last_name}`
+          : 'la nanny';
+        
+        const serviceDate = new Date(serviceInfo.start_date).toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        // Enviar notificación al cliente
+        console.log('📧 Enviando notificación al cliente sobre servicio completado...');
+        await notificationSystem.notifyClientServiceCompleted(
+          serviceInfo.client_email,
+          serviceInfo.client_user_id,
+          clientName,
+          nannyName,
+          serviceInfo.title,
+          serviceDate,
+          serviceId
+        );
+      }
+
+      console.log(`✓ Servicio ${serviceId} marcado como completado`);
+
+      return res.json({
+        success: true,
+        message: 'Servicio completado exitosamente',
+        data: { serviceId, status: 'completed', nannyId }
+      });
+    } catch (error) {
+      console.error('Error completing service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }

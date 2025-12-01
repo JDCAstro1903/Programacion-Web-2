@@ -163,30 +163,45 @@ export class AuthService {
    * Configurar datos de autenticación
    */
   private setAuthData(user: User, token: string): void {
-    // Guardar en formato antiguo para compatibilidad
+    // Decidir almacenamiento según la preferencia de "rememberUser"
+    // Si el usuario eligió "recordarme" se guardará en localStorage, en otro caso en sessionStorage.
+    const remember = localStorage.getItem('rememberUser') === 'true';
+    const storage: Storage = remember ? localStorage : sessionStorage;
+
     const currentUser = { ...user, token };
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    
-    // También guardar en formato nuevo
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('token', token);
-    
+    storage.setItem('currentUser', JSON.stringify(currentUser));
+    storage.setItem('user', JSON.stringify(user));
+    storage.setItem('token', token);
+
+    // Para compatibilidad también limpiar el otro storage para evitar inconsistencias
+    const otherStorage: Storage = remember ? sessionStorage : localStorage;
+    otherStorage.removeItem('currentUser');
+    otherStorage.removeItem('user');
+    otherStorage.removeItem('token');
+
     this.currentUserSubject.next(user);
     this.tokenSubject.next(token);
-    
-    console.log('✅ AuthService - Datos guardados:', { user, token: token.substring(0, 20) + '...' });
+
+    console.log('✅ AuthService - Datos guardados (remember=' + remember + ')', { user, token: token.substring(0, 20) + '...' });
   }
 
   /**
    * Limpiar datos de autenticación
    */
   private clearAuthData(): void {
+    // Limpiar tanto localStorage como sessionStorage para cubrir ambos casos
     localStorage.removeItem('currentUser');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    // También eliminar la bandera de "rememberUser" para evitar confusiones
+    localStorage.removeItem('rememberUser');
+
     this.currentUserSubject.next(null);
     this.tokenSubject.next(null);
-    console.log('🗑️ AuthService - Sesión limpiada');
+    console.log('🗑️ AuthService - Sesión limpiada (storages cleared)');
   }
 
   /**
@@ -194,34 +209,35 @@ export class AuthService {
    */
   private loadUserFromStorage(): void {
     try {
-      // Intentar cargar del formato antiguo primero
-      const currentUserStr = localStorage.getItem('currentUser');
-      if (currentUserStr) {
-        const currentUser = JSON.parse(currentUserStr);
-        if (currentUser && currentUser.token) {
-          this.currentUserSubject.next(currentUser);
-          this.tokenSubject.next(currentUser.token);
-          console.log('✅ AuthService - Usuario cargado desde currentUser');
-          
-          // Actualizar perfil desde el backend para obtener datos frescos (incluyendo profile_image)
-          this.refreshUserProfile();
+      // Preferir sessionStorage (sesión sin "recordarme") y si no existe usar localStorage
+      const storages: Storage[] = [sessionStorage, localStorage];
+
+      for (const storage of storages) {
+        const currentUserStr = storage.getItem('currentUser');
+        if (currentUserStr) {
+          const currentUser = JSON.parse(currentUserStr);
+          if (currentUser && currentUser.token) {
+            this.currentUserSubject.next(currentUser);
+            this.tokenSubject.next(currentUser.token);
+            console.log('✅ AuthService - Usuario cargado desde ' + (storage === sessionStorage ? 'sessionStorage' : 'localStorage'));
+            // Actualizar perfil desde el backend para obtener datos frescos (incluyendo profile_image)
+            this.refreshUserProfile();
+            return;
+          }
+        }
+
+        const userStr = storage.getItem('user');
+        const token = storage.getItem('token');
+        if (userStr && token) {
+          const userData = JSON.parse(userStr);
+          this.currentUserSubject.next(userData);
+          this.tokenSubject.next(token);
+          // Sincronizar currentUser en el mismo storage
+          const currentUser = { ...userData, token };
+          storage.setItem('currentUser', JSON.stringify(currentUser));
+          console.log('✅ AuthService - Usuario cargado desde ' + (storage === sessionStorage ? 'sessionStorage' : 'localStorage') + ' (user/token)');
           return;
         }
-      }
-      
-      // Si no, cargar del formato nuevo
-      const user = localStorage.getItem('user');
-      const token = localStorage.getItem('token');
-      
-      if (user && token) {
-        const userData = JSON.parse(user);
-        this.currentUserSubject.next(userData);
-        this.tokenSubject.next(token);
-        
-        // Sincronizar con formato antiguo
-        const currentUser = { ...userData, token };
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        console.log('✅ AuthService - Usuario cargado desde user/token');
       }
     } catch (error) {
       console.error('❌ AuthService - Error loading user from storage:', error);
