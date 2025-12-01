@@ -73,13 +73,13 @@ export class HeaderComponent implements OnChanges {
 
     // Si empieza con /uploads/
     if (this.config.userAvatar.startsWith('/uploads/')) {
-      const url = `http://localhost:8000${this.config.userAvatar}?t=${this.imageTimestamp}`;
+      const url = `${ApiConfig.BASE_URL}${this.config.userAvatar}?t=${this.imageTimestamp}`;
       return url;
     }
 
     // Si es solo el nombre del archivo
     if (this.config.userAvatar && !this.config.userAvatar.startsWith('/')) {
-      const url = `http://localhost:8000/uploads/${this.config.userAvatar}?t=${this.imageTimestamp}`;
+      const url = `${ApiConfig.BASE_URL}/uploads/${this.config.userAvatar}?t=${this.imageTimestamp}`;
       return url;
     }
 

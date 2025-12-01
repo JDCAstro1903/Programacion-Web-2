@@ -2461,7 +2461,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     
     // Si ya incluye /uploads/, solo agregar el host
     if (this.profileData.profile_image.startsWith('/uploads/')) {
-      return `http://localhost:8000${this.profileData.profile_image}`;
+      return `${ApiConfig.BASE_URL}${this.profileData.profile_image}`;
     }
     
     // Si es solo el nombre del archivo, construir la URL completa

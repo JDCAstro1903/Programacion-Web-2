@@ -32,7 +32,7 @@ export interface NannyResponse {
   providedIn: 'root'
 })
 export class NannyService {
-  private apiUrl = 'http://localhost:8000/api/v1/nannys';
+  private apiUrl = `${ApiConfig.API_URL}/nannys`;
 
   constructor(private http: HttpClient) {}
 
@@ -64,7 +64,7 @@ export class NannyService {
    * Obtener servicios de una nanny específica
    */
   getNannyServices(nannyId: number): Observable<any> {
-    const servicesUrl = 'http://localhost:8000/api/v1/services';
+    const servicesUrl = `${ApiConfig.API_URL}/services`;
     console.log(`📋 Obteniendo servicios de la nanny ${nannyId}`);
     return this.http.get<any>(`${servicesUrl}?nannyId=${nannyId}`);
   }
@@ -81,7 +81,7 @@ export class NannyService {
    * Obtener calificaciones de una nanny
    */
   getNannyRatings(nannyId: number): Observable<any> {
-    const ratingsUrl = 'http://localhost:8000/api/v1/ratings';
+    const ratingsUrl = `${ApiConfig.API_URL}/ratings`;
     console.log(`⭐ Obteniendo ratings de la nanny ${nannyId}`);
     return this.http.get<any>(`${ratingsUrl}?nannyId=${nannyId}`);
   }

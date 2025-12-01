@@ -18,7 +18,7 @@ export interface UserData {
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = `${environment.apiUrl || 'http://localhost:8000/api/v1'}/users`;
+  private apiUrl = `${ApiConfig.API_URL}/users`;
   private phoneCache: Map<number, string | null> = new Map();
 
   constructor(private http: HttpClient) {}

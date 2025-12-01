@@ -76,7 +76,7 @@ export interface CreateServiceResponse {
   providedIn: 'root'
 })
 export class ServiceService {
-  private apiUrl = 'http://localhost:8000/api/v1/services';
+  private apiUrl = `${ApiConfig.API_URL}/services`;
 
   constructor(private http: HttpClient) { }
 

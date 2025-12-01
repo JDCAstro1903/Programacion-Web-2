@@ -31,7 +31,7 @@ export interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class PaymentService {
-  private apiUrl = 'http://localhost:8000/api/v1/payments';
+  private apiUrl = `${ApiConfig.API_URL}/payments`;
 
   constructor(private http: HttpClient) { }
 

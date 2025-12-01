@@ -142,7 +142,7 @@ export interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl = 'http://localhost:8000/api/v1/dashboard';
+  private apiUrl = `${ApiConfig.API_URL}/dashboard`;
 
   constructor(private http: HttpClient) {}
 
@@ -164,28 +164,28 @@ export class DashboardService {
    * Obtener todos los clientes
    */
   getClients(): Observable<ApiResponse<Client[]>> {
-    return this.http.get<ApiResponse<Client[]>>('http://localhost:8000/api/v1/client/all');
+    return this.http.get<ApiResponse<Client[]>>(`${ApiConfig.API_URL}/client/all`);
   }
 
   /**
    * Obtener todos los pagos
    */
   getPayments(): Observable<ApiResponse<Payment[]>> {
-    return this.http.get<ApiResponse<Payment[]>>('http://localhost:8000/api/v1/payments');
+    return this.http.get<ApiResponse<Payment[]>>(`${ApiConfig.API_URL}/payments`);
   }
 
   /**
    * Obtener todos los servicios/reservas
    */
   getServices(): Observable<ApiResponse<Service[]>> {
-    return this.http.get<ApiResponse<Service[]>>('http://localhost:8000/api/v1/services');
+    return this.http.get<ApiResponse<Service[]>>(`${ApiConfig.API_URL}/services`);
   }
 
   /**
    * Obtener servicios de un cliente específico
    */
   getClientServices(clientId: number): Observable<ApiResponse<Service[]>> {
-    return this.http.get<ApiResponse<Service[]>>(`http://localhost:8000/api/v1/services?client_id=${clientId}`);
+    return this.http.get<ApiResponse<Service[]>>(`${ApiConfig.API_URL}/services?client_id=${clientId}`);
   }
 
   /**

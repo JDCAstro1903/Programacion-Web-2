@@ -22,7 +22,7 @@ export interface NotificationActionResponse {
   providedIn: 'root'
 })
 export class NotificationService {
-  private apiUrl = 'http://localhost:8000/api/v1/notifications';
+  private apiUrl = `${ApiConfig.API_URL}/notifications`;
   
   // BehaviorSubject para mantener las notificaciones en memoria
   private notificationsSubject = new BehaviorSubject<Notification[]>([]);
