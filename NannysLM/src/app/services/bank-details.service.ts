@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ApiConfig } from '../config/api.config';
 
 export interface BankDetail {
   id: number;
@@ -45,7 +46,7 @@ export interface ApiResponse<T> {
   providedIn: 'root'
 })
 export class BankDetailsService {
-  private apiUrl = 'http://localhost:8000/api/v1/bank-details';
+  private apiUrl = ApiConfig.BANK_DETAILS_URL;
 
   constructor(private http: HttpClient) {}
 
