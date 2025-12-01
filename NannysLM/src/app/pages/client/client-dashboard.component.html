@@ -392,7 +392,6 @@
 
               <!-- Sistema de calificación con estrellas -->
               <div class="rating-system" *ngIf="service.showRating">
-                <h4>Califica el servicio:</h4>
                 <div class="stars-container">
                   <span 
                     *ngFor="let star of getStarsArray()" 
@@ -793,9 +792,6 @@
                         <path d="M12 2L13.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z"/>
                       </svg>
                     </div>
-                    <div class="rating-hint" *ngIf="(service.tempRating || 0) > 0">
-                      <span>{{ getRatingText(service.tempRating || 0) }}</span>
-                    </div>
                     <div class="rating-actions">
                       <button class="cancel-rating-btn" (click)="cancelRating(service.id)">
                         Cancelar
@@ -1108,7 +1104,7 @@
                     <button class="cancel-btn" 
                             [disabled]="!hasValidReservation()"
                             (click)="cancelReservation()">
-                      Cancelar
+                      Cancelar  
                     </button>
                   </div>
                 </div>
@@ -1304,7 +1300,7 @@
                     </div>
                     <div class="info-item">
                       <span class="info-label">Tipo de servicio:</span>
-                      <span class="info-value">{{ payment.service?.name || 'No especificado' }}</span>
+                      <span class="info-value">{{ getServiceTypeName(payment.service_type) }}</span>
                     </div>
                   </div>
 
@@ -1316,7 +1312,7 @@
                     </div>
                     <div class="info-item">
                       <span class="info-label">Monto Total:</span>
-                      <span class="info-value amount">{{ payment.amount | currency }}</span>
+                      <span class="info-value amount">$ {{ payment.amount | number:'1.2-2':'es-MX' }}</span>
                     </div>
                   </div>
 
@@ -1324,11 +1320,11 @@
                   <div class="payment-details">
                     <div class="detail-item">
                       <span class="detail-label">Comisión plataforma:</span>
-                      <span class="detail-value">{{ payment.platform_fee | currency }}</span>
+                      <span class="detail-value">$ {{ payment.platform_fee | number:'1.2-2':'es-MX' }}</span>
                     </div>
                     <div class="detail-item">
                       <span class="detail-label">Para la niñera:</span>
-                      <span class="detail-value">{{ payment.nanny_amount | currency }}</span>
+                      <span class="detail-value">$ {{ payment.nanny_amount | number:'1.2-2':'es-MX' }}</span>
                     </div>
                   </div>
 

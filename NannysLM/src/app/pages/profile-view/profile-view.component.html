@@ -237,11 +237,19 @@
         </div>
       </div>
 
-      <!-- Cambiar contraseña -->
-      <div class="form-section">
-        <h3>Cambiar Contraseña</h3>
-        
-        <!-- Contraseña Actual -->
+      <!-- Cambiar contraseña (Desplegable) -->
+      <div class="form-section password-section">
+        <div class="password-section-header" (click)="togglePasswordSection()">
+          <h3>Cambiar Contraseña</h3>
+          <button type="button" class="toggle-section-btn" [class.expanded]="isPasswordSectionExpanded">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="password-section-content" [class.expanded]="isPasswordSectionExpanded">
+          <!-- Contraseña Actual -->
         <div class="form-group full-width">
           <label for="current_password">Contraseña Actual *</label>
           <div class="password-input-wrapper">
@@ -331,16 +339,16 @@
         </div>
 
         <!-- Feedback de coincidencia de contraseñas -->
-        <div *ngIf="newPassword && confirmPassword" class="password-feedback">
-          <div *ngIf="newPassword === confirmPassword" class="feedback-success">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div *ngIf="newPassword && confirmPassword">
+          <div *ngIf="newPassword === confirmPassword" class="password-feedback feedback-success">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
               <polyline points="8 12 11 15 16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <span>Las contraseñas coinciden</span>
           </div>
-          <div *ngIf="newPassword !== confirmPassword" class="feedback-error">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div *ngIf="newPassword !== confirmPassword" class="password-feedback feedback-error">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
               <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -367,6 +375,7 @@
               Cambiando...
             </span>
           </button>
+        </div>
         </div>
       </div>
 

@@ -128,9 +128,11 @@ export class ServiceService {
   /**
    * Cancelar/eliminar un servicio
    * @param serviceId - ID del servicio
+   * @param permanentDelete - Si es true, elimina completamente de la BD (para cambio de fecha)
    */
-  deleteService(serviceId: number): Observable<ApiResponse<any>> {
-    return this.http.delete<ApiResponse<any>>(`${this.apiUrl}/${serviceId}`);
+  deleteService(serviceId: number, permanentDelete: boolean = false): Observable<ApiResponse<any>> {
+    const params = permanentDelete ? new HttpParams().set('permanentDelete', 'true') : new HttpParams();
+    return this.http.delete<ApiResponse<any>>(`${this.apiUrl}/${serviceId}`, { params });
   }
 
   /**

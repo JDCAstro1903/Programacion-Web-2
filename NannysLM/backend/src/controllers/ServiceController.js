@@ -103,6 +103,7 @@ class ServiceController {
   static async deleteService(req, res) {
     try {
       const { id } = req.params;
+      const { permanentDelete } = req.query; // Nuevo parámetro para eliminación permanente
       
       // Primero obtener información del servicio antes de eliminarlo
       const { executeQuery } = require('../config/database');
@@ -131,8 +132,9 @@ class ServiceController {
       
       const serviceInfo = serviceResult.data[0];
       
-      // Eliminar el servicio
-      const result = await Service.delete(id);
+      // Eliminar el servicio (permanente si viene el query param)
+      const isPermanent = permanentDelete === 'true';
+      const result = await Service.delete(id, isPermanent);
       
       if (!result.success) {
         return res.status(404).json(result);

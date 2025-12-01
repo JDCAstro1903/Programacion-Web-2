@@ -395,6 +395,29 @@ export class AdminDashboardComponent implements OnInit {
     email: ''
   };
 
+  // Estados para modal de confirmación de aprobación de pago
+  showApprovePaymentModal: boolean = false;
+  selectedPaymentForApproval: any = null;
+
+  // Estados para modal de confirmación de rechazo de pago
+  showRejectPaymentModal: boolean = false;
+  selectedPaymentForRejection: any = null;
+  paymentRejectionReason: string = '';
+
+  // Estados para modal de resultado de acción de pago
+  showPaymentActionResultModal: boolean = false;
+  paymentActionResultData: {
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+    action: 'approved' | 'rejected' | '';
+  } = {
+    type: 'success',
+    title: '',
+    message: '',
+    action: ''
+  };
+
   // Usuario actual (temporal)
   currentUser = {
     name: 'Administrador',
@@ -1735,30 +1758,49 @@ export class AdminDashboardComponent implements OnInit {
    * Aprobar un pago después de verificar el comprobante
    */
   approvePayment(payment: any) {
-    if (!this.paymentService) {
+    this.selectedPaymentForApproval = payment;
+    this.showApprovePaymentModal = true;
+  }
+
+  /**
+   * Cerrar modal de aprobación de pago
+   */
+  closeApprovePaymentModal() {
+    this.showApprovePaymentModal = false;
+    this.selectedPaymentForApproval = null;
+  }
+
+  /**
+   * Confirmar aprobación de pago
+   */
+  confirmApprovePayment() {
+    if (!this.paymentService || !this.selectedPaymentForApproval) {
       return;
     }
 
     this.isSubmitting = true;
+    const paymentId = this.selectedPaymentForApproval.id; // Guardar el ID antes de hacer la petición
     
     // Llamar al servicio para verificar el pago
-    this.paymentService.verifyPayment(payment.id, 'approve', 'Comprobante verificado correctamente').subscribe({
+    this.paymentService.verifyPayment(paymentId, 'approve', 'Comprobante verificado correctamente').subscribe({
       next: (response: any) => {
         this.isSubmitting = false;
+        this.closeApprovePaymentModal(); // Cerrar el modal después de la respuesta exitosa
         
         // Mostrar modal de éxito
-        alert('✅ Pago aprobado exitosamente. La niñera recibirá el monto correspondiente.');
+        this.openPaymentActionResultModal('success', '✅ Pago Aprobado', 'El pago ha sido aprobado exitosamente. La niñera recibirá el monto correspondiente y se le ha notificado.', 'approved');
         
         // Recargar los pagos inmediatamente
         this.loadPayments();
         
-        // Cerrar el modal si está abierto
+        // Cerrar el modal de detalles si está abierto
         this.closePaymentDetailsModal();
       },
       error: (error: any) => {
         this.isSubmitting = false;
+        this.closeApprovePaymentModal(); // Cerrar el modal también en caso de error
         console.error('Error al aprobar pago:', error);
-        alert('❌ Error al aprobar el pago. Por favor, intenta nuevamente.');
+        this.openPaymentActionResultModal('error', '❌ Error al Aprobar', error.error?.message || 'Hubo un error al aprobar el pago. Por favor, intenta nuevamente.', '');
         
         // Recargar los pagos de todas formas para ver el estado actual
         this.loadPayments();
@@ -1770,41 +1812,79 @@ export class AdminDashboardComponent implements OnInit {
    * Rechazar un pago
    */
   rejectPayment(payment: any) {
-    const reason = prompt('Por favor, proporciona una razón para rechazar este pago:');
-    
-    if (!reason) {
+    this.selectedPaymentForRejection = payment;
+    this.paymentRejectionReason = '';
+    this.showRejectPaymentModal = true;
+  }
+
+  /**
+   * Cerrar modal de rechazo de pago
+   */
+  closeRejectPaymentModal() {
+    this.showRejectPaymentModal = false;
+    this.selectedPaymentForRejection = null;
+    this.paymentRejectionReason = '';
+  }
+
+  /**
+   * Confirmar rechazo de pago
+   */
+  confirmRejectPayment() {
+    if (!this.paymentRejectionReason.trim()) {
       return;
     }
 
-    if (!this.paymentService) {
+    if (!this.paymentService || !this.selectedPaymentForRejection) {
       return;
     }
 
     this.isSubmitting = true;
+    const reason = this.paymentRejectionReason;
+    const paymentId = this.selectedPaymentForRejection.id; // Guardar el ID antes de hacer la petición
     
     // Llamar al servicio para rechazar el pago
-    this.paymentService.verifyPayment(payment.id, 'reject', reason).subscribe({
+    this.paymentService.verifyPayment(paymentId, 'reject', reason).subscribe({
       next: (response: any) => {
         this.isSubmitting = false;
+        this.closeRejectPaymentModal(); // Cerrar el modal después de la respuesta exitosa
         
         // Mostrar modal de éxito
-        alert('✅ Pago rechazado exitosamente. Se ha notificado al cliente.');
+        this.openPaymentActionResultModal('success', '✅ Pago Rechazado', 'El pago ha sido rechazado exitosamente. Se ha notificado al cliente sobre el motivo del rechazo.', 'rejected');
         
         // Recargar los pagos inmediatamente
         this.loadPayments();
         
-        // Cerrar el modal si está abierto
+        // Cerrar el modal de detalles si está abierto
         this.closePaymentDetailsModal();
       },
       error: (error: any) => {
         this.isSubmitting = false;
+        this.closeRejectPaymentModal(); // Cerrar el modal también en caso de error
         console.error('Error al rechazar pago:', error);
-        alert('❌ Error al rechazar el pago. Por favor, intenta nuevamente.');
+        this.openPaymentActionResultModal('error', '❌ Error al Rechazar', error.error?.message || 'Hubo un error al rechazar el pago. Por favor, intenta nuevamente.', '');
         
         // Recargar los pagos de todas formas para ver el estado actual
         this.loadPayments();
       }
     });
+  }
+
+  /**
+   * Abrir modal de resultado de acción de pago
+   */
+  openPaymentActionResultModal(type: 'success' | 'error', title: string, message: string, action: 'approved' | 'rejected' | '') {
+    this.paymentActionResultData = { type, title, message, action };
+    this.showPaymentActionResultModal = true;
+  }
+
+  /**
+   * Cerrar modal de resultado de acción de pago
+   */
+  closePaymentActionResultModal() {
+    this.showPaymentActionResultModal = false;
+    setTimeout(() => {
+      this.paymentActionResultData = { type: 'success', title: '', message: '', action: '' };
+    }, 300);
   }
 
   /**

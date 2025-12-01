@@ -47,6 +47,7 @@ export class ProfileViewComponent implements OnInit {
   identificationTimestamp: number = Date.now();
   
   // Para cambio de contraseña
+  isPasswordSectionExpanded = false;
   showCurrentPassword = false;
   showNewPassword = false;
   showConfirmPassword = false;
@@ -427,6 +428,10 @@ export class ProfileViewComponent implements OnInit {
         this.showConfirmPassword = !this.showConfirmPassword;
         break;
     }
+  }
+
+  togglePasswordSection() {
+    this.isPasswordSectionExpanded = !this.isPasswordSectionExpanded;
   }
 
   cancelChanges() {

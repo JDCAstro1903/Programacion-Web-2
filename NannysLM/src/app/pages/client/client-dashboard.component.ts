@@ -154,6 +154,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   showServiceDetails: boolean = false;
   createdService: any = null;
 
+  // Estado para modal de confirmación de pago
+  showConfirmPaymentModal: boolean = false;
+  selectedServiceForPayment: any = null;
+  isCreatingPayment: boolean = false;
+
   // Datos dinámicos del cliente
   clientInfo: ClientInfo | null = null;
   contractedServices: ExtendedClientService[] = [];
@@ -2021,29 +2026,29 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       this.closeChangeDateModal();
       this.serviceModalType = 'loading';
       this.serviceModalTitle = 'Procesando cambio de fecha...';
-      this.serviceModalMessage = 'Cancelando servicio actual. La nanny será notificada de la cancelación.';
+      this.serviceModalMessage = 'Eliminando servicio anterior y creando nueva solicitud. La nanny asignada será notificada de la cancelación.';
       this.showServiceModal = true;
 
-      // Paso 2: Cancelar el servicio mediante el API
+      // Paso 2: Eliminar PERMANENTEMENTE el servicio anterior de la BD
       await new Promise<void>((resolve, reject) => {
-        this.serviceService.deleteService(serviceId).subscribe({
+        this.serviceService.deleteService(serviceId, true).subscribe({
           next: (response: any) => {
-            console.log('✅ Servicio cancelado:', response);
+            console.log('✅ Servicio eliminado permanentemente:', response);
             if (response.success) {
               resolve();
             } else {
-              reject(new Error(response.message || 'Error al cancelar el servicio'));
+              reject(new Error(response.message || 'Error al eliminar el servicio'));
             }
           },
           error: (error) => {
-            console.error('❌ Error al cancelar servicio:', error);
+            console.error('❌ Error al eliminar servicio:', error);
             reject(error);
           }
         });
       });
 
-      // Paso 3: Actualizar mensaje - servicio cancelado exitosamente
-      this.serviceModalMessage = 'Servicio cancelado. Preparando formulario para nueva fecha...';
+      // Paso 3: Actualizar mensaje - servicio eliminado exitosamente
+      this.serviceModalMessage = 'Servicio anterior eliminado. Creando nuevo servicio con la fecha seleccionada...';
 
       // Paso 4: Recargar servicios del cliente
       await new Promise<void>((resolve) => {
@@ -2060,13 +2065,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         });
       });
 
-      // Paso 5: Mostrar mensaje de éxito
-      this.serviceModalType = 'success';
-      this.serviceModalTitle = '✓ Servicio Cancelado';
-      this.serviceModalMessage = 'El servicio anterior ha sido cancelado exitosamente. Ahora puedes seleccionar una nueva fecha y horario. Las nannys disponibles recibirán una notificación con tu nueva solicitud.';
+      // Paso 5: Actualizar mensaje de progreso
+      this.serviceModalMessage = 'Servicio anterior eliminado. Creando nueva solicitud para todas las nannys disponibles...';
 
       // Paso 6: Preparar datos del nuevo servicio con la fecha y horarios seleccionados
-      this.serviceModalMessage = 'Creando nuevo servicio con la fecha seleccionada...';
       
       // Obtener el nombre del servicio desde serviceTypes
       const serviceTypeMapping: { [key: string]: string } = {
@@ -2116,28 +2118,16 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         });
       });
       
-      // Paso 8: Recargar servicios nuevamente
-      await new Promise<void>((resolve) => {
-        this.clientApiService.getClientServices(this.currentUserId).subscribe({
-          next: (response: any) => {
-            if (response.success && response.data) {
-              this.services.upcoming = response.data.filter((s: any) => 
-                s.status === 'pending' || s.status === 'confirmed' || s.status === 'in_progress'
-              ).map((s: any) => this.transformServiceData(s));
-              this.services.past = response.data.filter((s: any) => 
-                s.status === 'completed' || s.status === 'cancelled'
-              ).map((s: any) => this.transformServiceData(s));
-            }
-            resolve();
-          },
-          error: () => resolve()
-        });
-      });
+      // Paso 8: Recargar servicios con loadClientServices para actualizar la vista correctamente
+      this.loadClientServices();
+      
+      // Esperar un momento para que la recarga se complete
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 500));
       
       // Paso 9: Mostrar mensaje de éxito final
       this.serviceModalType = 'success';
       this.serviceModalTitle = '✓ Fecha Cambiada Exitosamente';
-      this.serviceModalMessage = `¡Perfecto! Tu servicio ha sido reprogramado para el ${newDate.getDate()} de ${monthNames[newDate.getMonth()]} de ${newStartTime} a ${newEndTime}.\n\nUna nanny disponible ha sido notificada y confirmará tu servicio pronto.`;
+      this.serviceModalMessage = `¡Perfecto! Tu servicio ha sido reprogramado para el ${newDate.getDate()} de ${monthNames[newDate.getMonth()]} de ${newStartTime} a ${newEndTime}.\n\nTodas las nannys disponibles han sido notificadas por correo electrónico sobre tu nueva solicitud. Una de ellas aceptará el servicio pronto.`;
       
       // Paso 10: Después de 3 segundos, cerrar modal y volver a la lista
       setTimeout(() => {
@@ -2151,6 +2141,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         // Volver a la lista de servicios
         this.currentView = 'services';
         this.servicesView = 'services-history';
+        
+        // Recargar una vez más para asegurar que la vista esté actualizada
+        this.loadClientServices();
       }, 3000);
 
     } catch (error: any) {
@@ -2547,6 +2540,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           this.serviceModalType = 'success';
           this.serviceModalTitle = 'Pago Inicializado';
           this.serviceModalMessage = `Pago de $${response.data.amount} creado exitosamente. Realiza la transferencia bancaria y sube el comprobante en tu sección de pagos.`;
+          
+          // Recargar la lista de pagos
+          this.loadClientPayments();
           
           // Esperar 2 segundos y luego ir a la sección de pagos
           setTimeout(() => {

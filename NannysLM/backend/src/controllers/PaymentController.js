@@ -712,7 +712,7 @@ class PaymentController {
                         const notificationTitle = '💰 Nuevo Pago para Verificar';
                         const notificationMessage = `Se ha registrado un nuevo pago por $${amount.toFixed(2)} que requiere verificación del comprobante.`;
                         
-                        await this.createPaymentNotification(
+                        await PaymentController.createPaymentNotification(
                             adminId,
                             notificationTitle,
                             notificationMessage,
@@ -931,6 +931,7 @@ class PaymentController {
                     s.end_time,
                     s.total_hours,
                     s.title,
+                    s.service_type,
                     -- Información de la nanny
                     un.first_name as nanny_first_name,
                     un.last_name as nanny_last_name,

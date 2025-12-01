@@ -514,15 +514,15 @@ class Service {
    * Aceptar un servicio por parte de una nanny (con control de concurrencia)
    */
   static async acceptService(serviceId, nannyId) {
-    const connection = require('mysql2/promise');
-    const dbConfig = require('../config/database');
+    const mysql = require('mysql2/promise');
+    const { getConnectionConfig } = require('../config/database');
     let conn = null;
 
     try {
       console.log(`🤝 Nanny ${nannyId} intentando aceptar servicio ${serviceId}`);
 
       // Crear conexión para usar transacciones
-      conn = await connection.createConnection(dbConfig.getConnectionConfig());
+      conn = await mysql.createConnection(getConnectionConfig());
       await conn.beginTransaction();
 
       // Verificar que el servicio existe y está pendiente CON BLOQUEO (FOR UPDATE)
@@ -786,9 +786,11 @@ class Service {
   }
 
   /**
-   * Cancelar un servicio (cambiar estado a cancelled)
+   * Cancelar o eliminar un servicio
+   * @param {number} serviceId - ID del servicio
+   * @param {boolean} permanentDelete - Si es true, elimina completamente de la BD (útil para cambio de fecha)
    */
-  static async delete(serviceId) {
+  static async delete(serviceId, permanentDelete = false) {
     try {
       // Primero obtener información del servicio
       const serviceQuery = 'SELECT nanny_id, start_date, end_date, start_time, end_time, status FROM services WHERE id = ?';
@@ -800,8 +802,8 @@ class Service {
 
       const service = serviceResult.data[0];
 
-      // Solo permitir cancelar si no está ya cancelado
-      if (service.status === 'cancelled') {
+      // Solo permitir cancelar si no está ya cancelado (excepto para eliminación permanente)
+      if (service.status === 'cancelled' && !permanentDelete) {
         return { success: false, message: 'Este servicio ya fue cancelado' };
       }
 
@@ -816,15 +818,31 @@ class Service {
         await executeQuery(updateAvailabilityQuery, [service.nanny_id]);
       }
 
-      // Cambiar el estado del servicio a 'cancelled' en lugar de eliminarlo
-      const updateQuery = 'UPDATE services SET status = ?, updated_at = NOW() WHERE id = ?';
-      const result = await executeQuery(updateQuery, ['cancelled', serviceId]);
-
-      if (result.success) {
-        return {
-          success: true,
-          message: 'Servicio cancelado exitosamente'
-        };
+      let result;
+      if (permanentDelete) {
+        // Eliminar COMPLETAMENTE de la base de datos (para cambio de fecha)
+        console.log(`🗑️ ELIMINANDO PERMANENTEMENTE servicio ${serviceId} de la base de datos`);
+        const deleteQuery = 'DELETE FROM services WHERE id = ?';
+        result = await executeQuery(deleteQuery, [serviceId]);
+        
+        if (result.success) {
+          return {
+            success: true,
+            message: 'Servicio eliminado completamente de la base de datos'
+          };
+        }
+      } else {
+        // Cambiar el estado del servicio a 'cancelled' (cancelación normal)
+        console.log(`🚫 Cancelando servicio ${serviceId} (cambio de estado)`);
+        const updateQuery = 'UPDATE services SET status = ?, updated_at = NOW() WHERE id = ?';
+        result = await executeQuery(updateQuery, ['cancelled', serviceId]);
+        
+        if (result.success) {
+          return {
+            success: true,
+            message: 'Servicio cancelado exitosamente'
+          };
+        }
       }
 
       return result;
