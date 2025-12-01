@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 
-// Polyfill para fetch en Node.js < 18
+// Polyfills para Node.js < 18
 const fetch = require('node-fetch');
 if (!globalThis.fetch) {
   globalThis.fetch = fetch;
+  globalThis.Headers = fetch.Headers;
+  globalThis.Request = fetch.Request;
+  globalThis.Response = fetch.Response;
 }
 
 // Importar directamente la función

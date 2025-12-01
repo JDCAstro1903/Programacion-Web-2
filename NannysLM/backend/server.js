@@ -30,6 +30,11 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // ===============================================
+// CONFIGURACIÓN DE TRUST PROXY (Railway/Heroku)
+// ===============================================
+app.set('trust proxy', 1);
+
+// ===============================================
 // CONFIGURACIÓN DE DIRECTORIOS
 // ===============================================
 const uploadsDir = path.join(__dirname, 'uploads');
