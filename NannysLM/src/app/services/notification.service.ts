@@ -4,6 +4,7 @@ import { Observable, BehaviorSubject, interval } from 'rxjs';
 import { switchMap, tap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Notification } from '../shared/components/header/header.component';
+import { ApiConfig } from '../config/api.config';
 
 export interface NotificationResponse {
   success: boolean;

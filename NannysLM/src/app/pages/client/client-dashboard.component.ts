@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { ApiConfig } from '../../config/api.config';
 import { SidebarComponent, SidebarConfig } from '../../shared/components/sidebar/sidebar.component';
 import { HeaderComponent, HeaderConfig, Notification } from '../../shared/components/header/header.component';
 import { LogoutModalComponent } from '../../shared/components/logout-modal/logout-modal.component';
@@ -15,7 +16,6 @@ import { NotificationService } from '../../services/notification.service';
 import { ServiceService, ServiceData } from '../../services/service.service';
 import { BankDetailsService, BankDetail } from '../../services/bank-details.service';
 import { PaymentService, Payment } from '../../services/payment.service';
-import { ApiConfig } from '../../config/api.config';
 
 // Interfaz mejorada para servicios del cliente con información de nanny
 interface ClientServiceComplete extends ServiceData {

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ApiConfig } from '../config/api.config';
 
 // Interfaz para la respuesta de la API
 interface ApiResponse<T> {
