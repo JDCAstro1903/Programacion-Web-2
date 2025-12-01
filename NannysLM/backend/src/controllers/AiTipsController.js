@@ -1,7 +1,6 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-// Inicializar Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+/**
+ * Controlador para generar consejos de IA usando Gemini
+ */
 
 /**
  * Obtener consejos de IA para nannys
@@ -10,6 +9,9 @@ const getNannyTips = async (req, res) => {
   try {
     console.log('🤖 Generando consejos de IA para nanny...');
     
+    // Inicializar Gemini AI
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     
     const prompt = `Eres un asistente experto en cuidado infantil y desarrollo profesional de niñeras. 
