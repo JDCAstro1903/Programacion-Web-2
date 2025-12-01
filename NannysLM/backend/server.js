@@ -224,13 +224,15 @@ const startServer = async () => {
         const serviceReminderScheduler = require('./src/utils/ServiceReminderScheduler');
         serviceReminderScheduler.start();
         
-        app.listen(PORT, () => {
+        const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+        
+        app.listen(PORT, HOST, () => {
             console.log(' ==========================================');
             console.log(` ✅ Servidor NannysLM iniciado exitosamente`);
             console.log(` 🌐 Puerto: ${PORT}`);
             console.log(` 🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
-            console.log(` 🔗 URL: http://localhost:${PORT}`);
-            console.log(` 🩺 API Health: http://localhost:${PORT}/api/health`);
+            console.log(` 🔗 Host: ${HOST}`);
+            console.log(` 🩺 API Health: http://${HOST}:${PORT}/api/health`);
             console.log(` 💾 Base de datos: Conectada ✅`);
             console.log(` ⏰ Recordatorios: Activos ✅`);
             console.log(' ==========================================');
