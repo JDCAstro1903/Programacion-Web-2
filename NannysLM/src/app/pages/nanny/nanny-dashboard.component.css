@@ -2146,6 +2146,7 @@ app-sidebar {
   .section-header {
     margin-bottom: 1rem;
   }
+}
 
 /* ===================================
    SECCIÓN DE CONSEJOS DE IA
@@ -2455,5 +2456,4 @@ app-sidebar {
     padding: 0.625rem 1rem;
     font-size: 0.9rem;
   }
-}
 } 
