@@ -59,7 +59,8 @@ class AuthController {
             const activationToken = jwt.sign({ id: newUser.id, email: newUser.email }, process.env.JWT_ACTIVATION_SECRET || process.env.JWT_SECRET, { expiresIn: process.env.ACTIVATION_TOKEN_EXPIRES_IN || '24h' });
 
             // Enlace de activación - apunta al endpoint de activación del backend
-            const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 8000}`;
+            const backendUrl = process.env.BACKEND_URL || 
+                              (process.env.RAILWAY_STATIC_URL ? `https://${process.env.RAILWAY_STATIC_URL}` : `http://localhost:${process.env.PORT || 8000}`);
             const activationLink = `${backendUrl}/api/v1/auth/activate?token=${activationToken}`;
 
             // Enviar correo de activación (si no está configurado enviará el link por consola)
