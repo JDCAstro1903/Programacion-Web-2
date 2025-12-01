@@ -13,6 +13,7 @@ import { DashboardService, DashboardStats, Nanny, Client } from '../../services/
 import { BankDetailsService } from '../../services/bank-details.service';
 import { NannyService } from '../../services/nanny.service';
 import { PaymentService } from '../../services/payment.service';
+import { ApiConfig } from '../../config/api.config';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -1085,16 +1086,16 @@ export class AdminDashboardComponent implements OnInit {
     
     // Si ya comienza con /uploads, simplemente agregar el servidor
     if (profileImage.startsWith('/uploads/')) {
-      return `http://localhost:8000${profileImage}`;
+      return `${ApiConfig.BASE_URL}${profileImage}`;
     }
     
     // Si solo tiene el nombre del archivo, agregar /uploads/
     if (!profileImage.startsWith('/')) {
-      return `http://localhost:8000/uploads/${profileImage}`;
+      return `${ApiConfig.UPLOADS_URL}/${profileImage}`;
     }
     
     // Si tiene barra al inicio pero no /uploads
-    return `http://localhost:8000/uploads${profileImage}`;
+    return `${ApiConfig.UPLOADS_URL}${profileImage}`;
   }
 
   openAddClientModal(): void {
@@ -1520,11 +1521,11 @@ export class AdminDashboardComponent implements OnInit {
 
     // Si empieza con /uploads/
     if (document.startsWith('/uploads/')) {
-      return `http://localhost:8000${document}`;
+      return `${ApiConfig.BASE_URL}${document}`;
     }
 
     // Si es solo el nombre del archivo
-    return `http://localhost:8000/uploads/${document}`;
+    return `${ApiConfig.UPLOADS_URL}/${document}`;
   }
 
   // Verificar si el documento es una imagen
@@ -1557,7 +1558,7 @@ export class AdminDashboardComponent implements OnInit {
         throw new Error('No hay token de autenticación');
       }
       
-      const response = await fetch(`http://localhost:8000/api/v1/client/${client.id}/verify`, {
+      const response = await fetch(`${ApiConfig.CLIENT_URL}/${client.id}/verify`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1613,7 +1614,7 @@ export class AdminDashboardComponent implements OnInit {
         throw new Error('No hay token de autenticación');
       }
       
-      const response = await fetch(`http://localhost:8000/api/v1/client/${client.id}/verify`, {
+      const response = await fetch(`${ApiConfig.CLIENT_URL}/${client.id}/verify`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1693,12 +1694,11 @@ export class AdminDashboardComponent implements OnInit {
       
       // Si es una ruta relativa, construir la URL completa
       if (receiptUrl.startsWith('/uploads/')) {
-        return `http://localhost:8000${receiptUrl}`;
+        return `${ApiConfig.BASE_URL}${receiptUrl}`;
       }
       
       // Si es solo el nombre del archivo
-      const baseUrl = 'http://localhost:8000/uploads/receipts';
-      return `${baseUrl}/${receiptUrl}`;
+      return ApiConfig.getReceiptUrl(receiptUrl);
     }
     
     // Fallback a receiptProof para compatibilidad

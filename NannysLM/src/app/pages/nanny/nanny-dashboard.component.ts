@@ -12,6 +12,7 @@ import { NannyService } from '../../services/nanny.service';
 import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
 import { ClientService } from '../../services/client.service';
 import { WhatsappButtonComponent } from '../../shared/components/whatsapp-button/whatsapp-button.component';
+import { ApiConfig } from '../../config/api.config';
 
 // Interfaz para definir la estructura de un servicio
 interface Service {
@@ -362,11 +363,11 @@ export class NannyDashboardComponent implements OnInit, OnDestroy {
 
     // Si ya incluye /uploads/, solo agregar el host
     if (profileImage.startsWith('/uploads/')) {
-      return `http://localhost:8000${profileImage}`;
+      return `${ApiConfig.BASE_URL}${profileImage}`;
     }
 
     // Si es solo el nombre del archivo, construir la URL completa
-    return `http://localhost:8000/uploads/${profileImage}`;
+    return `${ApiConfig.UPLOADS_URL}/${profileImage}`;
   }
 
   closeClientModal() {

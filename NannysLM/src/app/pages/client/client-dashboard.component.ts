@@ -15,6 +15,7 @@ import { NotificationService } from '../../services/notification.service';
 import { ServiceService, ServiceData } from '../../services/service.service';
 import { BankDetailsService, BankDetail } from '../../services/bank-details.service';
 import { PaymentService, Payment } from '../../services/payment.service';
+import { ApiConfig } from '../../config/api.config';
 
 // Interfaz mejorada para servicios del cliente con información de nanny
 interface ClientServiceComplete extends ServiceData {
@@ -580,13 +581,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       
       // Intentar obtener la imagen de perfil actualizada
       if (currentUser.profile_image) {
-        if (currentUser.profile_image.startsWith('http')) {
-          avatarUrl = currentUser.profile_image;
-        } else if (currentUser.profile_image.startsWith('/uploads/')) {
-          avatarUrl = `http://localhost:8000${currentUser.profile_image}`;
-        } else {
-          avatarUrl = `http://localhost:8000/uploads/${currentUser.profile_image}`;
-        }
+        avatarUrl = ApiConfig.getUploadUrl(currentUser.profile_image);
       }
       
       this.headerConfig = {
@@ -647,10 +642,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
             if (this.clientInfo.profile_image) {
               if (this.clientInfo.profile_image.startsWith('http')) {
                 avatarUrl = this.clientInfo.profile_image;
-              } else if (this.clientInfo.profile_image.startsWith('/uploads/')) {
-                avatarUrl = `http://localhost:8000${this.clientInfo.profile_image}`;
               } else {
-                avatarUrl = `http://localhost:8000/uploads/${this.clientInfo.profile_image}`;
+                avatarUrl = ApiConfig.getUploadUrl(this.clientInfo.profile_image);
               }
             } else 
               {
@@ -692,9 +685,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
               if (img.startsWith('http')) {
                 nanny_profile_image = img;
               } else if (img.startsWith('/uploads/')) {
-                nanny_profile_image = `http://localhost:8000${img}`;
+                nanny_profile_image = ApiConfig.BASE_URL + img;
               } else {
-                nanny_profile_image = `http://localhost:8000/uploads/${img}`;
+                nanny_profile_image = ApiConfig.getUploadUrl(img);
               }
             }
             
@@ -867,9 +860,9 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       if (img.startsWith('http')) {
         nanny_profile_image = img;
       } else if (img.startsWith('/uploads/')) {
-        nanny_profile_image = `http://localhost:8000${img}`;
+        nanny_profile_image = ApiConfig.BASE_URL + img;
       } else {
-        nanny_profile_image = `http://localhost:8000/uploads/${img}`;
+        nanny_profile_image = ApiConfig.getUploadUrl(img);
       }
     }
 
@@ -2364,10 +2357,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           avatarUrl = profileImage;
         } else if (profileImage.startsWith('/uploads/')) {
           // Si ya incluye /uploads/, solo agregar el host
-          avatarUrl = `http://localhost:8000${profileImage}`;
+          avatarUrl = ApiConfig.BASE_URL + profileImage;
         } else {
           // Si es solo el nombre del archivo
-          avatarUrl = `http://localhost:8000/uploads/${profileImage}`;
+          avatarUrl = ApiConfig.getUploadUrl(profileImage);
         }
       } else {
       }
@@ -2404,10 +2397,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
           avatarUrl = this.profileData.profile_image;
         } else if (this.profileData.profile_image.startsWith('/uploads/')) {
           // Si ya incluye /uploads/, solo agregar el host
-          avatarUrl = `http://localhost:8000${this.profileData.profile_image}`;
+          avatarUrl = ApiConfig.BASE_URL + this.profileData.profile_image;
         } else {
           // Si es solo el nombre del archivo
-          avatarUrl = `http://localhost:8000/uploads/${this.profileData.profile_image}`;
+          avatarUrl = ApiConfig.getUploadUrl(this.profileData.profile_image);
         }
       } else {
       }
@@ -2472,7 +2465,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     }
     
     // Si es solo el nombre del archivo, construir la URL completa
-    return `http://localhost:8000/uploads/${this.profileData.profile_image}`;
+    return ApiConfig.getUploadUrl(this.profileData.profile_image);
   }
 
   // Estadísticas del dashboard
@@ -2715,11 +2708,11 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     
     // Si empieza con /uploads, agregar el localhost:8000
     if (receiptUrl.startsWith('/uploads/')) {
-      return `http://localhost:8000${receiptUrl}`;
+      return ApiConfig.BASE_URL + receiptUrl;
     }
     
     // Si no, asumir que va en /uploads/
-    return `http://localhost:8000/uploads/${receiptUrl}`;
+    return ApiConfig.getReceiptUrl(receiptUrl);
   }
 
   /**
@@ -3075,7 +3068,7 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
     try {
       // Obtener datos del perfil desde el backend con el ID del usuario actual
       
-      const response = await fetch(`http://localhost:8000/api/v1/profile/data?userId=${this.currentUserId}`, {
+      const response = await fetch(`${ApiConfig.API_URL}/profile/data?userId=${this.currentUserId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -3246,7 +3239,7 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
       }
 
       
-      const response = await fetch('http://localhost:8000/api/v1/client/data', {
+      const response = await fetch(`${ApiConfig.CLIENT_URL}/data`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3341,7 +3334,7 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
         formData.append('identification_document', this.identificationDocumentFile);
       }
 
-      const response = await fetch('http://localhost:8000/api/v1/client/data', {
+      const response = await fetch(`${ApiConfig.CLIENT_URL}/data`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -3414,11 +3407,11 @@ Tipo de Cuenta: ${this.currentBankData.tipo_cuenta === 'ahorro' ? 'Cuenta de Aho
 
     // Si empieza con /uploads/
     if (document.startsWith('/uploads/')) {
-      return `http://localhost:8000${document}`;
+      return ApiConfig.BASE_URL + document;
     }
 
     // Si es solo el nombre del archivo
-    return `http://localhost:8000/uploads/${document}`;
+    return ApiConfig.getUploadUrl(document);
   }
 
   // Verificar si el documento de identificación es una imagen

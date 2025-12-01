@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ProfileService } from '../../services/profile.service';
+import { ApiConfig } from '../../config/api.config';
 
 interface UserProfile {
   id: number;
@@ -497,12 +498,12 @@ export class ProfileViewComponent implements OnInit {
     
     // Si la imagen empieza con /uploads/
     if (imageValue.startsWith('/uploads/')) {
-      const url = `http://localhost:8000${imageValue}?t=${this.imageTimestamp}`;
+      const url = `${ApiConfig.BASE_URL}${imageValue}?t=${this.imageTimestamp}`;
       return url;
     }
     
     // Caso por defecto: agregar el prefijo completo con timestamp
-    const url = `http://localhost:8000/uploads/${imageValue}?t=${this.imageTimestamp}`;
+    const url = `${ApiConfig.UPLOADS_URL}/${imageValue}?t=${this.imageTimestamp}`;
     return url;
   }
 
@@ -607,12 +608,12 @@ export class ProfileViewComponent implements OnInit {
     
     // Si empieza con /uploads/
     if (docValue.startsWith('/uploads/')) {
-      const url = `http://localhost:8000${docValue}?t=${this.identificationTimestamp}`;
+      const url = `${ApiConfig.BASE_URL}${docValue}?t=${this.identificationTimestamp}`;
       return url;
     }
     
     // Caso por defecto: agregar el prefijo completo con timestamp
-    const url = `http://localhost:8000/uploads/${docValue}?t=${this.identificationTimestamp}`;
+    const url = `${ApiConfig.UPLOADS_URL}/${docValue}?t=${this.identificationTimestamp}`;
     return url;
   }
 
