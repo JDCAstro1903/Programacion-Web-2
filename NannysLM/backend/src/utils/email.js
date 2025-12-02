@@ -747,76 +747,18 @@ const getVerificationRejectedEmailTemplate = (clientName) => {
  * Enviar correo de verificación aprobada
  */
 const sendVerificationApprovedEmail = async (toEmail, clientName) => {
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '✓ Tu verificación ha sido aprobada';
     const html = getVerificationApprovedEmailTemplate(clientName);
-
-    if (!user || !pass) {
-        console.log('📨 Verification approved email (sin SMTP):', toEmail);
-        return { success: true, message: 'Verification approved email logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = createTransporter();
-        if (!transporter) {
-            throw new Error('No se pudo crear el transporter SMTP');
-        }
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Verification approved email sent:', info.messageId);
-        return { success: true, message: 'Verification approved email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending verification approved email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
  * Enviar correo de verificación rechazada
  */
 const sendVerificationRejectedEmail = async (toEmail, clientName) => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = 'Verificación rechazada - Por favor reintenta';
     const html = getVerificationRejectedEmailTemplate(clientName);
-
-    if (!user || !pass) {
-        console.log('📨 Verification rejected email (sin SMTP):', toEmail);
-        return { success: true, message: 'Verification rejected email logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Verification rejected email sent:', info.messageId);
-        return { success: true, message: 'Verification rejected email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending verification rejected email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
@@ -1150,120 +1092,27 @@ const getNewPaymentNotificationEmailTemplate = (adminName, clientName, serviceNa
  * Enviar correo de pago aprobado al cliente
  */
 const sendPaymentApprovedEmail = async (toEmail, clientName, serviceName, amount, nannyName) => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '✓ Tu Pago ha sido Aprobado';
     const html = getPaymentApprovedEmailTemplate(clientName, serviceName, amount, nannyName);
-
-    if (!user || !pass) {
-        console.log(`📨 Payment approved email (sin SMTP): Email: ${toEmail}, Amount: $${amount}`);
-        return { success: true, message: 'Payment approved email logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Payment approved email sent:', info.messageId);
-        return { success: true, message: 'Payment approved email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending payment approved email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
  * Enviar correo de pago rechazado al cliente
  */
 const sendPaymentRejectedEmail = async (toEmail, clientName, serviceName, amount, nannyName, reason = '') => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '✗ Tu Pago ha sido Rechazado';
     const html = getPaymentRejectedEmailTemplate(clientName, serviceName, amount, nannyName, reason);
-
-    if (!user || !pass) {
-        console.log(`📨 Payment rejected email (sin SMTP): Email: ${toEmail}, Amount: $${amount}`);
-        return { success: true, message: 'Payment rejected email logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: toEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Payment rejected email sent:', info.messageId);
-        return { success: true, message: 'Payment rejected email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending payment rejected email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 
 /**
  * Enviar notificación de nuevo pago al admin
  */
 const sendNewPaymentNotificationEmail = async (adminEmail, adminName, clientName, serviceName, amount, nannyName) => {
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-
     const subject = '💰 Nuevo Pago Pendiente de Revisión';
     const html = getNewPaymentNotificationEmailTemplate(adminName, clientName, serviceName, amount, nannyName);
-
-    if (!user || !pass) {
-        console.log(`📨 New payment notification email (sin SMTP): Email: ${adminEmail}, Amount: $${amount}`);
-        return { success: true, message: 'New payment notification email logged to console (SMTP not configured)' };
-    }
-
-    try {
-        const transporter = nodemailer.createTransport({
-            host,
-            port: parseInt(port, 10),
-            secure: parseInt(port, 10) === 465,
-            auth: { user, pass }
-        });
-
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${user}>`,
-            to: adminEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 New payment notification email sent:', info.messageId);
-        return { success: true, message: 'New payment notification email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending new payment notification email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(adminEmail, subject, html);
 };
 
 /**
@@ -1551,93 +1400,27 @@ const sendNewVerificationRequestEmail = async (adminEmail, adminName, clientName
  * Enviar correo cuando nanny acepta servicio
  */
 const sendNannyAcceptedServiceEmail = async (clientEmail, clientName, nannyName, serviceName, serviceDate) => {
-    if (!isSMTPConfigured()) {
-        console.log('📧 [Email not sent - SMTP not configured]');
-        console.log(`   TO: ${clientEmail}`);
-        console.log(`   SUBJECT: ${nannyName} ha aceptado tu servicio`);
-        return { success: true, fallback: true };
-    }
-
     const subject = '✅ Tu servicio ha sido aceptado - NannysLM';
     const html = getNannyAcceptedServiceEmailTemplate(clientName, nannyName, serviceName, serviceDate);
-
-    try {
-        const transporter = createTransporter();
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
-            to: clientEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Service acceptance email sent to client:', info.messageId);
-        return { success: true, message: 'Service acceptance email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending service acceptance email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(clientEmail, subject, html);
 };
 
 /**
  * Enviar recordatorio de servicio
  */
 const sendServiceReminderEmail = async (nannyEmail, nannyName, serviceName, serviceDate, daysAhead) => {
-    if (!isSMTPConfigured()) {
-        console.log('📧 [Email not sent - SMTP not configured]');
-        console.log(`   TO: ${nannyEmail}`);
-        console.log(`   SUBJECT: Recordatorio: Servicio en ${daysAhead} día(s)`);
-        return { success: true, fallback: true };
-    }
-
     const subject = `🔔 Recordatorio: Servicio ${daysAhead === 1 ? 'mañana' : 'en 3 días'} - NannysLM`;
     const html = getServiceReminderEmailTemplate(nannyName, serviceName, serviceDate, daysAhead);
-
-    try {
-        const transporter = createTransporter();
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
-            to: nannyEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Service reminder email sent to nanny:', info.messageId);
-        return { success: true, message: 'Service reminder email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending service reminder email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(nannyEmail, subject, html);
 };
 
 /**
  * Enviar notificación de servicio completado
  */
 const sendServiceCompletedEmail = async (clientEmail, clientName, nannyName, serviceName, serviceDate) => {
-    if (!isSMTPConfigured()) {
-        console.log('📧 [Email not sent - SMTP not configured]');
-        console.log(`   TO: ${clientEmail}`);
-        console.log(`   SUBJECT: Servicio completado con ${nannyName}`);
-        return { success: true, fallback: true };
-    }
-
     const subject = '✨ Servicio Completado - NannysLM';
     const html = getServiceCompletedEmailTemplate(clientName, nannyName, serviceName, serviceDate);
-
-    try {
-        const transporter = createTransporter();
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
-            to: clientEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Service completed email sent to client:', info.messageId);
-        return { success: true, message: 'Service completed email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending service completed email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(clientEmail, subject, html);
 };
 
 /**
@@ -1717,31 +1500,9 @@ const getNannyRatingReceivedEmailTemplate = (nannyName, clientName, rating, serv
  * Enviar notificación de nueva calificación a nanny
  */
 const sendNannyRatingReceivedEmail = async (nannyEmail, nannyName, clientName, rating, serviceName, comment = '') => {
-    if (!isSMTPConfigured()) {
-        console.log('📧 [Email not sent - SMTP not configured]');
-        console.log(`   TO: ${nannyEmail}`);
-        console.log(`   SUBJECT: Nueva calificación recibida: ${rating}/5 estrellas`);
-        return { success: true, fallback: true };
-    }
-
     const subject = `⭐ Nueva Calificación: ${rating}/5 estrellas - NannysLM`;
     const html = getNannyRatingReceivedEmailTemplate(nannyName, clientName, rating, serviceName, comment);
-
-    try {
-        const transporter = createTransporter();
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
-            to: nannyEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Rating notification email sent to nanny:', info.messageId);
-        return { success: true, message: 'Rating notification email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending rating notification email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(nannyEmail, subject, html);
 };
 
 /**
@@ -1825,31 +1586,9 @@ const getServiceCancelledEmailTemplate = (nannyName, clientName, serviceName, se
  * Enviar notificación de servicio cancelado a nanny
  */
 const sendServiceCancelledEmail = async (nannyEmail, nannyName, clientName, serviceName, serviceDate) => {
-    if (!isSMTPConfigured()) {
-        console.log('📧 [Email not sent - SMTP not configured]');
-        console.log(`   TO: ${nannyEmail}`);
-        console.log(`   SUBJECT: Servicio Cancelado - ${serviceName}`);
-        return { success: true, fallback: true };
-    }
-
     const subject = `❌ Servicio Cancelado: ${serviceName} - NannysLM`;
     const html = getServiceCancelledEmailTemplate(nannyName, clientName, serviceName, serviceDate);
-
-    try {
-        const transporter = createTransporter();
-        const info = await transporter.sendMail({
-            from: process.env.MAIL_FROM || `NannysLM <${process.env.SMTP_USER}>`,
-            to: nannyEmail,
-            subject,
-            html
-        });
-
-        console.log('📨 Service cancelled email sent to nanny:', info.messageId);
-        return { success: true, message: 'Service cancelled email sent', info };
-    } catch (error) {
-        console.error('❌ Error sending service cancelled email:', error);
-        return { success: false, message: error.message };
-    }
+    return await sendEmailWithSendGrid(nannyEmail, subject, html);
 };
 
 module.exports = { 
