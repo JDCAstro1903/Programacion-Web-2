@@ -8,6 +8,9 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+// Importar logger optimizado
+const logger = require('./src/utils/logger');
+
 // Importar configuración de base de datos
 const { testConnection } = require('./src/config/database');
 
@@ -40,7 +43,7 @@ app.set('trust proxy', 1);
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true});
-    console.log('📁 Directorio uploads creado en:', uploadsDir);
+    logger.info('Directorio uploads creado');
 }
 
 // ===============================================
@@ -77,7 +80,7 @@ const corsOptions = {
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            console.warn(`⚠️  CORS bloqueado para origen: ${origin}`);
+            logger.warn(`CORS: Origen no listado: ${origin}`);
             callback(null, true); // Permitir de todas formas para desarrollo
         }
     },
@@ -198,7 +201,7 @@ app.use((req, res) => {
 
 // Error handler global
 app.use((err, req, res, next) => {
-    console.error('Error:', err.stack);
+    logger.error('Error no manejado', err);
     
     res.status(err.status || 500).json({
         success: false,
@@ -212,12 +215,12 @@ app.use((err, req, res, next) => {
 // ===============================================
 const startServer = async () => {
     try {
-        console.log('🔍 Verificando conexión a la base de datos...');
+        logger.info('Verificando conexión a base de datos...');
         const dbConnected = await testConnection();
         
         if (!dbConnected) {
-            console.error('❌ No se pudo conectar a la base de datos.');
-            console.log('💡 Verifica que MySQL esté ejecutándose y las credenciales en .env sean correctas.');
+            logger.error('No se pudo conectar a la base de datos');
+            logger.error('Verifica que MySQL esté ejecutándose y las credenciales en .env sean correctas');
             process.exit(1);
         }
         
@@ -228,31 +231,26 @@ const startServer = async () => {
         const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
         
         app.listen(PORT, HOST, () => {
-            console.log(' ==========================================');
-            console.log(` ✅ Servidor NannysLM iniciado exitosamente`);
-            console.log(` 🌐 Puerto: ${PORT}`);
-            console.log(` 🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
-            console.log(` 🔗 Host: ${HOST}`);
-            console.log(` 🩺 API Health: http://${HOST}:${PORT}/api/health`);
-            console.log(` 💾 Base de datos: Conectada ✅`);
-            console.log(` ⏰ Recordatorios: Activos ✅`);
-            console.log(' ==========================================');
+            logger.info(`Servidor iniciado en ${HOST}:${PORT} [${process.env.NODE_ENV || 'development'}]`);
+            if (process.env.NODE_ENV !== 'production') {
+                console.log(` 🩺 Health: http://${HOST}:${PORT}/api/health`);
+            }
         });
         
     } catch (error) {
-        console.error('❌ Error al iniciar el servidor:', error);
+        logger.error('Error al iniciar el servidor', error);
         process.exit(1);
     }
 };
 
 // Manejo de cierre graceful
 process.on('SIGTERM', () => {
-    console.log('🛑 Recibida señal SIGTERM, cerrando servidor...');
+    logger.info('Señal SIGTERM recibida, cerrando servidor...');
     process.exit(0);
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 Recibida señal SIGINT, cerrando servidor...');
+    logger.info('Señal SIGINT recibida, cerrando servidor...');
     process.exit(0);
 });
 

@@ -115,12 +115,11 @@ class AuthController {
             try {
                 await sendPasswordResetEmail(user.email, `${user.first_name} ${user.last_name}`, resetLink);
             } catch (err) {
-                console.error('Error sending password reset email:', err);
+                // Error silencioso - el usuario no debe saber si falló
             }
 
             return res.status(200).json({ success: true, message: 'Si existe una cuenta asociada, recibirás un correo con instrucciones para restablecer tu contraseña.' });
         } catch (error) {
-            console.error('Error en forgotPassword:', error);
             return res.status(500).json({ success: false, message: 'Error interno del servidor' });
         }
     }

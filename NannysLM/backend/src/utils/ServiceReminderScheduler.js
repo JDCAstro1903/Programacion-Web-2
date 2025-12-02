@@ -6,6 +6,7 @@
 const cron = require('node-cron');
 const { executeQuery } = require('../config/database');
 const notificationSystem = require('./NotificationSystem');
+const logger = require('./logger');
 
 class ServiceReminderScheduler {
     constructor() {
@@ -18,18 +19,18 @@ class ServiceReminderScheduler {
      */
     start() {
         if (this.isRunning) {
-            console.log('⚠️ El scheduler ya está en ejecución');
+            logger.warn('Scheduler ya en ejecución');
             return;
         }
 
         // Ejecutar todos los días a las 9:00 AM
         this.job = cron.schedule('0 9 * * *', async () => {
-            console.log('🔔 Ejecutando tarea de recordatorios de servicios...');
+            logger.info('Ejecutando recordatorios de servicios');
             await this.checkAndSendReminders();
         });
 
         this.isRunning = true;
-        console.log('✅ Scheduler de recordatorios iniciado - Se ejecutará diariamente a las 9:00 AM');
+        logger.info('Scheduler de recordatorios iniciado (9:00 AM diario)');
         
         // Ejecutar inmediatamente al iniciar (opcional)
         // this.checkAndSendReminders();
@@ -42,7 +43,7 @@ class ServiceReminderScheduler {
         if (this.job) {
             this.job.stop();
             this.isRunning = false;
-            console.log('🛑 Scheduler de recordatorios detenido');
+            logger.info('Scheduler detenido');
         }
     }
 

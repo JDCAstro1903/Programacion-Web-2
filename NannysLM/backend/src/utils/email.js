@@ -1,4 +1,5 @@
 const sgMail = require('@sendgrid/mail');
+const logger = require('./logger');
 
 // Configurar SendGrid API Key
 if (process.env.SENDGRID_API_KEY) {
@@ -17,7 +18,7 @@ const isSendGridConfigured = () => {
  */
 const sendEmailWithSendGrid = async (to, subject, html) => {
     if (!isSendGridConfigured()) {
-        console.log('📨 Email (sin SendGrid):', { to, subject });
+        logger.debug('Email no enviado (SendGrid no configurado)', { to, subject });
         return { success: true, message: 'Email logged to console (SendGrid not configured)' };
     }
 
@@ -30,10 +31,10 @@ const sendEmailWithSendGrid = async (to, subject, html) => {
         };
 
         await sgMail.send(msg);
-        console.log('✅ Email sent via SendGrid:', to);
+        logger.email(to, subject);
         return { success: true, message: 'Email sent via SendGrid' };
     } catch (error) {
-        console.error('❌ Error sending email via SendGrid:', error.message);
+        logger.error(`Error enviando email a ${to}`, error);
         throw error;
     }
 };
