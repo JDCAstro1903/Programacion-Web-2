@@ -63,9 +63,7 @@ class ServiceReminderScheduler {
             const threeDaysDate = threeDaysAhead.toISOString().split('T')[0];
             const oneDayDate = oneDayAhead.toISOString().split('T')[0];
 
-            console.log(`📅 Buscando servicios para:
-  - Recordatorio 3 días: ${threeDaysDate}
-  - Recordatorio 1 día: ${oneDayDate}`);
+            logger.debug('Buscando servicios para recordatorios', { threeDaysDate, oneDayDate });
 
             // Buscar servicios confirmados para estas fechas
             const query = `
@@ -90,12 +88,12 @@ class ServiceReminderScheduler {
             const result = await executeQuery(query, [threeDaysDate, oneDayDate]);
 
             if (!result.success) {
-                console.error('❌ Error al buscar servicios para recordatorios:', result.error);
+                logger.error('Error al buscar servicios para recordatorios', result.error);
                 return;
             }
 
             const services = result.data;
-            console.log(`📋 Encontrados ${services.length} servicios para enviar recordatorios`);
+            logger.info(`Recordatorios: ${services.length} servicios pendientes`);
 
             for (const service of services) {
                 const serviceDate = new Date(service.start_date);
@@ -129,7 +127,7 @@ class ServiceReminderScheduler {
                 ]);
 
                 if (notificationCheck.success && notificationCheck.data.length > 0) {
-                    console.log(`⏭️ Recordatorio de ${daysAhead} día(s) ya enviado para servicio ${service.id}`);
+                    logger.debug(`Recordatorio ya enviado: servicio ${service.id}`);
                     continue;
                 }
 
@@ -144,7 +142,7 @@ class ServiceReminderScheduler {
                 const nannyName = `${service.nanny_first_name} ${service.nanny_last_name}`;
 
                 // Enviar recordatorio
-                console.log(`📧 Enviando recordatorio de ${daysAhead} día(s) para servicio ${service.id} a ${nannyName}`);
+                logger.debug(`Enviando recordatorio: servicio ${service.id}`);
                 
                 await notificationSystem.sendServiceReminder(
                     service.nanny_email,
@@ -155,14 +153,12 @@ class ServiceReminderScheduler {
                     service.id,
                     daysAhead
                 );
-
-                console.log(`✅ Recordatorio enviado exitosamente`);
             }
 
-            console.log('✅ Tarea de recordatorios completada');
+            logger.success('Tarea de recordatorios completada');
 
         } catch (error) {
-            console.error('❌ Error en checkAndSendReminders:', error);
+            logger.error('Error en checkAndSendReminders', error);
         }
     }
 
@@ -170,7 +166,7 @@ class ServiceReminderScheduler {
      * Método manual para probar el sistema de recordatorios
      */
     async testReminders() {
-        console.log('🧪 Ejecutando prueba manual de recordatorios...');
+        logger.info('Ejecutando prueba manual de recordatorios');
         await this.checkAndSendReminders();
     }
 }

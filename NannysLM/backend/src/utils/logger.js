@@ -11,8 +11,10 @@ const LOG_LEVELS = {
 };
 
 // Configurar nivel según entorno
+// En producción: SOLO errores críticos (0)
+// En desarrollo: Todo (3)
 const CURRENT_LEVEL = process.env.NODE_ENV === 'production' 
-    ? LOG_LEVELS.WARN  // En producción solo errores y advertencias
+    ? LOG_LEVELS.ERROR  // ⚠️ CAMBIO: En producción SOLO errores
     : LOG_LEVELS.DEBUG; // En desarrollo todo
 
 // Contador para evitar spam de logs repetidos

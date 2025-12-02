@@ -8,6 +8,17 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+// ===============================================
+// DESACTIVAR CONSOLE.LOG EN PRODUCCIÓN
+// ===============================================
+if (process.env.NODE_ENV === 'production') {
+    // Silenciar console.log en producción para evitar saturación de memoria
+    console.log = () => {};
+    console.info = () => {};
+    console.debug = () => {};
+    // Mantener console.error y console.warn para errores críticos
+}
+
 // Importar logger optimizado
 const logger = require('./src/utils/logger');
 
