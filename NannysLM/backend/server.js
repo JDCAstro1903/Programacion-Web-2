@@ -62,17 +62,23 @@ if (!fs.existsSync(uploadsDir)) {
 app.use(helmet());
 app.use(compression());
 
-// Rate limiting - Configuración más permisiva para desarrollo y uso normal
+// Rate limiting - Configuración muy permisiva para soportar polling y múltiples usuarios
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // 500 requests por ventana
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 2000, // 2000 requests por ventana
     message: { error: 'Demasiadas solicitudes desde esta IP, intenta nuevamente más tarde' },
     standardHeaders: true,
     legacyHeaders: false,
-    // Omitir el rate limiting para ciertas rutas si es necesario
+    // Omitir el rate limiting para endpoints que hacen polling constante
     skip: (req) => {
-        // No aplicar rate limiting a health checks
-        return req.path === '/api/health' || req.path === '/api/info';
+        // No aplicar rate limiting a health checks, notificaciones y búsqueda de servicios
+        const excludedPaths = [
+            '/api/health',
+            '/api/info',
+            '/api/v1/notifications',
+            '/api/v1/services'
+        ];
+        return excludedPaths.some(path => req.path.startsWith(path));
     }
 });
 app.use('/api/', limiter);
