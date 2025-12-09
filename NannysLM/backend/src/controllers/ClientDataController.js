@@ -301,7 +301,7 @@ const verifyClient = async (req, res) => {
         logger.info(`📬 Notificación y correo de rechazo enviados para usuario ${client.user_id}`);
       }
       
-      logger.success('Cliente ${clientId} ${status === 'verified' ? 'verificado' : 'rechazado'} correctamente`);
+      logger.success(`Cliente ${clientId} ${status === 'verified' ? 'verificado' : 'rechazado'} correctamente`);
       
       // Obtener datos actualizados del cliente
       const [updatedClientRows] = await pool.query(
@@ -383,7 +383,7 @@ const getAllClients = async (req, res) => {
         lastLogin: client.last_login
       }));
       
-      logger.success('${formattedClients.length} clientes obtenidos para admin`);
+      logger.success(`${formattedClients.length} clientes obtenidos para admin`);
       
       return res.status(200).json({
         success: true,

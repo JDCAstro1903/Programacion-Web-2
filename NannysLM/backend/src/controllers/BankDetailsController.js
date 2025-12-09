@@ -32,7 +32,7 @@ class BankDetailsController {
             const result = await executeQuery(query);
 
             if (result.success) {
-                logger.success('Se encontraron ${result.data.length} registros de datos bancarios`);
+                logger.success(`Se encontraron ${result.data.length} registros de datos bancarios`);
                 
                 const bankDetails = result.data.map(detail => ({
                     id: detail.id,

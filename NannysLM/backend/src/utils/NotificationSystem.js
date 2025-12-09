@@ -85,7 +85,7 @@ class NotificationSystem {
                 html
             });
 
-            logger.success('Correo enviado exitosamente a ${toEmail}`);
+            logger.success(`Correo enviado exitosamente a ${toEmail}`);
             logger.info(`   MessageID: ${info.messageId}`);
             return { success: true, messageId: info.messageId };
         } catch (error) {
@@ -116,7 +116,7 @@ class NotificationSystem {
             ]);
 
             if (result.success) {
-                logger.success('Notificación creada para usuario ${userId}: ${title}`);
+                logger.success(`Notificación creada para usuario ${userId}: ${title}`);
                 return { success: true, notificationId: result.data.insertId };
             } else {
                 throw new Error(result.error);

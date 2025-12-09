@@ -34,7 +34,7 @@ class PaymentController {
             ]);
 
             if (result.success) {
-                logger.success('Notificación creada para usuario ${userId}: ${title}`);
+                logger.success(`Notificación creada para usuario ${userId}: ${title}`);
                 return result;
             } else {
                 logger.error(`❌ Error al crear notificación: ${result.error}`);
@@ -324,7 +324,7 @@ class PaymentController {
                             'payment_pending_review',
                             paymentId
                         );
-                        logger.success('Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
+                        logger.success(`Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
                     } catch (notifError) {
                         logger.error(`⚠️ Error al crear notificación en BD para pago #${paymentId}:`, notifError);
                     }
@@ -339,7 +339,7 @@ class PaymentController {
                             amount,
                             `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`
                         );
-                        logger.success('Email notificación enviado al admin (${paymentData.admin_email}) sobre nuevo pago #${paymentId}`);
+                        logger.success(`Email notificación enviado al admin (${paymentData.admin_email}) sobre nuevo pago #${paymentId}`);
                     } catch (emailError) {
                         logger.error(`⚠️ Error al enviar email al admin para pago #${paymentId}:`, emailError.message);
                     }
@@ -549,7 +549,7 @@ class PaymentController {
                 });
             }
 
-            logger.success('Comprobante subido exitosamente para pago ${paymentId}:`, receiptUrl);
+            logger.success(`Comprobante subido exitosamente para pago ${paymentId}:`, receiptUrl);
 
             // Notificar al admin sobre el nuevo recibo de pago
             try {
@@ -600,7 +600,7 @@ class PaymentController {
                             nannyName,
                             paymentId
                         );
-                        logger.success('Notificación enviada al admin (${admin.email}) sobre pago #${paymentId}`);
+                        logger.success(`Notificación enviada al admin (${admin.email}) sobre pago #${paymentId}`);
                     } else {
                         logger.warn('⚠️ No se encontró ningún usuario admin en la base de datos');
                     }
@@ -715,7 +715,7 @@ class PaymentController {
             ]);
 
             if (createResult.success) {
-                logger.success('Pago creado para servicio ${serviceId}`);
+                logger.success(`Pago creado para servicio ${serviceId}`);
                 
                 // 🔔 Crear notificación al admin sobre el nuevo pago
                 try {
@@ -736,7 +736,7 @@ class PaymentController {
                             'payment_pending',
                             createResult.insertId
                         );
-                        logger.success('Notificación de nuevo pago enviada al admin`);
+                        logger.success('Notificación de nuevo pago enviada al admin');
                     }
                 } catch (notificationError) {
                     logger.error('⚠️ Error al crear notificación de pago:', notificationError);
@@ -841,7 +841,7 @@ class PaymentController {
                                 paymentId,
                                 'payment'
                             );
-                            logger.success('Notificación DB creada para cliente sobre pago #${paymentId} aprobado`);
+                            logger.success(`Notificación DB creada para cliente sobre pago #${paymentId} aprobado`);
                         } catch (notifError) {
                             logger.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
                         }
@@ -855,7 +855,7 @@ class PaymentController {
                                 payment.amount,
                                 nannyName
                             );
-                            logger.success('Email de aprobación enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
+                            logger.success(`Email de aprobación enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
                         } catch (emailError) {
                             logger.error(`⚠️ Error al enviar email de aprobación a cliente (${paymentData.client_email}):`, emailError.message);
                         }
@@ -873,7 +873,7 @@ class PaymentController {
                                 paymentId,
                                 'payment'
                             );
-                            logger.success('Notificación DB creada para cliente sobre pago #${paymentId} rechazado`);
+                            logger.success(`Notificación DB creada para cliente sobre pago #${paymentId} rechazado`);
                         } catch (notifError) {
                             logger.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
                         }
@@ -889,7 +889,7 @@ class PaymentController {
                                 `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`,
                                 notes || ''
                             );
-                            logger.success('Email de rechazo enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
+                            logger.success(`Email de rechazo enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
                         } catch (emailError) {
                             logger.error(`⚠️ Error al enviar email de rechazo a cliente (${paymentData.client_email}):`, emailError.message);
                         }

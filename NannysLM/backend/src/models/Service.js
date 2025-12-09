@@ -46,7 +46,7 @@ class Service {
           const hasConflict = await this.hasScheduleConflict(nanny.nanny_id, startDate, startTime, endTime);
           
           if (!hasConflict) {
-            logger.success('Nanny ${nanny.first_name} ${nanny.last_name} (ID: ${nanny.nanny_id}) está disponible sin conflictos`);
+            logger.success(`Nanny ${nanny.first_name} ${nanny.last_name} (ID: ${nanny.nanny_id}) está disponible sin conflictos`);
             return nanny;
           } else {
             logger.info(`⚠️ Nanny ${nanny.first_name} ${nanny.last_name} (ID: ${nanny.nanny_id}) tiene conflicto de horario`);
@@ -244,7 +244,7 @@ class Service {
         notification.related_type
       ]);
       
-      logger.success('Notificación enviada a nanny (user_id: ${nannyUserId})`);
+      logger.success(`Notificación enviada a nanny (user_id: ${nannyUserId})`);
     } catch (error) {
       logger.error('Error sending notification to nanny:', error);
     }
@@ -299,7 +299,7 @@ class Service {
       logger.debug('📊 Params:', params);
       
       const result = await executeQuery(query, params);
-      logger.success('Servicios encontrados: ${result.data?.length || 0}`);
+      logger.success(`Servicios encontrados: ${result.data?.length || 0}`);
       
       if (result.data && result.data.length > 0) {
         logger.info('📋 Primer servicio:', JSON.stringify(result.data[0], null, 2));
@@ -406,7 +406,7 @@ class Service {
 
       const serviceId = result.data.insertId;
 
-      logger.success('Servicio creado con ID: ${serviceId} en estado PENDING (sin nanny asignada)`);
+      logger.success(`Servicio creado con ID: ${serviceId} en estado PENDING (sin nanny asignada)`);
 
       // Notificar a todas las nannys disponibles
       await this.notifyAllAvailableNannys(serviceId, {
@@ -499,13 +499,13 @@ class Service {
             `${nanny.first_name} ${nanny.last_name}`,
             serviceData
           );
-          logger.success('Correo enviado a ${nanny.email}`);
+          logger.success(`Correo enviado a ${nanny.email}`);
         } catch (emailError) {
           logger.error(`❌ Error enviando correo a ${nanny.email}:`, emailError);
         }
       }
 
-      logger.success('Notificaciones enviadas a ${result.data.length} nannys`);
+      logger.success(`Notificaciones enviadas a ${result.data.length} nannys`);
     } catch (error) {
       logger.error('❌ Error notificando a nannys:', error);
     }
@@ -599,7 +599,7 @@ class Service {
 
       // Commit de la transacción - el servicio fue asignado exitosamente
       await conn.commit();
-      logger.success('Servicio ${serviceId} asignado a nanny ${nannyId} exitosamente`);
+      logger.success(`Servicio ${serviceId} asignado a nanny ${nannyId} exitosamente`);
 
       // Notificar al cliente que su servicio fue aceptado
       const clientQuery = 'SELECT user_id FROM clients WHERE id = ?';
@@ -749,7 +749,7 @@ class Service {
         ]);
       }
 
-      logger.success('Notificaciones enviadas a ${result.data.length} nannys`);
+      logger.success(`Notificaciones enviadas a ${result.data.length} nannys`);
     } catch (error) {
       logger.error('❌ Error notificando a otras nannys:', error);
     }

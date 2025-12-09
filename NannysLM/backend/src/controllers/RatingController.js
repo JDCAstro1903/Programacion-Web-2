@@ -323,7 +323,7 @@ class RatingController {
       }
 
       const ratingsArray = Array.isArray(result.data) ? result.data : [];
-      logger.success('Se obtuvieron ${ratingsArray.length} ratings para nanny ${nannyId}`);
+      logger.success(`Se obtuvieron ${ratingsArray.length} ratings para nanny ${nannyId}`);
 
       return res.json({
         success: true,
@@ -384,7 +384,7 @@ class RatingController {
         
         if (updateResult.success) {
           updated++;
-          logger.success('Nanny ${row.nanny_id}: ${row.avg_rating.toFixed(2)} promedio, ${row.total_ratings} ratings`);
+          logger.success(`Nanny ${row.nanny_id}: ${row.avg_rating.toFixed(2)} promedio, ${row.total_ratings} ratings`);
         }
       }
 

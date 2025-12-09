@@ -99,7 +99,7 @@ const createNanny = async (req, res) => {
         );
         
         const userId = userResult.insertId;
-        logger.success('Usuario creado con ID: ${userId}`);
+        logger.success(`Usuario creado con ID: ${userId}`);
         
         // 4️⃣ Crear nanny en tabla nannys
         const [nannyResult] = await connection.query(
@@ -128,7 +128,7 @@ const createNanny = async (req, res) => {
         );
         
         const nannyId = nannyResult.insertId;
-        logger.success('Nanny creada con ID: ${nannyId}`);
+        logger.success(`Nanny creada con ID: ${nannyId}`);
         
         // 5️⃣ Crear entrada en nanny_availability
         const [availabilityResult] = await connection.query(
@@ -146,11 +146,11 @@ const createNanny = async (req, res) => {
             ]
         );
         
-        logger.success('Disponibilidad creada para nanny ${nannyId}`);
+        logger.success(`Disponibilidad creada para nanny ${nannyId}`);
         
         // Confirmar transacción
         await connection.commit();
-        logger.success('Transacción completada exitosamente`);
+        logger.success(`Transacción completada exitosamente`);
         
         // 6️⃣ Enviar correo con credenciales a la nanny
         const loginLink = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/login`;
@@ -247,7 +247,7 @@ const getAllNannys = async (req, res) => {
             ORDER BY n.created_at DESC`
         );
         
-        logger.success('Se obtuvieron ${nannys.length} nannys`);
+        logger.success(`Se obtuvieron ${nannys.length} nannys`);
         
         return res.status(200).json({
             success: true,
@@ -312,7 +312,7 @@ const getNannyById = async (req, res) => {
             });
         }
         
-        logger.success('Nanny ${nannyId} obtenida`);
+        logger.success(`Nanny ${nannyId} obtenida`);
         
         return res.status(200).json({
             success: true,
@@ -373,7 +373,7 @@ const getNannyByUserId = async (req, res) => {
             });
         }
         
-        logger.success('Nanny encontrada para user_id ${userId}:`, nannys[0].id);
+        logger.success(`Nanny encontrada para user_id ${userId}:`, nannys[0].id);
         
         return res.status(200).json({
             success: true,
@@ -434,7 +434,7 @@ const updateNannyStatus = async (req, res) => {
             });
         }
 
-        logger.success('Status actualizado a: ${status}`);
+        logger.success(`Status actualizado a: ${status}`);
 
         return res.json({
             success: true,
@@ -502,7 +502,7 @@ const updateNannyHourlyRate = async (req, res) => {
             });
         }
 
-        logger.success('Tarifa actualizada a: $${hourly_rate}`);
+        logger.success(`Tarifa actualizada a: $${hourly_rate}`);
 
         return res.json({
             success: true,

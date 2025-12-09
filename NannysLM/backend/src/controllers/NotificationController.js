@@ -27,7 +27,7 @@ const getNotifications = async (req, res) => {
             [userId]
         );
         
-        logger.success('Se obtuvieron ${rows.length} notificaciones para user_id: ${userId}`);
+        logger.success(`Se obtuvieron ${rows.length} notificaciones para user_id: ${userId}`);
         
         return res.status(200).json({
             success: true,
@@ -76,7 +76,7 @@ const markAsRead = async (req, res) => {
             [notificationId]
         );
         
-        logger.success('Notificación ${notificationId} marcada como leída`);
+        logger.success(`Notificación ${notificationId} marcada como leída`);
         
         return res.status(200).json({
             success: true,
@@ -107,7 +107,7 @@ const markAllAsRead = async (req, res) => {
             [userId]
         );
         
-        logger.success('Se marcaron ${result.affectedRows} notificaciones como leídas`);
+        logger.success(`Se marcaron ${result.affectedRows} notificaciones como leídas`);
         
         return res.status(200).json({
             success: true,
@@ -153,7 +153,7 @@ const deleteNotification = async (req, res) => {
             [notificationId]
         );
         
-        logger.success('Notificación ${notificationId} eliminada`);
+        logger.success(`Notificación ${notificationId} eliminada`);
         
         return res.status(200).json({
             success: true,
