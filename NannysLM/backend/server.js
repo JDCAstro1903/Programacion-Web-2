@@ -148,14 +148,38 @@ app.use('/uploads', (req, res, next) => {
 // ===============================================
 // RUTAS DE LA API
 // ===============================================
-// Health check
-app.get('/api/health', (req, res) => {
-    res.status(200).json({
-        status: 'OK',
-        message: 'NannysLM API está funcionando correctamente',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV
-    });
+// Health check mejorado
+app.get('/api/health', async (req, res) => {
+    try {
+        // Verificar conexión a DB
+        let dbStatus = 'unknown';
+        try {
+            const dbTest = await testConnection();
+            dbStatus = dbTest ? 'connected' : 'disconnected';
+        } catch (dbError) {
+            dbStatus = 'error: ' + dbError.message;
+        }
+
+        res.status(200).json({
+            status: 'OK',
+            message: 'NannysLM API está funcionando correctamente',
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+            database: dbStatus,
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+            },
+            uptime: Math.round(process.uptime()) + ' segundos'
+        });
+    } catch (error) {
+        logger.error('Error en health check:', error);
+        res.status(500).json({
+            status: 'ERROR',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // Info de la API
@@ -234,16 +258,39 @@ const startServer = async () => {
         }
         
         // Iniciar scheduler de recordatorios de servicios
-        const serviceReminderScheduler = require('./src/utils/ServiceReminderScheduler');
-        serviceReminderScheduler.start();
+        try {
+            const serviceReminderScheduler = require('./src/utils/ServiceReminderScheduler');
+            serviceReminderScheduler.start();
+            logger.info('Scheduler de recordatorios iniciado correctamente');
+        } catch (schedulerError) {
+            logger.error('Error al iniciar scheduler de recordatorios:', schedulerError.message);
+            logger.warn('El servidor continuará sin el scheduler de recordatorios');
+        }
         
         const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
         
         app.listen(PORT, HOST, () => {
-            logger.info(`Servidor iniciado en ${HOST}:${PORT} [${process.env.NODE_ENV || 'development'}]`);
-            if (process.env.NODE_ENV !== 'production') {
-                console.log(` 🩺 Health: http://${HOST}:${PORT}/api/health`);
-            }
+            logger.success('═══════════════════════════════════════════════════');
+            logger.success(`✅ SERVIDOR INICIADO CORRECTAMENTE`);
+            logger.success(`📍 Host: ${HOST}:${PORT}`);
+            logger.success(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+            logger.success(`🗄️  Base de datos: ${process.env.DB_NAME}`);
+            logger.success(`🔗 Health check: http://${HOST}:${PORT}/api/health`);
+            logger.success('═══════════════════════════════════════════════════');
+            
+            // Hacer un health check inicial
+            setTimeout(async () => {
+                try {
+                    const dbTest = await testConnection();
+                    if (dbTest) {
+                        logger.success('✅ Conexión a base de datos verificada');
+                    } else {
+                        logger.warn('⚠️  Advertencia: Problemas con la conexión a base de datos');
+                    }
+                } catch (e) {
+                    logger.error('❌ Error verificando conexión a DB:', e.message);
+                }
+            }, 2000);
         });
         
     } catch (error) {
@@ -251,6 +298,25 @@ const startServer = async () => {
         process.exit(1);
     }
 };
+
+// Manejo de errores no capturados
+process.on('uncaughtException', (error) => {
+    logger.error('❌ Excepción no capturada:', error);
+    logger.error('Stack:', error.stack);
+    // No cerrar el servidor en producción
+    if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+    }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error('❌ Promise rechazada no manejada:', reason);
+    logger.error('Promise:', promise);
+    // No cerrar el servidor en producción
+    if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+    }
+});
 
 // Manejo de cierre graceful
 process.on('SIGTERM', () => {

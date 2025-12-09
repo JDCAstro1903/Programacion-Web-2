@@ -9,13 +9,17 @@ const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'AhlLskvSmCjAjFOkchyFzziBGTfVDGpa',
+    password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'railway',
     waitForConnections: true,
     connectionLimit: 10,
+    maxIdle: 10,
+    idleTimeout: 60000,
     queueLimit: 0,
-    // Configuraciones válidas para MySQL2
-    charset: 'utf8mb4'
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+    charset: 'utf8mb4',
+    connectTimeout: 10000
 };
 
 // Crear el pool de conexiones
@@ -39,15 +43,24 @@ const testConnection = async () => {
 };
 
 /**
- * Función helper para ejecutar queries con manejo de errores
+ * Función helper para ejecutar queries con manejo de errores y reintentos
  */
-const executeQuery = async (query, params = []) => {
-    try {
-        const [results] = await pool.execute(query, params);
-        return { success: true, data: results };
-    } catch (error) {
-        console.error('Error en query:', error.message);
-        return { success: false, error: error.message };
+const executeQuery = async (query, params = [], retries = 3) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const [results] = await pool.execute(query, params);
+            return { success: true, data: results };
+        } catch (error) {
+            console.error(`Error en query (intento ${attempt}/${retries}):`, error.message);
+            
+            // Si es error de conexión y quedan reintentos, esperar y reintentar
+            if (attempt < retries && (error.code === 'ECONNRESET' || error.code === 'PROTOCOL_CONNECTION_LOST' || error.code === 'ETIMEDOUT')) {
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                continue;
+            }
+            
+            return { success: false, error: error.message, code: error.code };
+        }
     }
 };
 
