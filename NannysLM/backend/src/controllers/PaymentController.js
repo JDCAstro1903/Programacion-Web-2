@@ -23,7 +23,7 @@ class PaymentController {
                 userId ?? null,
                 title ?? 'Notificación de Pago',
                 message ?? '',
-                type ?? 'payment_notification',
+                type ?? 'payment_notif',
                 paymentId ?? null
             ];
 
@@ -331,7 +331,7 @@ class PaymentController {
                             paymentData.admin_user_id,
                             notifTitle,
                             notifMessage,
-                            'payment_pending_review',
+                            'payment_review',
                             paymentId
                         );
                         logger.success(`Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
