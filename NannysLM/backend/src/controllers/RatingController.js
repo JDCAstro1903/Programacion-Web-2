@@ -1,5 +1,5 @@
 const { executeQuery } = require('../config/database');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 const notificationSystem = require('../utils/NotificationSystem');
 
 class RatingController {

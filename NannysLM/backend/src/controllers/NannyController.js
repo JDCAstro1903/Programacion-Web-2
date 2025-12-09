@@ -1,6 +1,6 @@
 // Controlador para gestionar nannys
 const { pool } = require('../config/database');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 const bcrypt = require('bcrypt');
 const { sendNannyCredentialsEmail } = require('../utils/email');
 

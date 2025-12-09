@@ -1,6 +1,6 @@
 // Controlador para gestionar notificaciones
 const { pool } = require('../config/database');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 
 // Obtener todas las notificaciones del usuario autenticado
 const getNotifications = async (req, res) => {

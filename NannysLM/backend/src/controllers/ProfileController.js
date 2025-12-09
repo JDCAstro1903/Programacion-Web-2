@@ -1,5 +1,5 @@
 const UserModel = require('../models/User');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 const { executeQuery } = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { uploadImage, deleteImage, extractPublicId } = require('../config/cloudinary');

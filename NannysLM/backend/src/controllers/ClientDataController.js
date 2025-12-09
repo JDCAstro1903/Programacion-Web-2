@@ -1,6 +1,6 @@
 // Controlador para gestionar información específica del cliente
 const { pool } = require('../config/database');
-const logger = require('./logger');
+const logger = require('../utils/logger');
 const notificationSystem = require('../utils/NotificationSystem');
 const { sendVerificationApprovedEmail, sendVerificationRejectedEmail } = require('../utils/email');
 
