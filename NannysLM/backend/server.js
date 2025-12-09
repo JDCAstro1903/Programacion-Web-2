@@ -62,13 +62,18 @@ if (!fs.existsSync(uploadsDir)) {
 app.use(helmet());
 app.use(compression());
 
-// Rate limiting
+// Rate limiting - Configuración más permisiva para desarrollo y uso normal
 const limiter = rateLimit({
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutos
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // 500 requests por ventana
     message: { error: 'Demasiadas solicitudes desde esta IP, intenta nuevamente más tarde' },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    // Omitir el rate limiting para ciertas rutas si es necesario
+    skip: (req) => {
+        // No aplicar rate limiting a health checks
+        return req.path === '/api/health' || req.path === '/api/info';
+    }
 });
 app.use('/api/', limiter);
 
