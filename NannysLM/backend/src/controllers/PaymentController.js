@@ -30,7 +30,8 @@ class PaymentController {
             // Verificar que userId y paymentId no sean null
             if (!params[0] || !params[4]) {
                 const error = `Parámetros inválidos: userId=${userId}, paymentId=${paymentId}`;
-                logger.error(`❌ ${error}`);
+                logger.error(`❌ createPaymentNotification: ${error}`);
+                logger.error(`Stack trace:`, new Error().stack);
                 return { success: false, error };
             }
 
@@ -474,10 +475,19 @@ class PaymentController {
             const { executeQuery } = require('../config/database');
             
             logger.info('📤 Intentando subir comprobante:');
+            logger.info('  - URL params:', req.params);
             logger.info('  - paymentId:', paymentId);
             logger.info('  - userId:', userId);
             logger.info('  - req.file:', req.file ? req.file.filename : 'undefined');
             
+            if (!paymentId) {
+                logger.error('❌ paymentId no fue proporcionado en la URL');
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID de pago no especificado'
+                });
+            }
+
             if (!userId) {
                 return res.status(401).json({
                     success: false,
