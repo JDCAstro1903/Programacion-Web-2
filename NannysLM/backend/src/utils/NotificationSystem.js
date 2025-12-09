@@ -99,6 +99,23 @@ class NotificationSystem {
      */
     async createNotification(userId, title, message, type, relatedId = null, relatedType = 'general') {
         try {
+            // Validar y sanitizar parámetros para evitar undefined
+            const params = [
+                userId ?? null,
+                title ?? 'Notificación',
+                message ?? '',
+                type ?? 'notification',
+                relatedId ?? null,
+                relatedType ?? 'general'
+            ];
+
+            // Verificar que userId no sea null
+            if (!params[0]) {
+                const error = `userId es requerido pero recibió: ${userId}`;
+                logger.error(`❌ ${error}`);
+                return { success: false, error };
+            }
+
             const query = `
                 INSERT INTO notifications (
                     user_id, title, message, type, is_read, 
@@ -106,14 +123,7 @@ class NotificationSystem {
                 ) VALUES (?, ?, ?, ?, false, ?, ?, NOW())
             `;
 
-            const result = await executeQuery(query, [
-                userId,
-                title,
-                message,
-                type,
-                relatedId,
-                relatedType
-            ]);
+            const result = await executeQuery(query, params);
 
             if (result.success) {
                 logger.success(`Notificación creada para usuario ${userId}: ${title}`);
@@ -298,26 +308,47 @@ class NotificationSystem {
     async notifyAdminNewPayment(adminEmail, adminUserId, adminName, clientName, serviceName, amount, nannyName, paymentId) {
         const { sendNewPaymentNotificationEmail } = require('./email');
         
+        // Validar y sanitizar parámetros
+        const safeAdminEmail = adminEmail || 'admin@example.com';
+        const safeAdminUserId = adminUserId;
+        const safeAdminName = adminName || 'Admin';
+        const safeClientName = clientName || 'Cliente';
+        const safeServiceName = serviceName || 'Servicio sin título';
+        const safeAmount = parseFloat(amount) || 0;
+        const safeNannyName = nannyName || 'N/A';
+        const safePaymentId = paymentId;
+
+        // Verificar parámetros críticos
+        if (!safeAdminUserId) {
+            logger.error('❌ notifyAdminNewPayment: adminUserId es requerido');
+            return { success: false, error: 'adminUserId es requerido' };
+        }
+
+        if (!safePaymentId) {
+            logger.error('❌ notifyAdminNewPayment: paymentId es requerido');
+            return { success: false, error: 'paymentId es requerido' };
+        }
+        
         const title = '💰 Nuevo Recibo de Pago Recibido';
-        const message = `${clientName} ha enviado un recibo de pago de $${amount} para el servicio: ${serviceName}`;
+        const message = `${safeClientName} ha enviado un recibo de pago de $${safeAmount.toFixed(2)} para el servicio: ${safeServiceName}`;
         
         // Enviar correo
         const emailResult = await sendNewPaymentNotificationEmail(
-            adminEmail,
-            adminName,
-            clientName,
-            serviceName,
-            amount,
-            nannyName
+            safeAdminEmail,
+            safeAdminName,
+            safeClientName,
+            safeServiceName,
+            safeAmount,
+            safeNannyName
         );
         
         // Crear notificación
         const notificationResult = await this.createNotification(
-            adminUserId,
+            safeAdminUserId,
             title,
             message,
             'payment_pending',
-            paymentId,
+            safePaymentId,
             'payment'
         );
         

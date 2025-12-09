@@ -18,6 +18,22 @@ class PaymentController {
      */
     static async createPaymentNotification(userId, title, message, type, paymentId) {
         try {
+            // Validar que no haya undefined - convertir a null si es necesario
+            const params = [
+                userId ?? null,
+                title ?? 'Notificación de Pago',
+                message ?? '',
+                type ?? 'payment_notification',
+                paymentId ?? null
+            ];
+
+            // Verificar que userId y paymentId no sean null
+            if (!params[0] || !params[4]) {
+                const error = `Parámetros inválidos: userId=${userId}, paymentId=${paymentId}`;
+                logger.error(`❌ ${error}`);
+                return { success: false, error };
+            }
+
             const query = `
                 INSERT INTO notifications (
                     user_id, title, message, type, is_read, 
@@ -25,13 +41,7 @@ class PaymentController {
                 ) VALUES (?, ?, ?, ?, false, ?, 'payment', NOW())
             `;
 
-            const result = await executeQuery(query, [
-                userId,
-                title,
-                message,
-                type,
-                paymentId
-            ]);
+            const result = await executeQuery(query, params);
 
             if (result.success) {
                 logger.success(`Notificación creada para usuario ${userId}: ${title}`);
@@ -584,19 +594,28 @@ class PaymentController {
                     
                     if (adminResult.success && adminResult.data.length > 0) {
                         const admin = adminResult.data[0];
-                        const clientName = `${paymentInfo.client_first_name} ${paymentInfo.client_last_name}`;
+                        const clientName = `${paymentInfo.client_first_name || 'Cliente'} ${paymentInfo.client_last_name || ''}`.trim();
                         const nannyName = paymentInfo.nanny_first_name 
                             ? `${paymentInfo.nanny_first_name} ${paymentInfo.nanny_last_name}`
                             : 'N/A';
                         
                         logger.info('📧 Enviando notificación al admin sobre nuevo recibo de pago...');
-                        await notificationSystem.notifyAdminNewPayment(
-                            admin.email,
-                            admin.id,
-                            admin.first_name,
+                        logger.debug('Datos de pago:', {
+                            adminEmail: admin.email,
+                            adminId: admin.id,
                             clientName,
-                            paymentInfo.service_title,
-                            paymentInfo.amount,
+                            serviceTitle: paymentInfo.service_title,
+                            amount: paymentInfo.amount,
+                            paymentId
+                        });
+                        
+                        await notificationSystem.notifyAdminNewPayment(
+                            admin.email ?? 'admin@example.com',
+                            admin.id,
+                            admin.first_name ?? 'Admin',
+                            clientName,
+                            paymentInfo.service_title ?? 'Servicio',
+                            parseFloat(paymentInfo.amount) || 0,
                             nannyName,
                             paymentId
                         );
