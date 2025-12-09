@@ -30,8 +30,16 @@ class PaymentController {
             // Verificar que userId y paymentId no sean null
             if (!params[0] || !params[4]) {
                 const error = `Parámetros inválidos: userId=${userId}, paymentId=${paymentId}`;
+                const stack = new Error().stack;
                 logger.error(`❌ createPaymentNotification: ${error}`);
-                logger.error(`Stack trace:`, new Error().stack);
+                logger.error('📍 Llamado desde:');
+                // Imprimir el stack trace línea por línea
+                if (stack) {
+                    stack.split('\n').slice(1, 6).forEach(line => {
+                        logger.error(line.trim());
+                    });
+                }
+                // NO fallar, solo retornar error
                 return { success: false, error };
             }
 
@@ -323,22 +331,28 @@ class PaymentController {
                 const paymentData = await PaymentController.getPaymentDataForNotification(paymentId);
                 
                 // Notificar al admin sobre el nuevo pago
-                if (paymentData && paymentData.admin_user_id) {
+                if (paymentData && paymentData.admin_user_id && paymentId) {
                     const notifTitle = `💰 Nuevo Pago Recibido - $${amount.toFixed(2)}`;
                     const notifMessage = `${paymentData.client_first_name} ${paymentData.client_last_name} ha enviado un pago pendiente de revisión`;
                     
                     try {
-                        await PaymentController.createPaymentNotification(
+                        const notifResult = await PaymentController.createPaymentNotification(
                             paymentData.admin_user_id,
                             notifTitle,
                             notifMessage,
                             'payment_review',
                             paymentId
                         );
-                        logger.success(`Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
+                        if (notifResult.success) {
+                            logger.success(`Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
+                        } else {
+                            logger.warn(`⚠️ No se pudo crear notificación: ${notifResult.error}`);
+                        }
                     } catch (notifError) {
                         logger.error(`⚠️ Error al crear notificación en BD para pago #${paymentId}:`, notifError);
                     }
+                } else if (!paymentId) {
+                    logger.warn('⚠️ No se creó notificación porque paymentId es undefined');
 
                     // Enviar email al admin
                     try {
@@ -744,10 +758,16 @@ class PaymentController {
             ]);
 
             if (createResult.success) {
-                logger.success(`Pago creado para servicio ${serviceId}`);
+                const newPaymentId = createResult.insertId;
+                logger.success(`Pago creado para servicio ${serviceId} con ID ${newPaymentId}`);
                 
                 // 🔔 Crear notificación al admin sobre el nuevo pago
                 try {
+                    if (!newPaymentId) {
+                        logger.error('❌ No se obtuvo insertId del pago creado');
+                        throw new Error('No se pudo obtener el ID del pago');
+                    }
+
                     const adminQuery = `
                         SELECT id FROM users WHERE user_type = 'admin' LIMIT 1
                     `;
@@ -758,14 +778,18 @@ class PaymentController {
                         const notificationTitle = '💰 Nuevo Pago para Verificar';
                         const notificationMessage = `Se ha registrado un nuevo pago por $${amount.toFixed(2)} que requiere verificación del comprobante.`;
                         
-                        await PaymentController.createPaymentNotification(
+                        const notifResult = await PaymentController.createPaymentNotification(
                             adminId,
                             notificationTitle,
                             notificationMessage,
                             'payment_pending',
-                            createResult.insertId
+                            newPaymentId
                         );
-                        logger.success('Notificación de nuevo pago enviada al admin');
+                        if (notifResult.success) {
+                            logger.success('Notificación de nuevo pago enviada al admin');
+                        } else {
+                            logger.warn(`⚠️ No se pudo crear notificación: ${notifResult.error}`);
+                        }
                     }
                 } catch (notificationError) {
                     logger.error('⚠️ Error al crear notificación de pago:', notificationError);
@@ -776,7 +800,7 @@ class PaymentController {
                     success: true,
                     message: 'Pago inicializado exitosamente',
                     data: {
-                        paymentId: createResult.insertId,
+                        paymentId: newPaymentId,
                         serviceId: serviceId,
                         amount: amount,
                         platformFee: platformFee,
