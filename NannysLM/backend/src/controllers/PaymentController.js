@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const logger = require('./logger');
 const { 
     sendPaymentApprovedEmail,
     sendPaymentRejectedEmail,
@@ -33,14 +34,14 @@ class PaymentController {
             ]);
 
             if (result.success) {
-                console.log(`✅ Notificación creada para usuario ${userId}: ${title}`);
+                logger.success('Notificación creada para usuario ${userId}: ${title}`);
                 return result;
             } else {
-                console.error(`❌ Error al crear notificación: ${result.error}`);
+                logger.error(`❌ Error al crear notificación: ${result.error}`);
                 return result;
             }
         } catch (error) {
-            console.error('❌ Error en createPaymentNotification:', error);
+            logger.error('❌ Error en createPaymentNotification:', error);
             return { success: false, error: error.message };
         }
     }
@@ -90,11 +91,11 @@ class PaymentController {
             if (result.success && result.data.length > 0) {
                 return result.data[0];
             } else {
-                console.error(`❌ No se encontraron datos para el pago ${paymentId}`);
+                logger.error(`❌ No se encontraron datos para el pago ${paymentId}`);
                 return null;
             }
         } catch (error) {
-            console.error('❌ Error en getPaymentDataForNotification:', error);
+            logger.error('❌ Error en getPaymentDataForNotification:', error);
             return null;
         }
     }
@@ -189,7 +190,7 @@ class PaymentController {
                     service_status: payment.service_status
                 }));
 
-                console.log('✅ Pagos procesados:', payments.length);
+                logger.success('Pagos procesados:', payments.length);
 
                 res.json({
                     success: true,
@@ -200,7 +201,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo pagos:', error);
+            logger.error('Error obteniendo pagos:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -261,7 +262,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo pago:', error);
+            logger.error('Error obteniendo pago:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -323,9 +324,9 @@ class PaymentController {
                             'payment_pending_review',
                             paymentId
                         );
-                        console.log(`✅ Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
+                        logger.success('Notificación DB creada para admin sobre nuevo pago #${paymentId}`);
                     } catch (notifError) {
-                        console.error(`⚠️ Error al crear notificación en BD para pago #${paymentId}:`, notifError);
+                        logger.error(`⚠️ Error al crear notificación en BD para pago #${paymentId}:`, notifError);
                     }
 
                     // Enviar email al admin
@@ -338,9 +339,9 @@ class PaymentController {
                             amount,
                             `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`
                         );
-                        console.log(`✅ Email notificación enviado al admin (${paymentData.admin_email}) sobre nuevo pago #${paymentId}`);
+                        logger.success('Email notificación enviado al admin (${paymentData.admin_email}) sobre nuevo pago #${paymentId}`);
                     } catch (emailError) {
-                        console.error(`⚠️ Error al enviar email al admin para pago #${paymentId}:`, emailError.message);
+                        logger.error(`⚠️ Error al enviar email al admin para pago #${paymentId}:`, emailError.message);
                     }
                 }
 
@@ -354,7 +355,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error creando pago:', error);
+            logger.error('Error creando pago:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -398,7 +399,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error actualizando pago:', error);
+            logger.error('Error actualizando pago:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -444,7 +445,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo estadísticas:', error);
+            logger.error('Error obteniendo estadísticas:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -462,10 +463,10 @@ class PaymentController {
             const userId = req.user?.id;
             const { executeQuery } = require('../config/database');
             
-            console.log('📤 Intentando subir comprobante:');
-            console.log('  - paymentId:', paymentId);
-            console.log('  - userId:', userId);
-            console.log('  - req.file:', req.file ? req.file.filename : 'undefined');
+            logger.info('📤 Intentando subir comprobante:');
+            logger.info('  - paymentId:', paymentId);
+            logger.info('  - userId:', userId);
+            logger.info('  - req.file:', req.file ? req.file.filename : 'undefined');
             
             if (!userId) {
                 return res.status(401).json({
@@ -475,7 +476,7 @@ class PaymentController {
             }
             
             if (!req.file) {
-                console.log('❌ No hay archivo receipt');
+                logger.info('❌ No hay archivo receipt');
                 return res.status(400).json({
                     success: false,
                     message: 'No se seleccionó ningún archivo de comprobante'
@@ -523,9 +524,9 @@ class PaymentController {
                     `receipt_${paymentId}_${Date.now()}`
                 );
                 receiptUrl = cloudinaryResult.secure_url;
-                console.log('📤 Recibo subido a Cloudinary:', receiptUrl);
+                logger.info('📤 Recibo subido a Cloudinary:', receiptUrl);
             } catch (error) {
-                console.error('❌ Error subiendo recibo a Cloudinary:', error);
+                logger.error('❌ Error subiendo recibo a Cloudinary:', error);
                 return res.status(500).json({
                     success: false,
                     message: 'Error al subir el comprobante de pago'
@@ -548,7 +549,7 @@ class PaymentController {
                 });
             }
 
-            console.log(`✅ Comprobante subido exitosamente para pago ${paymentId}:`, receiptUrl);
+            logger.success('Comprobante subido exitosamente para pago ${paymentId}:`, receiptUrl);
 
             // Notificar al admin sobre el nuevo recibo de pago
             try {
@@ -588,7 +589,7 @@ class PaymentController {
                             ? `${paymentInfo.nanny_first_name} ${paymentInfo.nanny_last_name}`
                             : 'N/A';
                         
-                        console.log('📧 Enviando notificación al admin sobre nuevo recibo de pago...');
+                        logger.info('📧 Enviando notificación al admin sobre nuevo recibo de pago...');
                         await notificationSystem.notifyAdminNewPayment(
                             admin.email,
                             admin.id,
@@ -599,13 +600,13 @@ class PaymentController {
                             nannyName,
                             paymentId
                         );
-                        console.log(`✅ Notificación enviada al admin (${admin.email}) sobre pago #${paymentId}`);
+                        logger.success('Notificación enviada al admin (${admin.email}) sobre pago #${paymentId}`);
                     } else {
-                        console.warn('⚠️ No se encontró ningún usuario admin en la base de datos');
+                        logger.warn('⚠️ No se encontró ningún usuario admin en la base de datos');
                     }
                 }
             } catch (notifError) {
-                console.error('⚠️ Error al notificar al admin sobre nuevo pago:', notifError);
+                logger.error('⚠️ Error al notificar al admin sobre nuevo pago:', notifError);
             }
 
             return res.json({
@@ -620,7 +621,7 @@ class PaymentController {
             });
 
         } catch (error) {
-            console.error('❌ Error al subir comprobante:', error);
+            logger.error('❌ Error al subir comprobante:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error al subir el comprobante',
@@ -714,7 +715,7 @@ class PaymentController {
             ]);
 
             if (createResult.success) {
-                console.log(`✅ Pago creado para servicio ${serviceId}`);
+                logger.success('Pago creado para servicio ${serviceId}`);
                 
                 // 🔔 Crear notificación al admin sobre el nuevo pago
                 try {
@@ -735,10 +736,10 @@ class PaymentController {
                             'payment_pending',
                             createResult.insertId
                         );
-                        console.log(`✅ Notificación de nuevo pago enviada al admin`);
+                        logger.success('Notificación de nuevo pago enviada al admin`);
                     }
                 } catch (notificationError) {
-                    console.error('⚠️ Error al crear notificación de pago:', notificationError);
+                    logger.error('⚠️ Error al crear notificación de pago:', notificationError);
                     // No interrumpimos el flujo si falla la notificación
                 }
                 
@@ -759,7 +760,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error al inicializar pago:', error);
+            logger.error('Error al inicializar pago:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error al crear el pago',
@@ -799,7 +800,7 @@ class PaymentController {
 
             const payment = paymentResult.data[0];
 
-            console.log(`🔍 Verificando pago #${paymentId} - Estado actual: ${payment.payment_status}`);
+            logger.debug(`🔍 Verificando pago #${paymentId} - Estado actual: ${payment.payment_status}`);
 
             if (payment.payment_status !== 'processing') {
                 return res.status(400).json({
@@ -840,9 +841,9 @@ class PaymentController {
                                 paymentId,
                                 'payment'
                             );
-                            console.log(`✅ Notificación DB creada para cliente sobre pago #${paymentId} aprobado`);
+                            logger.success('Notificación DB creada para cliente sobre pago #${paymentId} aprobado`);
                         } catch (notifError) {
-                            console.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
+                            logger.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
                         }
 
                         // Enviar email de aprobación
@@ -854,9 +855,9 @@ class PaymentController {
                                 payment.amount,
                                 nannyName
                             );
-                            console.log(`✅ Email de aprobación enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
+                            logger.success('Email de aprobación enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
                         } catch (emailError) {
-                            console.error(`⚠️ Error al enviar email de aprobación a cliente (${paymentData.client_email}):`, emailError.message);
+                            logger.error(`⚠️ Error al enviar email de aprobación a cliente (${paymentData.client_email}):`, emailError.message);
                         }
                     } else {
                         // Notificar al cliente que el pago fue rechazado (BD + correo)
@@ -872,9 +873,9 @@ class PaymentController {
                                 paymentId,
                                 'payment'
                             );
-                            console.log(`✅ Notificación DB creada para cliente sobre pago #${paymentId} rechazado`);
+                            logger.success('Notificación DB creada para cliente sobre pago #${paymentId} rechazado`);
                         } catch (notifError) {
-                            console.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
+                            logger.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
                         }
 
                         // Enviar email de rechazo
@@ -888,13 +889,13 @@ class PaymentController {
                                 `${paymentData.nanny_first_name} ${paymentData.nanny_last_name}`,
                                 notes || ''
                             );
-                            console.log(`✅ Email de rechazo enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
+                            logger.success('Email de rechazo enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
                         } catch (emailError) {
-                            console.error(`⚠️ Error al enviar email de rechazo a cliente (${paymentData.client_email}):`, emailError.message);
+                            logger.error(`⚠️ Error al enviar email de rechazo a cliente (${paymentData.client_email}):`, emailError.message);
                         }
                     }
                 } else {
-                    console.warn(`⚠️ No se encontraron datos del cliente para enviar notificaciones del pago #${paymentId}`);
+                    logger.warn(`⚠️ No se encontraron datos del cliente para enviar notificaciones del pago #${paymentId}`);
                 }
 
                 const actionText = action === 'approve' ? 'aprobado' : 'rechazado';
@@ -913,7 +914,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error al verificar pago:', error);
+            logger.error('Error al verificar pago:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error al verificar el pago',
@@ -973,7 +974,7 @@ class PaymentController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo pagos del cliente:', error);
+            logger.error('Error obteniendo pagos del cliente:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error al obtener los pagos',

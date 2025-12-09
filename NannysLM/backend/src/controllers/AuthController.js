@@ -1,4 +1,5 @@
 const UserModel = require('../models/User');
+const logger = require('./logger');
 const jwt = require('jsonwebtoken');
 const { 
     hashPassword, 
@@ -67,7 +68,7 @@ class AuthController {
             try {
                 await sendActivationEmail(newUser.email, `${newUser.first_name} ${newUser.last_name}`, activationLink);
             } catch (err) {
-                console.error('Error enviando email de activación:', err);
+                logger.error('Error enviando email de activación:', err);
             }
 
             // No iniciar sesión automáticamente: requerir activación por email
@@ -77,7 +78,7 @@ class AuthController {
             });
             
         } catch (error) {
-            console.error('Error en registro:', error);
+            logger.error('Error en registro:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -162,7 +163,7 @@ class AuthController {
 
             return res.status(200).json({ success: true, message: 'Contraseña restablecida correctamente. Ya puedes iniciar sesión.' });
         } catch (error) {
-            console.error('Error en resetPassword:', error);
+            logger.error('Error en resetPassword:', error);
             return res.status(500).json({ success: false, message: 'Error interno del servidor' });
         }
     }
@@ -228,7 +229,7 @@ class AuthController {
             res.status(200).json(createAuthResponse(user, token));
             
         } catch (error) {
-            console.error('Error en login:', error);
+            logger.error('Error en login:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -272,7 +273,7 @@ class AuthController {
 
             res.status(200).json({ success: true, message: 'Cuenta activada correctamente. Ya puedes iniciar sesión.' });
         } catch (error) {
-            console.error('Error activando cuenta:', error);
+            logger.error('Error activando cuenta:', error);
             res.status(500).json({ success: false, message: 'Error interno del servidor' });
         }
     }
@@ -302,7 +303,7 @@ class AuthController {
             });
             
         } catch (error) {
-            console.error('Error al obtener perfil:', error);
+            logger.error('Error al obtener perfil:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -339,7 +340,7 @@ class AuthController {
             });
             
         } catch (error) {
-            console.error('Error al actualizar perfil:', error);
+            logger.error('Error al actualizar perfil:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -373,7 +374,7 @@ class AuthController {
             });
             
         } catch (error) {
-            console.error('Error al verificar email:', error);
+            logger.error('Error al verificar email:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -392,7 +393,7 @@ class AuthController {
                 message: 'Sesión cerrada exitosamente'
             });
         } catch (error) {
-            console.error('Error en logout:', error);
+            logger.error('Error en logout:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor'

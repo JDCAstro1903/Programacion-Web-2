@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const logger = require('./logger');
 const notificationSystem = require('../utils/NotificationSystem');
 
 class RatingController {
@@ -115,7 +116,7 @@ class RatingController {
         ]);
       }
 
-      console.log(`✓ Calificación creada para servicio ${service_id} por cliente ${client_id}`);
+      logger.info(`✓ Calificación creada para servicio ${service_id} por cliente ${client_id}`);
 
       // Notificar a la nanny sobre la nueva calificación
       try {
@@ -144,7 +145,7 @@ class RatingController {
           const nannyName = `${notifData.nanny_first_name} ${notifData.nanny_last_name}`;
           const clientName = `${notifData.client_first_name} ${notifData.client_last_name}`;
           
-          console.log('📧 Enviando notificación a nanny sobre nueva calificación...');
+          logger.info('📧 Enviando notificación a nanny sobre nueva calificación...');
           await notificationSystem.notifyNannyNewRating(
             notifData.nanny_email,
             notifData.nanny_user_id,
@@ -157,7 +158,7 @@ class RatingController {
           );
         }
       } catch (notifError) {
-        console.error('⚠️ Error al notificar a nanny sobre calificación:', notifError);
+        logger.error('⚠️ Error al notificar a nanny sobre calificación:', notifError);
       }
 
       return res.json({
@@ -170,7 +171,7 @@ class RatingController {
         }
       });
     } catch (error) {
-      console.error('Error creating rating:', error);
+      logger.error('Error creating rating:', error);
       return res.status(500).json({
         success: false,
         error: error.message
@@ -213,7 +214,7 @@ class RatingController {
         data: result.data.length > 0 ? result.data[0] : null
       });
     } catch (error) {
-      console.error('Error getting rating:', error);
+      logger.error('Error getting rating:', error);
       return res.status(500).json({
         success: false,
         error: error.message
@@ -261,7 +262,7 @@ class RatingController {
         }
       });
     } catch (error) {
-      console.error('Error getting nanny rating:', error);
+      logger.error('Error getting nanny rating:', error);
       return res.status(500).json({
         success: false,
         error: error.message
@@ -283,7 +284,7 @@ class RatingController {
         });
       }
 
-      console.log(`⭐ Obteniendo ratings para nanny ${nannyId}`);
+      logger.info(`⭐ Obteniendo ratings para nanny ${nannyId}`);
 
       const query = `
         SELECT 
@@ -310,10 +311,10 @@ class RatingController {
 
       const result = await executeQuery(query, [nannyId]);
 
-      console.log(`📊 Resultado de executeQuery:`, {success: result.success, count: result.data ? result.data.length : 0});
+      logger.debug(`📊 Resultado de executeQuery:`, {success: result.success, count: result.data ? result.data.length : 0});
 
       if (!result.success) {
-        console.error('❌ Error en la query:', result.error);
+        logger.error('❌ Error en la query:', result.error);
         return res.status(500).json({
           success: false,
           message: 'Error al obtener calificaciones',
@@ -322,7 +323,7 @@ class RatingController {
       }
 
       const ratingsArray = Array.isArray(result.data) ? result.data : [];
-      console.log(`✅ Se obtuvieron ${ratingsArray.length} ratings para nanny ${nannyId}`);
+      logger.success('Se obtuvieron ${ratingsArray.length} ratings para nanny ${nannyId}`);
 
       return res.json({
         success: true,
@@ -332,7 +333,7 @@ class RatingController {
       });
 
     } catch (error) {
-      console.error('❌ Error al obtener ratings:', error);
+      logger.error('❌ Error al obtener ratings:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -347,7 +348,7 @@ class RatingController {
    */
   static async recalculateAllRatings(req, res) {
     try {
-      console.log(`⭐ Recalculando promedios de ratings para todas las nannys...`);
+      logger.info(`⭐ Recalculando promedios de ratings para todas las nannys...`);
 
       const query = `
         SELECT 
@@ -383,7 +384,7 @@ class RatingController {
         
         if (updateResult.success) {
           updated++;
-          console.log(`✅ Nanny ${row.nanny_id}: ${row.avg_rating.toFixed(2)} promedio, ${row.total_ratings} ratings`);
+          logger.success('Nanny ${row.nanny_id}: ${row.avg_rating.toFixed(2)} promedio, ${row.total_ratings} ratings`);
         }
       }
 
@@ -394,7 +395,7 @@ class RatingController {
       });
 
     } catch (error) {
-      console.error('❌ Error al recalcular ratings:', error);
+      logger.error('❌ Error al recalcular ratings:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor',

@@ -1,5 +1,6 @@
 // Controlador para gestionar nannys
 const { pool } = require('../config/database');
+const logger = require('./logger');
 const bcrypt = require('bcrypt');
 const { sendNannyCredentialsEmail } = require('../utils/email');
 
@@ -11,7 +12,7 @@ const createNanny = async (req, res) => {
     const connection = await pool.getConnection();
     
     try {
-        console.log('📨 Datos recibidos en POST /api/v1/nannys:', req.body);
+        logger.info('📨 Datos recibidos en POST /api/v1/nannys:', req.body);
         
         // Extraer datos del request
         const {
@@ -44,7 +45,7 @@ const createNanny = async (req, res) => {
             });
         }
         
-        console.log(`👩‍💼 Creando nueva nanny: ${first_name} ${last_name}`);
+        logger.info(`👩‍💼 Creando nueva nanny: ${first_name} ${last_name}`);
         
         // Iniciar transacción
         await connection.beginTransaction();
@@ -57,7 +58,7 @@ const createNanny = async (req, res) => {
         
         if (existingUser.length > 0) {
             await connection.rollback();
-            console.log(`❌ El email ${email} ya está registrado`);
+            logger.info(`❌ El email ${email} ya está registrado`);
             return res.status(400).json({
                 success: false,
                 message: 'El correo electrónico ya está registrado en el sistema'
@@ -67,7 +68,7 @@ const createNanny = async (req, res) => {
         // 2️⃣ Hashear contraseña
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-        console.log('🔐 Contraseña hasheada');
+        logger.info('🔐 Contraseña hasheada');
         
         // 3️⃣ Crear usuario en tabla users
         const [userResult] = await connection.query(
@@ -98,7 +99,7 @@ const createNanny = async (req, res) => {
         );
         
         const userId = userResult.insertId;
-        console.log(`✅ Usuario creado con ID: ${userId}`);
+        logger.success('Usuario creado con ID: ${userId}`);
         
         // 4️⃣ Crear nanny en tabla nannys
         const [nannyResult] = await connection.query(
@@ -127,7 +128,7 @@ const createNanny = async (req, res) => {
         );
         
         const nannyId = nannyResult.insertId;
-        console.log(`✅ Nanny creada con ID: ${nannyId}`);
+        logger.success('Nanny creada con ID: ${nannyId}`);
         
         // 5️⃣ Crear entrada en nanny_availability
         const [availabilityResult] = await connection.query(
@@ -145,11 +146,11 @@ const createNanny = async (req, res) => {
             ]
         );
         
-        console.log(`✅ Disponibilidad creada para nanny ${nannyId}`);
+        logger.success('Disponibilidad creada para nanny ${nannyId}`);
         
         // Confirmar transacción
         await connection.commit();
-        console.log(`✅ Transacción completada exitosamente`);
+        logger.success('Transacción completada exitosamente`);
         
         // 6️⃣ Enviar correo con credenciales a la nanny
         const loginLink = `${process.env.FRONTEND_URL || 'http://localhost:4200'}/login`;
@@ -162,13 +163,13 @@ const createNanny = async (req, res) => {
             );
             
             if (emailResult.success) {
-                console.log('📧 Correo de credenciales enviado exitosamente a:', email);
+                logger.info('📧 Correo de credenciales enviado exitosamente a:', email);
             } else {
-                console.warn('⚠️ Error al enviar correo de credenciales:', emailResult.message);
+                logger.warn('⚠️ Error al enviar correo de credenciales:', emailResult.message);
                 // No hacemos reject aquí, la nanny fue creada correctamente
             }
         } catch (emailError) {
-            console.error('❌ Error en el intento de envío de correo:', emailError.message);
+            logger.error('❌ Error en el intento de envío de correo:', emailError.message);
             // No bloqueamos la respuesta si falla el correo
         }
         
@@ -193,10 +194,10 @@ const createNanny = async (req, res) => {
         try {
             await connection.rollback();
         } catch (rollbackError) {
-            console.error('❌ Error en rollback:', rollbackError);
+            logger.error('❌ Error en rollback:', rollbackError);
         }
         
-        console.error('❌ Error creando nanny:', error);
+        logger.error('❌ Error creando nanny:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor al crear nanny',
@@ -215,7 +216,7 @@ const createNanny = async (req, res) => {
  */
 const getAllNannys = async (req, res) => {
     try {
-        console.log('📋 Obteniendo todas las nannys');
+        logger.info('📋 Obteniendo todas las nannys');
         
         const [nannys] = await pool.query(
             `SELECT 
@@ -246,7 +247,7 @@ const getAllNannys = async (req, res) => {
             ORDER BY n.created_at DESC`
         );
         
-        console.log(`✅ Se obtuvieron ${nannys.length} nannys`);
+        logger.success('Se obtuvieron ${nannys.length} nannys`);
         
         return res.status(200).json({
             success: true,
@@ -256,7 +257,7 @@ const getAllNannys = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error al obtener nannys:', error);
+        logger.error('❌ Error al obtener nannys:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -272,7 +273,7 @@ const getNannyById = async (req, res) => {
     try {
         const { nannyId } = req.params;
         
-        console.log(`📋 Obteniendo nanny ${nannyId}`);
+        logger.info(`📋 Obteniendo nanny ${nannyId}`);
         
         const [nannys] = await pool.query(
             `SELECT 
@@ -311,7 +312,7 @@ const getNannyById = async (req, res) => {
             });
         }
         
-        console.log(`✅ Nanny ${nannyId} obtenida`);
+        logger.success('Nanny ${nannyId} obtenida`);
         
         return res.status(200).json({
             success: true,
@@ -320,7 +321,7 @@ const getNannyById = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error al obtener nanny:', error);
+        logger.error('❌ Error al obtener nanny:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -336,7 +337,7 @@ const getNannyByUserId = async (req, res) => {
     try {
         const { userId } = req.params;
         
-        console.log(`🔍 Buscando nanny con user_id: ${userId}`);
+        logger.debug(`🔍 Buscando nanny con user_id: ${userId}`);
         
         const [nannys] = await pool.query(
             `SELECT 
@@ -372,7 +373,7 @@ const getNannyByUserId = async (req, res) => {
             });
         }
         
-        console.log(`✅ Nanny encontrada para user_id ${userId}:`, nannys[0].id);
+        logger.success('Nanny encontrada para user_id ${userId}:`, nannys[0].id);
         
         return res.status(200).json({
             success: true,
@@ -381,7 +382,7 @@ const getNannyByUserId = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error al obtener nanny por user_id:', error);
+        logger.error('❌ Error al obtener nanny por user_id:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -413,7 +414,7 @@ const updateNannyStatus = async (req, res) => {
             });
         }
 
-        console.log(`🔄 Actualizando status de nanny ${id} a: ${status}`);
+        logger.info(`🔄 Actualizando status de nanny ${id} a: ${status}`);
 
         // Actualizar en la BD
         const updateQuery = `
@@ -433,7 +434,7 @@ const updateNannyStatus = async (req, res) => {
             });
         }
 
-        console.log(`✅ Status actualizado a: ${status}`);
+        logger.success('Status actualizado a: ${status}`);
 
         return res.json({
             success: true,
@@ -442,7 +443,7 @@ const updateNannyStatus = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error al actualizar status:', error);
+        logger.error('❌ Error al actualizar status:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -481,7 +482,7 @@ const updateNannyHourlyRate = async (req, res) => {
             });
         }
 
-        console.log(`💰 Actualizando tarifa por hora de nanny ${id} a: $${hourly_rate}`);
+        logger.info(`💰 Actualizando tarifa por hora de nanny ${id} a: $${hourly_rate}`);
 
         // Actualizar en la BD
         const updateQuery = `
@@ -501,7 +502,7 @@ const updateNannyHourlyRate = async (req, res) => {
             });
         }
 
-        console.log(`✅ Tarifa actualizada a: $${hourly_rate}`);
+        logger.success('Tarifa actualizada a: $${hourly_rate}`);
 
         return res.json({
             success: true,
@@ -510,7 +511,7 @@ const updateNannyHourlyRate = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error al actualizar tarifa:', error);
+        logger.error('❌ Error al actualizar tarifa:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',

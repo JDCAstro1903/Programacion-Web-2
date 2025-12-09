@@ -13,7 +13,6 @@ import { NotificationsPanelComponent } from '../../shared/components/notificatio
 import { ClientService } from '../../services/client.service';
 import { WhatsappButtonComponent } from '../../shared/components/whatsapp-button/whatsapp-button.component';
 import { ApiConfig } from '../../config/api.config';
-import { AiService, AiTip } from '../../services/ai.service';
 
 // Interfaz para definir la estructura de un servicio
 interface Service {
@@ -86,11 +85,6 @@ export class NannyDashboardComponent implements OnInit, OnDestroy {
   isLoadingNannyData = false;
   isLoadingServices = false;
   loadError: string | null = null;
-  
-  // Consejos de IA
-  aiTips: AiTip[] = [];
-  isLoadingAiTips = false;
-  aiTipsError: string | null = null;
 
   // Exponer Math para el template
   Math = Math;
@@ -111,8 +105,7 @@ export class NannyDashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private notificationService: NotificationService,
     private nannyService: NannyService,
-    private clientService: ClientService,
-    private aiService: AiService
+    private clientService: ClientService
   ) {
     // Configurar sidebar específico para nanny con tema rosa como el admin
     this.sidebarConfig = {
@@ -189,9 +182,6 @@ export class NannyDashboardComponent implements OnInit, OnDestroy {
     
     // Cargar notificaciones
     this.loadNotifications();
-    
-    // Cargar consejos de IA
-    this.loadAiTips();
     
     // Revisar si hay un parámetro de vista en la URL
     this.route.queryParams.subscribe(params => {
@@ -599,31 +589,5 @@ export class NannyDashboardComponent implements OnInit, OnDestroy {
   // Manejo de error en la imagen de perfil del cliente
   onProfileImageError(event: any) {
     event.target.src = '/assets/logo.png';
-  }
-
-  // Cargar consejos de IA
-  loadAiTips() {
-    this.isLoadingAiTips = true;
-    this.aiTipsError = null;
-
-    this.aiService.getNannyTips().subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.aiTips = response.data.tips;
-          console.log('✨ Consejos de IA cargados:', this.aiTips);
-        }
-        this.isLoadingAiTips = false;
-      },
-      error: (error) => {
-        console.error('❌ Error al cargar consejos de IA:', error);
-        this.aiTipsError = 'No se pudieron cargar los consejos';
-        this.isLoadingAiTips = false;
-      }
-    });
-  }
-
-  // Recargar consejos de IA
-  refreshAiTips() {
-    this.loadAiTips();
   }
 }

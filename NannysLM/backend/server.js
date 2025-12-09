@@ -38,7 +38,6 @@ const nannyRoutes = require('./src/routes/nannys');
 const userRoutes = require('./src/routes/users');
 const clientDataRoutes = require('./src/routes/clientData');
 const ratingRoutes = require('./src/routes/ratings');
-const aiRoutes = require('./src/routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -196,7 +195,6 @@ app.use('/api/v1/ratings', ratingRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/client', clientDataRoutes);
 app.use('/api/v1/client', clientRoutes);
-app.use('/api/v1/ai', aiRoutes);
 
 // ===============================================
 // MANEJO DE ERRORES

@@ -1,5 +1,6 @@
 // Controlador para gestionar información específica del cliente
 const { pool } = require('../config/database');
+const logger = require('./logger');
 const notificationSystem = require('../utils/NotificationSystem');
 const { sendVerificationApprovedEmail, sendVerificationRejectedEmail } = require('../utils/email');
 
@@ -8,7 +9,7 @@ const getClientData = async (req, res) => {
     try {
       const userId = req.user.id; // Del token JWT verificado por middleware
       
-      console.log(`📋 Obteniendo datos del cliente para user_id: ${userId}`);
+      logger.info(`📋 Obteniendo datos del cliente para user_id: ${userId}`);
       
       const [rows] = await pool.query(
         'SELECT * FROM clients WHERE user_id = ?',
@@ -24,7 +25,7 @@ const getClientData = async (req, res) => {
       }
       
       const clientData = rows[0];
-      console.log('✅ Datos del cliente obtenidos:', clientData);
+      logger.success('Datos del cliente obtenidos:', clientData);
       
       return res.status(200).json({
         success: true,
@@ -33,7 +34,7 @@ const getClientData = async (req, res) => {
       });
       
     } catch (error) {
-      console.error('❌ Error al obtener datos del cliente:', error);
+      logger.error('❌ Error al obtener datos del cliente:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor al obtener los datos',
@@ -53,15 +54,15 @@ const upsertClientData = async (req, res) => {
         special_requirements
       } = req.body;
       
-      console.log(`💾 Guardando datos del cliente para user_id: ${userId}`);
-      console.log('📝 Datos recibidos:', req.body);
-      console.log('📎 Archivo recibido:', req.file);
+      logger.info(`💾 Guardando datos del cliente para user_id: ${userId}`);
+      logger.debug('📝 Datos recibidos:', req.body);
+      logger.info('📎 Archivo recibido:', req.file);
       
       // Manejar archivo de identificación
       let identification_document = null;
       if (req.file) {
         identification_document = req.file.filename;
-        console.log('✅ Documento de identificación guardado:', identification_document);
+        logger.success('Documento de identificación guardado:', identification_document);
       }
       
       // Verificar si el cliente ya existe
@@ -72,7 +73,7 @@ const upsertClientData = async (req, res) => {
       
       if (existingClient.length > 0) {
         // Cliente existe - actualizar
-        console.log('🔄 Cliente existente, actualizando...');
+        logger.info('🔄 Cliente existente, actualizando...');
         
         const clientId = existingClient[0].id;
         const oldDocument = existingClient[0].identification_document;
@@ -101,7 +102,7 @@ const upsertClientData = async (req, res) => {
           userId
         ]);
         
-        console.log('✅ Datos del cliente actualizados correctamente');
+        logger.success('Datos del cliente actualizados correctamente');
         
         // Obtener datos actualizados
         const [updatedClient] = await pool.query(
@@ -117,7 +118,7 @@ const upsertClientData = async (req, res) => {
         
       } else {
         // Cliente no existe - crear nuevo
-        console.log('✨ Nuevo cliente, creando registro...');
+        logger.info('✨ Nuevo cliente, creando registro...');
         
         const insertQuery = `
           INSERT INTO clients (
@@ -142,7 +143,7 @@ const upsertClientData = async (req, res) => {
           special_requirements || ''
         ]);
         
-        console.log('✅ Cliente creado correctamente con ID:', result.insertId);
+        logger.success('Cliente creado correctamente con ID:', result.insertId);
         
         // Obtener datos del cliente recién creado
         const [newClient] = await pool.query(
@@ -168,7 +169,7 @@ const upsertClientData = async (req, res) => {
           
           if (adminData.length > 0) {
             // Enviar notificación y correo al admin
-            console.log('📧 Enviando notificación al admin sobre nueva verificación...');
+            logger.info('📧 Enviando notificación al admin sobre nueva verificación...');
             await notificationSystem.notifyAdminNewVerification(
               adminData[0].email,
               adminData[0].id,
@@ -188,7 +189,7 @@ const upsertClientData = async (req, res) => {
       }
       
     } catch (error) {
-      console.error('❌ Error al guardar datos del cliente:', error);
+      logger.error('❌ Error al guardar datos del cliente:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor al guardar los datos',
@@ -203,7 +204,7 @@ const verifyClient = async (req, res) => {
       const { clientId } = req.params;
       const { status, reason } = req.body; // status: 'verified' | 'rejected', reason: opcional para rechazos
       
-      console.log(`🔍 Verificando cliente ID: ${clientId} con estado: ${status}`);
+      logger.debug(`🔍 Verificando cliente ID: ${clientId} con estado: ${status}`);
       
       // Validar que el status sea válido
       if (!['verified', 'rejected'].includes(status)) {
@@ -268,11 +269,11 @@ const verifyClient = async (req, res) => {
         
         // Enviar correo de aprobación
         if (clientEmail) {
-          console.log('📧 Enviando correo de verificación aprobada...');
+          logger.info('📧 Enviando correo de verificación aprobada...');
           await sendVerificationApprovedEmail(clientEmail, clientName);
         }
         
-        console.log(`📬 Notificación y correo de verificación enviados para usuario ${client.user_id}`);
+        logger.info(`📬 Notificación y correo de verificación enviados para usuario ${client.user_id}`);
       } else {
         await pool.query(
           'UPDATE users SET is_verified = FALSE WHERE id = ?',
@@ -293,14 +294,14 @@ const verifyClient = async (req, res) => {
         
         // Enviar correo de rechazo
         if (clientEmail) {
-          console.log('📧 Enviando correo de verificación rechazada...');
+          logger.info('📧 Enviando correo de verificación rechazada...');
           await sendVerificationRejectedEmail(clientEmail, clientName);
         }
         
-        console.log(`📬 Notificación y correo de rechazo enviados para usuario ${client.user_id}`);
+        logger.info(`📬 Notificación y correo de rechazo enviados para usuario ${client.user_id}`);
       }
       
-      console.log(`✅ Cliente ${clientId} ${status === 'verified' ? 'verificado' : 'rechazado'} correctamente`);
+      logger.success('Cliente ${clientId} ${status === 'verified' ? 'verificado' : 'rechazado'} correctamente`);
       
       // Obtener datos actualizados del cliente
       const [updatedClientRows] = await pool.query(
@@ -318,7 +319,7 @@ const verifyClient = async (req, res) => {
       });
       
     } catch (error) {
-      console.error('❌ Error al verificar cliente:', error);
+      logger.error('❌ Error al verificar cliente:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor al verificar cliente',
@@ -330,7 +331,7 @@ const verifyClient = async (req, res) => {
 // Obtener todos los clientes para el administrador
 const getAllClients = async (req, res) => {
     try {
-      console.log('📋 Obteniendo todos los clientes para admin');
+      logger.info('📋 Obteniendo todos los clientes para admin');
       
       const query = `
         SELECT 
@@ -382,7 +383,7 @@ const getAllClients = async (req, res) => {
         lastLogin: client.last_login
       }));
       
-      console.log(`✅ ${formattedClients.length} clientes obtenidos para admin`);
+      logger.success('${formattedClients.length} clientes obtenidos para admin`);
       
       return res.status(200).json({
         success: true,
@@ -391,7 +392,7 @@ const getAllClients = async (req, res) => {
       });
       
     } catch (error) {
-      console.error('❌ Error al obtener clientes para admin:', error);
+      logger.error('❌ Error al obtener clientes para admin:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor al obtener los clientes',

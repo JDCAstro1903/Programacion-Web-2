@@ -1,4 +1,5 @@
 const UserModel = require('../models/User');
+const logger = require('./logger');
 const { executeQuery } = require('../config/database');
 
 /**
@@ -72,7 +73,7 @@ class ClientController {
         });
       }
     } catch (error) {
-      console.error('Error al obtener todos los clientes:', error);
+      logger.error('Error al obtener todos los clientes:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -106,7 +107,7 @@ class ClientController {
         message: 'Perfil de cliente actualizado correctamente.'
       });
     } catch (error) {
-      console.error('Error al actualizar perfil de cliente:', error);
+      logger.error('Error al actualizar perfil de cliente:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -188,7 +189,7 @@ class ClientController {
       }
 
     } catch (error) {
-      console.error('Error al obtener información del cliente:', error);
+      logger.error('Error al obtener información del cliente:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -253,8 +254,8 @@ class ClientController {
       const limitNum = Number.isInteger(parseInt(limit)) ? parseInt(limit) : 50;
       servicesQuery += ` ORDER BY s.created_at DESC LIMIT ${limitNum}`;
 
-      console.log('📝 Query params para servicios:', queryParams);
-      console.log('📝 Limit procesado:', limitNum);
+      logger.debug('📝 Query params para servicios:', queryParams);
+      logger.debug('📝 Limit procesado:', limitNum);
 
       const result = await executeQuery(servicesQuery, queryParams);
 
@@ -304,7 +305,7 @@ class ClientController {
       }
 
     } catch (error) {
-      console.error('Error al obtener servicios del cliente:', error);
+      logger.error('Error al obtener servicios del cliente:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -369,8 +370,8 @@ class ClientController {
       const limitNum = Number.isInteger(parseInt(limit)) ? parseInt(limit) : 50;
       paymentsQuery += ` ORDER BY p.created_at DESC LIMIT ${limitNum}`;
 
-      console.log('📝 Query params para pagos:', queryParams);
-      console.log('📝 Limit procesado:', limitNum);
+      logger.debug('📝 Query params para pagos:', queryParams);
+      logger.debug('📝 Limit procesado:', limitNum);
 
       const result = await executeQuery(paymentsQuery, queryParams);
 
@@ -408,7 +409,7 @@ class ClientController {
       }
 
     } catch (error) {
-      console.error('Error al obtener pagos del cliente:', error);
+      logger.error('Error al obtener pagos del cliente:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -487,7 +488,7 @@ class ClientController {
       });
 
     } catch (error) {
-      console.error('Error al obtener estadísticas del cliente:', error);
+      logger.error('Error al obtener estadísticas del cliente:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -572,12 +573,12 @@ class ClientController {
         emailResult = await sendVerificationApprovedEmail(client.email, clientName);
         notificationMessage = '¡Tu cuenta ha sido verificada exitosamente! Ahora puedes acceder a todos los servicios de NannysLM.';
         notificationType = 'success';
-        console.log('✓ Email de verificación aprobada enviado a:', client.email);
+        logger.info('✓ Email de verificación aprobada enviado a:', client.email);
       } else {
         emailResult = await sendVerificationRejectedEmail(client.email, clientName);
         notificationMessage = 'Tu solicitud de verificación ha sido rechazada. Por favor, revisa tu correo para más información y reintenta.';
         notificationType = 'warning';
-        console.log('✗ Email de verificación rechazada enviado a:', client.email);
+        logger.info('✗ Email de verificación rechazada enviado a:', client.email);
       }
 
       // Crear notificación en la base de datos
@@ -590,10 +591,10 @@ class ClientController {
       const notificationResult = await executeQuery(createNotificationQuery, [client.id, notificationTitle, notificationMessage, notificationType, clientId]);
 
       if (!notificationResult.success) {
-        console.error('Error al crear notificación:', notificationResult.error);
+        logger.error('Error al crear notificación:', notificationResult.error);
         // No lanzar error, continuar de todas formas
       } else {
-        console.log('✓ Notificación creada para el cliente:', client.id);
+        logger.info('✓ Notificación creada para el cliente:', client.id);
       }
 
       res.status(200).json({
@@ -609,7 +610,7 @@ class ClientController {
       });
 
     } catch (error) {
-      console.error('Error al verificar cliente:', error);
+      logger.error('Error al verificar cliente:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor',
@@ -626,7 +627,7 @@ class ClientController {
       const userId = req.user.id;
       const { service_id, rating, punctuality_rating, communication_rating, care_quality_rating, would_recommend } = req.body;
 
-      console.log('🔍 Datos de calificación recibidos:', { userId, service_id, rating });
+      logger.debug('🔍 Datos de calificación recibidos:', { userId, service_id, rating });
 
       // Validar datos requeridos
       if (!service_id || !rating) {
@@ -645,14 +646,14 @@ class ClientController {
 
       // Obtener información del servicio
       const serviceQuery = 'SELECT * FROM services WHERE id = ?';
-      console.log('🔍 Buscando servicio con query:', serviceQuery, 'params:', [service_id]);
+      logger.debug('🔍 Buscando servicio con query:', serviceQuery, 'params:', [service_id]);
       
       const serviceResult = await executeQuery(serviceQuery, [service_id]);
 
-      console.log('🔍 Resultado de búsqueda de servicio:', serviceResult);
+      logger.debug('🔍 Resultado de búsqueda de servicio:', serviceResult);
 
       if (!serviceResult.success || serviceResult.data.length === 0) {
-        console.log('❌ Servicio no encontrado. Success:', serviceResult.success, 'Data length:', serviceResult.data?.length);
+        logger.info('❌ Servicio no encontrado. Success:', serviceResult.success, 'Data length:', serviceResult.data?.length);
         return res.status(404).json({
           success: false,
           message: 'Servicio no encontrado'
@@ -661,14 +662,14 @@ class ClientController {
 
       const service = serviceResult.data[0];
 
-      console.log('✓ Servicio encontrado:', service);
+      logger.info('✓ Servicio encontrado:', service);
 
       // Obtener el client_id del usuario actual
       const clientQuery = 'SELECT id FROM clients WHERE user_id = ?';
       const clientResult = await executeQuery(clientQuery, [userId]);
 
       if (!clientResult.success || clientResult.data.length === 0) {
-        console.log('❌ Cliente no encontrado para el usuario:', userId);
+        logger.info('❌ Cliente no encontrado para el usuario:', userId);
         return res.status(404).json({
           success: false,
           message: 'No se encontró un perfil de cliente asociado a tu cuenta'
@@ -676,11 +677,11 @@ class ClientController {
       }
 
       const userClientId = clientResult.data[0].id;
-      console.log('✓ Client ID del usuario:', userClientId, 'Service client_id:', service.client_id);
+      logger.info('✓ Client ID del usuario:', userClientId, 'Service client_id:', service.client_id);
 
       // Verificar que el cliente sea el propietario del servicio
       if (service.client_id !== userClientId) {
-        console.log('❌ Cliente no autorizado. Service client_id:', service.client_id, 'User client_id:', userClientId);
+        logger.info('❌ Cliente no autorizado. Service client_id:', service.client_id, 'User client_id:', userClientId);
         return res.status(403).json({
           success: false,
           message: 'No tienes permiso para calificar este servicio'
@@ -764,11 +765,11 @@ class ClientController {
         ]);
 
         if (updateResult.success) {
-          console.log(`✓ Rating de nanny ${service.nanny_id} actualizado: ${avgResult.data[0].avg_rating} promedio, ${avgResult.data[0].total_ratings} calificaciones`);
+          logger.info(`✓ Rating de nanny ${service.nanny_id} actualizado: ${avgResult.data[0].avg_rating} promedio, ${avgResult.data[0].total_ratings} calificaciones`);
         }
       }
 
-      console.log(`✓ Calificación creada para servicio ${service_id} por cliente ${userClientId}`);
+      logger.info(`✓ Calificación creada para servicio ${service_id} por cliente ${userClientId}`);
 
       return res.json({
         success: true,
@@ -780,7 +781,7 @@ class ClientController {
         }
       });
     } catch (error) {
-      console.error('Error creating rating:', error);
+      logger.error('Error creating rating:', error);
       return res.status(500).json({
         success: false,
         message: 'Error interno del servidor',

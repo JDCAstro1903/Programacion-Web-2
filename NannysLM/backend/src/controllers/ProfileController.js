@@ -1,4 +1,5 @@
 const UserModel = require('../models/User');
+const logger = require('./logger');
 const { executeQuery } = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { uploadImage, deleteImage, extractPublicId } = require('../config/cloudinary');
@@ -79,7 +80,7 @@ class ProfileController {
             }
 
         } catch (error) {
-            console.error('Error al completar perfil de cliente:', error);
+            logger.error('Error al completar perfil de cliente:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -154,7 +155,7 @@ class ProfileController {
             }
 
         } catch (error) {
-            console.error('Error al completar perfil de niñera:', error);
+            logger.error('Error al completar perfil de niñera:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -226,7 +227,7 @@ class ProfileController {
             });
 
         } catch (error) {
-            console.error('Error al verificar estado del perfil:', error);
+            logger.error('Error al verificar estado del perfil:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -240,10 +241,10 @@ class ProfileController {
      */
     static async updateUserProfile(req, res) {
         try {
-            console.log('📝 ProfileController - updateUserProfile iniciado');
-            console.log('📝 User ID:', req.user.id);
-            console.log('📝 Body:', req.body);
-            console.log('📝 File:', req.file);
+            logger.debug('📝 ProfileController - updateUserProfile iniciado');
+            logger.debug('📝 User ID:', req.user.id);
+            logger.debug('📝 Body:', req.body);
+            logger.debug('📝 File:', req.file);
             const userId = req.user.id;
             const {
                 first_name,
@@ -252,9 +253,9 @@ class ProfileController {
                 address
             } = req.body;
 
-            console.log('📝 Actualizando perfil del usuario:', userId);
-            console.log('📝 Datos recibidos:', req.body);
-            console.log('📝 Archivo recibido:', req.file);
+            logger.debug('📝 Actualizando perfil del usuario:', userId);
+            logger.debug('📝 Datos recibidos:', req.body);
+            logger.debug('📝 Archivo recibido:', req.file);
 
             // Manejar la imagen de perfil si se subió una
             let profile_image = null;
@@ -267,9 +268,9 @@ class ProfileController {
                         `profile_${userId}`
                     );
                     profile_image = result.secure_url;
-                    console.log('📝 Imagen de perfil guardada en Cloudinary:', profile_image);
+                    logger.debug('📝 Imagen de perfil guardada en Cloudinary:', profile_image);
                 } catch (error) {
-                    console.error('❌ Error subiendo imagen a Cloudinary:', error);
+                    logger.error('❌ Error subiendo imagen a Cloudinary:', error);
                     return res.status(500).json({
                         success: false,
                         message: 'Error al subir la imagen de perfil'
@@ -323,7 +324,7 @@ class ProfileController {
             const result = await executeQuery(updateQuery, queryParams);
 
             if (result.success) {
-                console.log('✅ Update query ejecutado exitosamente');
+                logger.success('Update query ejecutado exitosamente');
                 
                 // Obtener el usuario actualizado
                 const user = await UserModel.findById(userId);
@@ -358,7 +359,7 @@ class ProfileController {
             }
 
         } catch (error) {
-            console.error('Error al actualizar perfil:', error);
+            logger.error('Error al actualizar perfil:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -375,7 +376,7 @@ class ProfileController {
             const userId = req.user.id;
             const { current_password, new_password } = req.body;
 
-            console.log('🔐 Cambiando contraseña del usuario:', userId);
+            logger.info('🔐 Cambiando contraseña del usuario:', userId);
 
             // Validar que se enviaron ambas contraseñas
             if (!current_password || !new_password) {
@@ -435,7 +436,7 @@ class ProfileController {
             }
 
         } catch (error) {
-            console.error('Error al cambiar contraseña:', error);
+            logger.error('Error al cambiar contraseña:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -458,7 +459,7 @@ class ProfileController {
                 });
             }
 
-            console.log(`📋 Obteniendo datos del perfil para userId: ${userId}`);
+            logger.info(`📋 Obteniendo datos del perfil para userId: ${userId}`);
 
             // Obtener datos del usuario
             const { pool } = require('../config/database');
@@ -512,7 +513,7 @@ class ProfileController {
             });
 
         } catch (error) {
-            console.error('❌ Error al obtener datos del perfil:', error);
+            logger.error('❌ Error al obtener datos del perfil:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor al obtener los datos del perfil',

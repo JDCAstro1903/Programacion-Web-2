@@ -8,6 +8,7 @@
  */
 
 const nodemailer = require('nodemailer');
+const logger = require('./logger');
 const { executeQuery } = require('../config/database');
 
 class NotificationSystem {
@@ -17,18 +18,18 @@ class NotificationSystem {
         
         // Log del estado
         if (this.smtpConfigured) {
-            console.log('✅ SMTP configurado correctamente');
-            console.log(`   HOST: ${process.env.SMTP_HOST}`);
-            console.log(`   PORT: ${process.env.SMTP_PORT}`);
-            console.log(`   FROM: ${process.env.MAIL_FROM || process.env.SMTP_USER}`);
+            logger.success('SMTP configurado correctamente');
+            logger.info(`   HOST: ${process.env.SMTP_HOST}`);
+            logger.info(`   PORT: ${process.env.SMTP_PORT}`);
+            logger.info(`   FROM: ${process.env.MAIL_FROM || process.env.SMTP_USER}`);
         } else {
-            console.warn('⚠️ SMTP NO configurado - Los correos se registrarán en consola');
-            console.warn('   Configure las siguientes variables de entorno:');
-            console.warn('   - SMTP_HOST');
-            console.warn('   - SMTP_PORT');
-            console.warn('   - SMTP_USER');
-            console.warn('   - SMTP_PASS');
-            console.warn('   - MAIL_FROM (opcional)');
+            logger.warn('⚠️ SMTP NO configurado - Los correos se registrarán en consola');
+            logger.warn('   Configure las siguientes variables de entorno:');
+            logger.warn('   - SMTP_HOST');
+            logger.warn('   - SMTP_PORT');
+            logger.warn('   - SMTP_USER');
+            logger.warn('   - SMTP_PASS');
+            logger.warn('   - MAIL_FROM (opcional)');
         }
     }
 
@@ -59,7 +60,7 @@ class NotificationSystem {
                 }
             });
         } catch (error) {
-            console.error('❌ Error al crear transporter SMTP:', error.message);
+            logger.error('❌ Error al crear transporter SMTP:', error.message);
             return null;
         }
     }
@@ -70,9 +71,9 @@ class NotificationSystem {
     async sendEmail(toEmail, subject, html) {
         if (!this.smtpConfigured || !this.transporter) {
             // Fallback a console log
-            console.log('📧 [CORREO NO ENVIADO - SMTP no configurado]');
-            console.log(`   TO: ${toEmail}`);
-            console.log(`   SUBJECT: ${subject}`);
+            logger.info('📧 [CORREO NO ENVIADO - SMTP no configurado]');
+            logger.info(`   TO: ${toEmail}`);
+            logger.info(`   SUBJECT: ${subject}`);
             return { success: true, fallback: true, message: 'Email logged to console' };
         }
 
@@ -84,11 +85,11 @@ class NotificationSystem {
                 html
             });
 
-            console.log(`✅ Correo enviado exitosamente a ${toEmail}`);
-            console.log(`   MessageID: ${info.messageId}`);
+            logger.success('Correo enviado exitosamente a ${toEmail}`);
+            logger.info(`   MessageID: ${info.messageId}`);
             return { success: true, messageId: info.messageId };
         } catch (error) {
-            console.error(`❌ Error al enviar correo a ${toEmail}:`, error.message);
+            logger.error(`❌ Error al enviar correo a ${toEmail}:`, error.message);
             return { success: false, error: error.message };
         }
     }
@@ -115,13 +116,13 @@ class NotificationSystem {
             ]);
 
             if (result.success) {
-                console.log(`✅ Notificación creada para usuario ${userId}: ${title}`);
+                logger.success('Notificación creada para usuario ${userId}: ${title}`);
                 return { success: true, notificationId: result.data.insertId };
             } else {
                 throw new Error(result.error);
             }
         } catch (error) {
-            console.error('❌ Error al crear notificación en BD:', error.message);
+            logger.error('❌ Error al crear notificación en BD:', error.message);
             return { success: false, error: error.message };
         }
     }
@@ -139,7 +140,7 @@ class NotificationSystem {
         try {
             results.email = await this.sendEmail(toEmail, subject, html);
         } catch (error) {
-            console.error('⚠️ Error al enviar correo:', error.message);
+            logger.error('⚠️ Error al enviar correo:', error.message);
             results.email = { success: false, error: error.message };
         }
 
@@ -147,7 +148,7 @@ class NotificationSystem {
         try {
             results.notification = await this.createNotification(userId, title, message, type, relatedId, relatedType);
         } catch (error) {
-            console.error('⚠️ Error al crear notificación en BD:', error.message);
+            logger.error('⚠️ Error al crear notificación en BD:', error.message);
             results.notification = { success: false, error: error.message };
         }
 

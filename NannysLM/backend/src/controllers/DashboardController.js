@@ -1,4 +1,5 @@
 const UserModel = require('../models/User');
+const logger = require('./logger');
 const { executeQuery } = require('../config/database');
 
 /**
@@ -53,7 +54,7 @@ class DashboardController {
             });
 
         } catch (error) {
-            console.error('Error obteniendo estadísticas:', error);
+            logger.error('Error obteniendo estadísticas:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -108,7 +109,7 @@ class DashboardController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo usuarios:', error);
+            logger.error('Error obteniendo usuarios:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -165,7 +166,7 @@ class DashboardController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo nannys:', error);
+            logger.error('Error obteniendo nannys:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -224,7 +225,7 @@ class DashboardController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo clientes:', error);
+            logger.error('Error obteniendo clientes:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',

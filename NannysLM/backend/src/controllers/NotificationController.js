@@ -1,12 +1,13 @@
 // Controlador para gestionar notificaciones
 const { pool } = require('../config/database');
+const logger = require('./logger');
 
 // Obtener todas las notificaciones del usuario autenticado
 const getNotifications = async (req, res) => {
     try {
         const userId = req.user.id; // Del token JWT verificado por middleware
         
-        console.log(`📋 Obteniendo notificaciones para user_id: ${userId}`);
+        logger.info(`📋 Obteniendo notificaciones para user_id: ${userId}`);
         
         const [rows] = await pool.query(
             `SELECT 
@@ -26,7 +27,7 @@ const getNotifications = async (req, res) => {
             [userId]
         );
         
-        console.log(`✅ Se obtuvieron ${rows.length} notificaciones para user_id: ${userId}`);
+        logger.success('Se obtuvieron ${rows.length} notificaciones para user_id: ${userId}`);
         
         return res.status(200).json({
             success: true,
@@ -36,7 +37,7 @@ const getNotifications = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error al obtener notificaciones:', error);
+        logger.error('❌ Error al obtener notificaciones:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor al obtener notificaciones',
@@ -51,7 +52,7 @@ const markAsRead = async (req, res) => {
         const userId = req.user.id;
         const { notificationId } = req.params;
         
-        console.log(`📖 Marcando notificación ${notificationId} como leída para user_id: ${userId}`);
+        logger.info(`📖 Marcando notificación ${notificationId} como leída para user_id: ${userId}`);
         
         // Verificar que la notificación pertenece al usuario
         const [rows] = await pool.query(
@@ -60,7 +61,7 @@ const markAsRead = async (req, res) => {
         );
         
         if (rows.length === 0) {
-            console.log(`⚠️ Notificación ${notificationId} no encontrada para user_id: ${userId}`);
+            logger.info(`⚠️ Notificación ${notificationId} no encontrada para user_id: ${userId}`);
             return res.status(404).json({
                 success: false,
                 message: 'Notificación no encontrada'
@@ -75,7 +76,7 @@ const markAsRead = async (req, res) => {
             [notificationId]
         );
         
-        console.log(`✅ Notificación ${notificationId} marcada como leída`);
+        logger.success('Notificación ${notificationId} marcada como leída`);
         
         return res.status(200).json({
             success: true,
@@ -83,7 +84,7 @@ const markAsRead = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error al marcar notificación como leída:', error);
+        logger.error('❌ Error al marcar notificación como leída:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -97,7 +98,7 @@ const markAllAsRead = async (req, res) => {
     try {
         const userId = req.user.id;
         
-        console.log(`📖 Marcando todas las notificaciones como leídas para user_id: ${userId}`);
+        logger.info(`📖 Marcando todas las notificaciones como leídas para user_id: ${userId}`);
         
         const [result] = await pool.query(
             `UPDATE notifications 
@@ -106,7 +107,7 @@ const markAllAsRead = async (req, res) => {
             [userId]
         );
         
-        console.log(`✅ Se marcaron ${result.affectedRows} notificaciones como leídas`);
+        logger.success('Se marcaron ${result.affectedRows} notificaciones como leídas`);
         
         return res.status(200).json({
             success: true,
@@ -115,7 +116,7 @@ const markAllAsRead = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error al marcar todas las notificaciones como leídas:', error);
+        logger.error('❌ Error al marcar todas las notificaciones como leídas:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',
@@ -130,7 +131,7 @@ const deleteNotification = async (req, res) => {
         const userId = req.user.id;
         const { notificationId } = req.params;
         
-        console.log(`🗑️ Eliminando notificación ${notificationId} para user_id: ${userId}`);
+        logger.info(`🗑️ Eliminando notificación ${notificationId} para user_id: ${userId}`);
         
         // Verificar que la notificación pertenece al usuario
         const [rows] = await pool.query(
@@ -139,7 +140,7 @@ const deleteNotification = async (req, res) => {
         );
         
         if (rows.length === 0) {
-            console.log(`⚠️ Notificación ${notificationId} no encontrada para user_id: ${userId}`);
+            logger.info(`⚠️ Notificación ${notificationId} no encontrada para user_id: ${userId}`);
             return res.status(404).json({
                 success: false,
                 message: 'Notificación no encontrada'
@@ -152,7 +153,7 @@ const deleteNotification = async (req, res) => {
             [notificationId]
         );
         
-        console.log(`✅ Notificación ${notificationId} eliminada`);
+        logger.success('Notificación ${notificationId} eliminada`);
         
         return res.status(200).json({
             success: true,
@@ -160,7 +161,7 @@ const deleteNotification = async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error al eliminar notificación:', error);
+        logger.error('❌ Error al eliminar notificación:', error);
         return res.status(500).json({
             success: false,
             message: 'Error interno del servidor',

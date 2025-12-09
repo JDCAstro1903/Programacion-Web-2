@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const logger = require('./logger');
 
 /**
  * Controlador para gestión de datos bancarios de las nannys
@@ -10,7 +11,7 @@ class BankDetailsController {
      */
     static async getBankDetails(req, res) {
         try {
-            console.log('📋 Obteniendo todos los datos bancarios...');
+            logger.info('📋 Obteniendo todos los datos bancarios...');
             
             const query = `
                 SELECT 
@@ -31,7 +32,7 @@ class BankDetailsController {
             const result = await executeQuery(query);
 
             if (result.success) {
-                console.log(`✅ Se encontraron ${result.data.length} registros de datos bancarios`);
+                logger.success('Se encontraron ${result.data.length} registros de datos bancarios`);
                 
                 const bankDetails = result.data.map(detail => ({
                     id: detail.id,
@@ -51,13 +52,13 @@ class BankDetailsController {
                     data: bankDetails
                 });
             } else {
-                console.error('❌ Error en la query:', result.error);
+                logger.error('❌ Error en la query:', result.error);
                 throw new Error(result.error);
             }
 
         } catch (error) {
-            console.error('❌ Error obteniendo datos bancarios:', error.message);
-            console.error('Stack:', error.stack);
+            logger.error('❌ Error obteniendo datos bancarios:', error.message);
+            logger.error('Stack:', error.stack);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -117,7 +118,7 @@ class BankDetailsController {
             }
 
         } catch (error) {
-            console.error('Error obteniendo datos bancarios:', error);
+            logger.error('Error obteniendo datos bancarios:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -141,8 +142,8 @@ class BankDetailsController {
                 isActive = true
             } = req.body;
 
-            console.log('📝 Creando nuevos datos bancarios');
-            console.log('Datos recibidos:', { accountHolderName, bankName, accountNumber, clabe, accountType, isPrimary, isActive });
+            logger.debug('📝 Creando nuevos datos bancarios');
+            logger.info('Datos recibidos:', { accountHolderName, bankName, accountNumber, clabe, accountType, isPrimary, isActive });
 
             // Validar campos requeridos
             if (!accountHolderName || !bankName || !accountNumber) {
@@ -173,25 +174,25 @@ class BankDetailsController {
                 isActiveValue
             ];
 
-            console.log('Parámetros de query:', params);
+            logger.info('Parámetros de query:', params);
 
             const result = await executeQuery(query, params);
 
             if (result.success) {
-                console.log('✅ Datos bancarios creados exitosamente');
+                logger.success('Datos bancarios creados exitosamente');
                 res.status(201).json({
                     success: true,
                     message: 'Datos bancarios creados exitosamente',
                     data: { id: result.data.insertId }
                 });
             } else {
-                console.error('❌ Error en la creación:', result.error);
+                logger.error('❌ Error en la creación:', result.error);
                 throw new Error(result.error);
             }
 
         } catch (error) {
-            console.error('❌ Error creando datos bancarios:', error.message);
-            console.error('Stack:', error.stack);
+            logger.error('❌ Error creando datos bancarios:', error.message);
+            logger.error('Stack:', error.stack);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -216,8 +217,8 @@ class BankDetailsController {
                 isActive
             } = req.body;
 
-            console.log('📝 Actualizando datos bancarios ID:', id);
-            console.log('Datos recibidos:', { accountHolderName, bankName, accountNumber, clabe, accountType, isPrimary, isActive });
+            logger.debug('📝 Actualizando datos bancarios ID:', id);
+            logger.info('Datos recibidos:', { accountHolderName, bankName, accountNumber, clabe, accountType, isPrimary, isActive });
 
             // Validar ID
             if (!id || isNaN(parseInt(id))) {
@@ -271,24 +272,24 @@ class BankDetailsController {
                 parseInt(id)
             ];
 
-            console.log('Parámetros de query:', params);
+            logger.info('Parámetros de query:', params);
 
             const result = await executeQuery(query, params);
 
             if (result.success) {
-                console.log('✅ Datos bancarios actualizados exitosamente');
+                logger.success('Datos bancarios actualizados exitosamente');
                 res.json({
                     success: true,
                     message: 'Datos bancarios actualizados exitosamente'
                 });
             } else {
-                console.error('❌ Error en la actualización:', result.error);
+                logger.error('❌ Error en la actualización:', result.error);
                 throw new Error(result.error);
             }
 
         } catch (error) {
-            console.error('❌ Error actualizando datos bancarios:', error.message);
-            console.error('Stack:', error.stack);
+            logger.error('❌ Error actualizando datos bancarios:', error.message);
+            logger.error('Stack:', error.stack);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -317,7 +318,7 @@ class BankDetailsController {
             }
 
         } catch (error) {
-            console.error('Error eliminando datos bancarios:', error);
+            logger.error('Error eliminando datos bancarios:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',
@@ -333,7 +334,7 @@ class BankDetailsController {
         try {
             const { id } = req.params;
 
-            console.log('🔄 Alternando estado del registro ID:', id);
+            logger.info('🔄 Alternando estado del registro ID:', id);
 
             const query = `
                 UPDATE bank_details 
@@ -344,18 +345,18 @@ class BankDetailsController {
             const result = await executeQuery(query, [id]);
 
             if (result.success) {
-                console.log('✅ Estado alternado exitosamente');
+                logger.success('Estado alternado exitosamente');
                 res.json({
                     success: true,
                     message: 'Estado actualizado exitosamente'
                 });
             } else {
-                console.error('❌ Error en la alternancia:', result.error);
+                logger.error('❌ Error en la alternancia:', result.error);
                 throw new Error(result.error);
             }
 
         } catch (error) {
-            console.error('Error actualizando estado:', error);
+            logger.error('Error actualizando estado:', error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor',

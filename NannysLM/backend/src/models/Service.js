@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const logger = require('./logger');
 const notificationSystem = require('../utils/NotificationSystem');
 
 class Service {
@@ -7,7 +8,7 @@ class Service {
    */
   static async findAvailableNanny(startDate, endDate, startTime, endTime, numberOfChildren) {
     try {
-      console.log('🔍 Buscando nanny con parámetros:', { startDate, endDate: endDate || startDate, startTime, endTime, numberOfChildren });
+      logger.debug('🔍 Buscando nanny con parámetros:', { startDate, endDate: endDate || startDate, startTime, endTime, numberOfChildren });
       
       // Primero, obtener todas las nannys que están activas y disponibles
       const query = `
@@ -29,7 +30,7 @@ class Service {
         ORDER BY n.rating_average DESC
       `;
       
-      console.log('📝 Buscando nannys disponibles...');
+      logger.debug('📝 Buscando nannys disponibles...');
       
       const result = await executeQuery(query, []);
       
@@ -45,21 +46,21 @@ class Service {
           const hasConflict = await this.hasScheduleConflict(nanny.nanny_id, startDate, startTime, endTime);
           
           if (!hasConflict) {
-            console.log(`✅ Nanny ${nanny.first_name} ${nanny.last_name} (ID: ${nanny.nanny_id}) está disponible sin conflictos`);
+            logger.success('Nanny ${nanny.first_name} ${nanny.last_name} (ID: ${nanny.nanny_id}) está disponible sin conflictos`);
             return nanny;
           } else {
-            console.log(`⚠️ Nanny ${nanny.first_name} ${nanny.last_name} (ID: ${nanny.nanny_id}) tiene conflicto de horario`);
+            logger.info(`⚠️ Nanny ${nanny.first_name} ${nanny.last_name} (ID: ${nanny.nanny_id}) tiene conflicto de horario`);
           }
         }
         
-        console.log('⚠️ Todas las nannys disponibles tienen conflictos de horario');
+        logger.info('⚠️ Todas las nannys disponibles tienen conflictos de horario');
         return null;
       }
       
-      console.log('❌ No hay nannys disponibles');
+      logger.info('❌ No hay nannys disponibles');
       return null;
     } catch (error) {
-      console.error('❌ Error finding available nanny:', error);
+      logger.error('❌ Error finding available nanny:', error);
       return null;
     }
   }
@@ -97,7 +98,7 @@ class Service {
       const hasConflict = result.success && result.data[0]?.conflict_count > 0;
       return hasConflict;
     } catch (error) {
-      console.error('❌ Error checking schedule conflict:', error);
+      logger.error('❌ Error checking schedule conflict:', error);
       return false;
     }
   }
@@ -178,7 +179,7 @@ class Service {
       
       return totalHours;
     } catch (error) {
-      console.error('Error en cálculo multi-día, revertiendo a cálculo simple:', error);
+      logger.error('Error en cálculo multi-día, revertiendo a cálculo simple:', error);
       
       let hours = endHour - startHour;
       let minutes = endMin - startMin;
@@ -203,11 +204,11 @@ class Service {
     try {
       // La tabla nanny_availability ahora solo tiene un registro por nanny con disponibilidad general
       // No necesitamos actualizar por fecha específica, esto se maneja por conflictos de servicio
-      console.log(`📝 Nota: Disponibilidad de nanny ID: ${nannyId} se verifica a través de servicios confirmados`);
+      logger.debug(`📝 Nota: Disponibilidad de nanny ID: ${nannyId} se verifica a través de servicios confirmados`);
       // Este método se mantiene por compatibilidad pero ya no hace actualización en nanny_availability
       // La disponibilidad se determina dinámicamente en hasScheduleConflict()
     } catch (error) {
-      console.error('Error updating nanny availability:', error);
+      logger.error('Error updating nanny availability:', error);
     }
   }
 
@@ -243,9 +244,9 @@ class Service {
         notification.related_type
       ]);
       
-      console.log(`✅ Notificación enviada a nanny (user_id: ${nannyUserId})`);
+      logger.success('Notificación enviada a nanny (user_id: ${nannyUserId})`);
     } catch (error) {
-      console.error('Error sending notification to nanny:', error);
+      logger.error('Error sending notification to nanny:', error);
     }
   }
 
@@ -283,7 +284,7 @@ class Service {
       if (nannyId) {
         query += ' AND s.nanny_id = ?';
         params.push(nannyId);
-        console.log(`🔍 Filtrando por nannyId: ${nannyId}`);
+        logger.debug(`🔍 Filtrando por nannyId: ${nannyId}`);
       }
       
       if (status) {
@@ -294,19 +295,19 @@ class Service {
       const limitNum = parseInt(limit) || 100;
       query += ` ORDER BY s.created_at DESC LIMIT ${limitNum}`;
       
-      console.log('📊 Query servicios:', query);
-      console.log('📊 Params:', params);
+      logger.debug('📊 Query servicios:', query);
+      logger.debug('📊 Params:', params);
       
       const result = await executeQuery(query, params);
-      console.log(`✅ Servicios encontrados: ${result.data?.length || 0}`);
+      logger.success('Servicios encontrados: ${result.data?.length || 0}`);
       
       if (result.data && result.data.length > 0) {
-        console.log('📋 Primer servicio:', JSON.stringify(result.data[0], null, 2));
+        logger.info('📋 Primer servicio:', JSON.stringify(result.data[0], null, 2));
       }
       
       return result;
     } catch (error) {
-      console.error('Error fetching services:', error);
+      logger.error('Error fetching services:', error);
       throw error;
     }
   }
@@ -343,7 +344,7 @@ class Service {
       const result = await executeQuery(query, [serviceId]);
       return result;
     } catch (error) {
-      console.error('Error fetching service by ID:', error);
+      logger.error('Error fetching service by ID:', error);
       throw error;
     }
   }
@@ -405,7 +406,7 @@ class Service {
 
       const serviceId = result.data.insertId;
 
-      console.log(`✅ Servicio creado con ID: ${serviceId} en estado PENDING (sin nanny asignada)`);
+      logger.success('Servicio creado con ID: ${serviceId} en estado PENDING (sin nanny asignada)`);
 
       // Notificar a todas las nannys disponibles
       await this.notifyAllAvailableNannys(serviceId, {
@@ -431,7 +432,7 @@ class Service {
         }
       };
     } catch (error) {
-      console.error('Error creating service:', error);
+      logger.error('Error creating service:', error);
       throw error;
     }
   }
@@ -441,7 +442,7 @@ class Service {
    */
   static async notifyAllAvailableNannys(serviceId, serviceData) {
     try {
-      console.log('📢 Notificando a todas las nannys disponibles sobre servicio:', serviceId);
+      logger.info('📢 Notificando a todas las nannys disponibles sobre servicio:', serviceId);
 
       // Obtener todas las nannys activas
       const query = `
@@ -461,11 +462,11 @@ class Service {
       const result = await executeQuery(query, []);
 
       if (!result.success || result.data.length === 0) {
-        console.log('⚠️ No hay nannys disponibles para notificar');
+        logger.info('⚠️ No hay nannys disponibles para notificar');
         return;
       }
 
-      console.log(`📊 Encontradas ${result.data.length} nannys activas para notificar`);
+      logger.debug(`📊 Encontradas ${result.data.length} nannys activas para notificar`);
 
       // Enviar notificación a cada nanny
       const { sendServiceNotificationEmail } = require('../utils/email');
@@ -498,15 +499,15 @@ class Service {
             `${nanny.first_name} ${nanny.last_name}`,
             serviceData
           );
-          console.log(`✅ Correo enviado a ${nanny.email}`);
+          logger.success('Correo enviado a ${nanny.email}`);
         } catch (emailError) {
-          console.error(`❌ Error enviando correo a ${nanny.email}:`, emailError);
+          logger.error(`❌ Error enviando correo a ${nanny.email}:`, emailError);
         }
       }
 
-      console.log(`✅ Notificaciones enviadas a ${result.data.length} nannys`);
+      logger.success('Notificaciones enviadas a ${result.data.length} nannys`);
     } catch (error) {
-      console.error('❌ Error notificando a nannys:', error);
+      logger.error('❌ Error notificando a nannys:', error);
     }
   }
 
@@ -519,7 +520,7 @@ class Service {
     let conn = null;
 
     try {
-      console.log(`🤝 Nanny ${nannyId} intentando aceptar servicio ${serviceId}`);
+      logger.info(`🤝 Nanny ${nannyId} intentando aceptar servicio ${serviceId}`);
 
       // Crear conexión para usar transacciones
       conn = await mysql.createConnection(getConnectionConfig());
@@ -598,7 +599,7 @@ class Service {
 
       // Commit de la transacción - el servicio fue asignado exitosamente
       await conn.commit();
-      console.log(`✅ Servicio ${serviceId} asignado a nanny ${nannyId} exitosamente`);
+      logger.success('Servicio ${serviceId} asignado a nanny ${nannyId} exitosamente`);
 
       // Notificar al cliente que su servicio fue aceptado
       const clientQuery = 'SELECT user_id FROM clients WHERE id = ?';
@@ -629,7 +630,7 @@ class Service {
           });
           
           // Enviar notificación Y correo al cliente
-          console.log('📧 Enviando notificación y correo al cliente sobre servicio aceptado...');
+          logger.info('📧 Enviando notificación y correo al cliente sobre servicio aceptado...');
           await notificationSystem.notifyClientServiceAccepted(
             clientEmail,
             clientResult.data[0].user_id,
@@ -658,7 +659,7 @@ class Service {
       if (conn) {
         await conn.rollback();
       }
-      console.error('❌ Error aceptando servicio:', error);
+      logger.error('❌ Error aceptando servicio:', error);
       throw error;
     } finally {
       if (conn) {
@@ -689,9 +690,9 @@ class Service {
         'service'
       ]);
 
-      console.log(`📢 Notificación enviada a nanny (user_id: ${nannyUserId}) - servicio ya tomado`);
+      logger.info(`📢 Notificación enviada a nanny (user_id: ${nannyUserId}) - servicio ya tomado`);
     } catch (error) {
-      console.error('❌ Error notificando a nanny sobre servicio tomado:', error);
+      logger.error('❌ Error notificando a nanny sobre servicio tomado:', error);
     }
   }
 
@@ -700,7 +701,7 @@ class Service {
    */
   static async notifyOtherNannysServiceTaken(acceptingNannyId, serviceTitle, serviceId) {
     try {
-      console.log('📢 Notificando a otras nannys que el servicio fue tomado...');
+      logger.info('📢 Notificando a otras nannys que el servicio fue tomado...');
 
       // Obtener todas las nannys activas excepto la que aceptó
       const query = `
@@ -720,11 +721,11 @@ class Service {
       const result = await executeQuery(query, [acceptingNannyId]);
 
       if (!result.success || result.data.length === 0) {
-        console.log('⚠️ No hay otras nannys para notificar');
+        logger.info('⚠️ No hay otras nannys para notificar');
         return;
       }
 
-      console.log(`📊 Notificando a ${result.data.length} nannys sobre servicio tomado`);
+      logger.debug(`📊 Notificando a ${result.data.length} nannys sobre servicio tomado`);
 
       // Enviar notificación a cada nanny
       for (const nanny of result.data) {
@@ -748,9 +749,9 @@ class Service {
         ]);
       }
 
-      console.log(`✅ Notificaciones enviadas a ${result.data.length} nannys`);
+      logger.success('Notificaciones enviadas a ${result.data.length} nannys`);
     } catch (error) {
-      console.error('❌ Error notificando a otras nannys:', error);
+      logger.error('❌ Error notificando a otras nannys:', error);
     }
   }
 
@@ -780,7 +781,7 @@ class Service {
       const result = await executeQuery(query, values);
       return result;
     } catch (error) {
-      console.error('Error updating service:', error);
+      logger.error('Error updating service:', error);
       throw error;
     }
   }
@@ -821,7 +822,7 @@ class Service {
       let result;
       if (permanentDelete) {
         // Eliminar COMPLETAMENTE de la base de datos (para cambio de fecha)
-        console.log(`🗑️ ELIMINANDO PERMANENTEMENTE servicio ${serviceId} de la base de datos`);
+        logger.info(`🗑️ ELIMINANDO PERMANENTEMENTE servicio ${serviceId} de la base de datos`);
         const deleteQuery = 'DELETE FROM services WHERE id = ?';
         result = await executeQuery(deleteQuery, [serviceId]);
         
@@ -833,7 +834,7 @@ class Service {
         }
       } else {
         // Cambiar el estado del servicio a 'cancelled' (cancelación normal)
-        console.log(`🚫 Cancelando servicio ${serviceId} (cambio de estado)`);
+        logger.info(`🚫 Cancelando servicio ${serviceId} (cambio de estado)`);
         const updateQuery = 'UPDATE services SET status = ?, updated_at = NOW() WHERE id = ?';
         result = await executeQuery(updateQuery, ['cancelled', serviceId]);
         
@@ -847,7 +848,7 @@ class Service {
 
       return result;
     } catch (error) {
-      console.error('Error cancelling service:', error);
+      logger.error('Error cancelling service:', error);
       throw error;
     }
   }

@@ -1370,9 +1370,9 @@ const getServiceCompletedEmailTemplate = (clientName, nannyName, serviceName, se
  */
 const sendNewVerificationRequestEmail = async (adminEmail, adminName, clientName, clientEmail) => {
     if (!isSMTPConfigured()) {
-        console.log('📧 [Email not sent - SMTP not configured]');
-        console.log(`   TO: ${adminEmail} (Admin)`);
-        console.log(`   SUBJECT: Nueva solicitud de verificación de ${clientName}`);
+        logger.info('📧 [Email not sent - SMTP not configured]');
+        logger.info(`   TO: ${adminEmail} (Admin)`);
+        logger.info(`   SUBJECT: Nueva solicitud de verificación de ${clientName}`);
         return { success: true, fallback: true };
     }
 
@@ -1388,10 +1388,10 @@ const sendNewVerificationRequestEmail = async (adminEmail, adminName, clientName
             html
         });
 
-        console.log('📨 Verification request email sent to admin:', info.messageId);
+        logger.info('📨 Verification request email sent to admin:', info.messageId);
         return { success: true, message: 'Verification request email sent', info };
     } catch (error) {
-        console.error('❌ Error sending verification request email:', error);
+        logger.error('❌ Error sending verification request email:', error);
         return { success: false, message: error.message };
     }
 };

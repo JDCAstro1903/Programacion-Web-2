@@ -1,4 +1,5 @@
 const Service = require('../models/Service');
+const logger = require('./logger');
 const notificationSystem = require('../utils/NotificationSystem');
 
 class ServiceController {
@@ -9,12 +10,12 @@ class ServiceController {
     try {
       const { clientId, nannyId, status, limit = 100 } = req.query;
       
-      console.log('📋 GET /api/services - Parámetros:', { clientId, nannyId, status, limit });
+      logger.info('📋 GET /api/services - Parámetros:', { clientId, nannyId, status, limit });
       
       const result = await Service.getAll(clientId, nannyId, status, limit);
       return res.json({ success: true, data: result.data || [] });
     } catch (error) {
-      console.error('Error fetching services:', error);
+      logger.error('Error fetching services:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -34,7 +35,7 @@ class ServiceController {
       
       return res.json({ success: true, data: result.data[0] });
     } catch (error) {
-      console.error('Error fetching service:', error);
+      logger.error('Error fetching service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -44,7 +45,7 @@ class ServiceController {
    */
   static async createService(req, res) {
     try {
-      console.log('📥 POST /api/services - Body recibido:', JSON.stringify(req.body, null, 2));
+      logger.info('📥 POST /api/services - Body recibido:', JSON.stringify(req.body, null, 2));
       
       const {
         client_id,
@@ -57,7 +58,7 @@ class ServiceController {
 
       // Validar campos requeridos
       if (!client_id || !title || !service_type || !start_date || !start_time || !end_time) {
-        console.log('❌ Validación fallida - Campos faltantes:', { client_id, title, service_type, start_date, start_time, end_time });
+        logger.info('❌ Validación fallida - Campos faltantes:', { client_id, title, service_type, start_date, start_time, end_time });
         return res.status(400).json({
           success: false,
           message: 'Faltan campos requeridos: client_id, title, service_type, start_date, start_time, end_time'
@@ -72,7 +73,7 @@ class ServiceController {
 
       return res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating service:', error);
+      logger.error('Error creating service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -92,7 +93,7 @@ class ServiceController {
       
       return res.json({ success: true, message: 'Servicio actualizado exitosamente' });
     } catch (error) {
-      console.error('Error updating service:', error);
+      logger.error('Error updating service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -158,11 +159,11 @@ class ServiceController {
           day: 'numeric'
         });
         
-        console.log('📧 Notificando cancelación a nanny asignada...');
-        console.log(`   Nanny: ${nannyName} (${serviceInfo.nanny_email})`);
-        console.log(`   Cliente: ${clientName}`);
-        console.log(`   Servicio: ${serviceInfo.title}`);
-        console.log(`   Fecha: ${serviceDate}`);
+        logger.info('📧 Notificando cancelación a nanny asignada...');
+        logger.info(`   Nanny: ${nannyName} (${serviceInfo.nanny_email})`);
+        logger.info(`   Cliente: ${clientName}`);
+        logger.info(`   Servicio: ${serviceInfo.title}`);
+        logger.info(`   Fecha: ${serviceDate}`);
         
         await notificationSystem.notifyNannyCancellation(
           serviceInfo.nanny_email,
@@ -174,14 +175,14 @@ class ServiceController {
           id
         );
         
-        console.log('✅ Notificación de cancelación enviada exitosamente');
+        logger.success('Notificación de cancelación enviada exitosamente');
       } else {
-        console.log('ℹ️ No se envió notificación de cancelación: servicio sin nanny asignada (estado: pending)');
+        logger.info('ℹ️ No se envió notificación de cancelación: servicio sin nanny asignada (estado: pending)');
       }
       
       return res.json({ success: true, message: 'Servicio cancelado exitosamente' });
     } catch (error) {
-      console.error('Error deleting service:', error);
+      logger.error('Error deleting service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -236,7 +237,7 @@ class ServiceController {
 
       return res.json({ success: true, data: result.data || [] });
     } catch (error) {
-      console.error('Error fetching nanny availability:', error);
+      logger.error('Error fetching nanny availability:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -249,7 +250,7 @@ class ServiceController {
       const { serviceId } = req.params;
       const { nanny_id } = req.body;
 
-      console.log(`🤝 Request to accept service ${serviceId} by nanny ${nanny_id}`);
+      logger.info(`🤝 Request to accept service ${serviceId} by nanny ${nanny_id}`);
 
       if (!nanny_id) {
         return res.status(400).json({
@@ -266,7 +267,7 @@ class ServiceController {
 
       return res.json(result);
     } catch (error) {
-      console.error('Error accepting service:', error);
+      logger.error('Error accepting service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }
@@ -327,7 +328,7 @@ class ServiceController {
         `;
         
         await executeQuery(incrementQuery, [nannyId]);
-        console.log(`✓ Contador de servicios completados incrementado para nanny ${nannyId}`);
+        logger.info(`✓ Contador de servicios completados incrementado para nanny ${nannyId}`);
       }
 
       // Obtener información del servicio completo para notificar al cliente
@@ -364,7 +365,7 @@ class ServiceController {
         });
         
         // Enviar notificación al cliente
-        console.log('📧 Enviando notificación al cliente sobre servicio completado...');
+        logger.info('📧 Enviando notificación al cliente sobre servicio completado...');
         await notificationSystem.notifyClientServiceCompleted(
           serviceInfo.client_email,
           serviceInfo.client_user_id,
@@ -376,7 +377,7 @@ class ServiceController {
         );
       }
 
-      console.log(`✓ Servicio ${serviceId} marcado como completado`);
+      logger.info(`✓ Servicio ${serviceId} marcado como completado`);
 
       return res.json({
         success: true,
@@ -384,7 +385,7 @@ class ServiceController {
         data: { serviceId, status: 'completed', nannyId }
       });
     } catch (error) {
-      console.error('Error completing service:', error);
+      logger.error('Error completing service:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }

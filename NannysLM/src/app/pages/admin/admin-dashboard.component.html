@@ -2724,7 +2724,7 @@
           <!-- Si hay recibo -->
           <div class="receipt-image-container" *ngIf="selectedReceiptPayment.receipt_url">
             <img 
-              [src]="'http://localhost:8000' + selectedReceiptPayment.receipt_url" 
+              [src]="selectedReceiptPayment.receipt_url" 
               alt="Recibo de transferencia bancaria" 
               class="receipt-image"
               loading="lazy">
@@ -2773,7 +2773,7 @@
         </button>
         <a 
           *ngIf="selectedReceiptPayment.receipt_url"
-          [href]="'http://localhost:8000' + selectedReceiptPayment.receipt_url" 
+          [href]="selectedReceiptPayment.receipt_url" 
           target="_blank"
           download
           class="btn-primary-pro">

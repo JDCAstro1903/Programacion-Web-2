@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const logger = require('./logger');
 
 class UserController {
   /**
@@ -55,7 +56,7 @@ class UserController {
         }
       });
     } catch (error) {
-      console.error('❌ Error en getUserById:', error);
+      logger.error('❌ Error en getUserById:', error);
       res.status(500).json({
         success: false,
         message: 'Error obteniendo usuario'
@@ -100,7 +101,7 @@ class UserController {
         }
       });
     } catch (error) {
-      console.error('❌ Error en getUserPhone:', error);
+      logger.error('❌ Error en getUserPhone:', error);
       res.status(500).json({
         success: false,
         message: 'Error obteniendo teléfono del usuario'
@@ -162,7 +163,7 @@ class UserController {
         }
       });
     } catch (error) {
-      console.error('❌ Error en getUserByEmail:', error);
+      logger.error('❌ Error en getUserByEmail:', error);
       res.status(500).json({
         success: false,
         message: 'Error obteniendo usuario'
@@ -218,7 +219,7 @@ class UserController {
         }))
       });
     } catch (error) {
-      console.error('❌ Error en searchUsers:', error);
+      logger.error('❌ Error en searchUsers:', error);
       res.status(500).json({
         success: false,
         message: 'Error buscando usuarios'

@@ -1687,7 +1687,7 @@ export class AdminDashboardComponent implements OnInit {
     if (payment?.receipt_url) {
       const receiptUrl = payment.receipt_url;
       
-      // Si ya es una URL completa, devolverla
+      // Si ya es una URL completa (Cloudinary u otra), devolverla directamente
       if (receiptUrl.startsWith('http')) {
         return receiptUrl;
       }
@@ -1701,7 +1701,7 @@ export class AdminDashboardComponent implements OnInit {
       return ApiConfig.getReceiptUrl(receiptUrl);
     }
     
-    // Fallback a receiptProof para compatibilidad
+    // Fallback a receiptProof para compatibilidad (sistema antiguo)
     if (!payment?.receiptProof) {
       return '';
     }
@@ -1714,7 +1714,7 @@ export class AdminDashboardComponent implements OnInit {
     }
     
     // Si es una ruta relativa, construir URL completa
-    const baseUrl = 'http://localhost:3000/uploads/receipts'; // TODO: Cambiar según configuración del backend
+    const baseUrl = 'http://localhost:3000/uploads/receipts';
     return `${baseUrl}/${receiptProof}`;
   }
 
