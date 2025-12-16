@@ -1,4 +1,4 @@
-<div class="admin-layout">
+﻿<div class="admin-layout">
   <!-- Header Genérico -->
   <app-header 
     [config]="headerConfig"
@@ -1369,6 +1369,229 @@
            
             <h3>No hay datos bancarios registrados</h3>
             <p>Agrega información bancaria para facilitar los pagos y transferencias.</p>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Vista Pagos a Nannys -->
+      <div *ngIf="currentView === 'pagos-nannys'" class="nanny-payments-view">
+        <div class="content-header">
+          <h2>Pagos a Nannys</h2>
+          <p>Control de ingresos generados por cada nanny para gestionar sus pagos</p>
+        </div>
+
+        <!-- Filtros de período de tiempo -->
+        <div class="time-period-filters">
+          <button 
+            class="period-btn" 
+            [class.active]="nannyPaymentPeriod === 'day'"
+            (click)="setNannyPaymentPeriod('day')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Hoy
+          </button>
+          <button 
+            class="period-btn" 
+            [class.active]="nannyPaymentPeriod === 'week'"
+            (click)="setNannyPaymentPeriod('week')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Esta Semana
+          </button>
+          <button 
+            class="period-btn" 
+            [class.active]="nannyPaymentPeriod === 'month'"
+            (click)="setNannyPaymentPeriod('month')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Este Mes
+          </button>
+        </div>
+
+        <!-- Resumen general de pagos -->
+        <div class="nanny-payments-summary">
+          <div class="summary-card total">
+            <div class="summary-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="summary-content">
+              <h4>Total a Pagar</h4>
+              <div class="summary-amount">${{ getTotalNannyPayments().toFixed(2) }}</div>
+              <span class="summary-period">{{ getNannyPaymentPeriodLabel() }}</span>
+            </div>
+          </div>
+
+          <div class="summary-card nannys">
+            <div class="summary-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="summary-content">
+              <h4>Nannys Activas</h4>
+              <div class="summary-amount">{{ getActiveNannysWithPayments() }}</div>
+              <span class="summary-period">Con ingresos generados</span>
+            </div>
+          </div>
+
+          <div class="summary-card services">
+            <div class="summary-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="summary-content">
+              <h4>Servicios Completados</h4>
+              <div class="summary-amount">{{ getTotalCompletedServices() }}</div>
+              <span class="summary-period">{{ getNannyPaymentPeriodLabel() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de búsqueda -->
+        <div class="search-bar-container">
+          <div class="search-bar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+              <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input 
+              type="text" 
+              class="search-input" 
+              placeholder="Buscar nanny por nombre..."
+              [(ngModel)]="nannyPaymentSearchTerm"
+              (input)="onNannyPaymentSearchChange()">
+          </div>
+        </div>
+
+        <!-- Grid de pagos a nannys -->
+        <div class="nanny-payments-grid">
+          <div *ngFor="let nannyPayment of getCurrentNannyPayments()" class="nanny-payment-card">
+            <!-- Header de la tarjeta -->
+            <div class="nanny-payment-header">
+              <div class="nanny-payment-profile">
+                <div class="nanny-payment-avatar-container">
+                  <div class="nanny-payment-avatar" [style.background]="getAvatarColor(nannyPayment.nanny_name)">
+                    <span>{{ nannyPayment.nanny_name[0] }}</span>
+                  </div>
+                </div>
+                <div class="nanny-payment-info">
+                  <h3 class="nanny-payment-name">{{ nannyPayment.nanny_name }}</h3>
+                  <p class="nanny-payment-email">{{ nannyPayment.nanny_email }}</p>
+                </div>
+              </div>
+              <div class="payment-total-badge">
+                <span class="badge-label">Total</span>
+                <span class="badge-amount">${{ nannyPayment.total_earnings.toFixed(2) }}</span>
+              </div>
+            </div>
+
+            <!-- Cuerpo de la tarjeta -->
+            <div class="nanny-payment-body">
+              <div class="payment-stat-row">
+                <div class="payment-stat-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <div class="stat-content">
+                    <span class="stat-label">Servicios</span>
+                    <span class="stat-value">{{ nannyPayment.completed_services }}</span>
+                  </div>
+                </div>
+
+                <div class="payment-stat-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                    <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <div class="stat-content">
+                    <span class="stat-label">Horas Totales</span>
+                    <span class="stat-value">{{ nannyPayment.total_hours.toFixed(1) }}h</span>
+                  </div>
+                </div>
+
+                <div class="payment-stat-item">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <div class="stat-content">
+                    <span class="stat-label">Tarifa/Hora</span>
+                    <span class="stat-value">${{ nannyPayment.hourly_rate.toFixed(2) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Desglose de comisión -->
+              <div class="commission-breakdown">
+                <div class="breakdown-row">
+                  <span class="breakdown-label">Ingresos Brutos</span>
+                  <span class="breakdown-value">${{ nannyPayment.total_earnings.toFixed(2) }}</span>
+                </div>
+                <div class="breakdown-row commission">
+                  <span class="breakdown-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <line x1="19" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Comisión (20%)
+                  </span>
+                  <span class="breakdown-value">-${{ (nannyPayment.total_earnings * 0.20).toFixed(2) }}</span>
+                </div>
+                <div class="breakdown-row total">
+                  <span class="breakdown-label">Pago Neto</span>
+                  <span class="breakdown-value">${{ (nannyPayment.total_earnings * 0.80).toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer de la tarjeta -->
+            <div class="nanny-payment-footer">
+              <button class="action-btn details" (click)="viewNannyPaymentDetails(nannyPayment)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Ver Detalles
+              </button>
+              <button class="action-btn primary" (click)="processNannyPayment(nannyPayment)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Marcar como Pagado
+              </button>
+            </div>
+          </div>
+
+          <!-- Estado vacío -->
+          <div *ngIf="getCurrentNannyPayments().length === 0" class="modern-empty-state">
+            <div class="empty-content">
+              <div class="empty-icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <h3>No hay pagos pendientes</h3>
+              <p>No se encontraron servicios completados en el período seleccionado.</p>
+            </div>
           </div>
         </div>
       </div>

@@ -134,7 +134,6 @@ export class AdminDashboardComponent implements OnInit {
             ...response.data,
             payments: this.dashboardStats.payments // Preserve payments object
           };
-          this.updateSidebarCounts();
         }
         this.isLoadingStats = false;
       },
@@ -199,7 +198,6 @@ export class AdminDashboardComponent implements OnInit {
           this.dashboardStats.payments.total = this.paymentsData.length;
           this.dashboardStats.payments.pending = this.paymentsData.filter((p: any) => p.payment_status === 'pending').length;
           this.dashboardStats.payments.completed = this.paymentsData.filter((p: any) => p.payment_status === 'completed').length;
-          this.updateSidebarCounts();
         }
         this.isLoadingPayments = false;
       },
@@ -215,7 +213,6 @@ export class AdminDashboardComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.datosBancarios = response.data;
-          this.updateSidebarCounts();
         }
         this.isLoadingBankDetails = false;
       },
@@ -225,12 +222,6 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  private updateSidebarCounts() {
-    this.userConfigService.updateSidebarItemCount('admin', 'nannys', this.dashboardStats.nannys?.total || 0);
-    this.userConfigService.updateSidebarItemCount('admin', 'clients', this.dashboardStats.clients?.total || 0);
-    this.userConfigService.updateSidebarItemCount('admin', 'payments', this.dashboardStats.payments?.total || 0);
-    this.userConfigService.updateSidebarItemCount('admin', 'datos-bancarios', this.datosBancarios.length);
-  }
 
   // Estados de filtro para las nannys
   nannyFilter: string = 'active';
@@ -255,6 +246,7 @@ export class AdminDashboardComponent implements OnInit {
   nannySearchTerm: string = '';
   clientSearchTerm: string = '';
   paymentSearchTerm: string = '';
+  nannyPaymentSearchTerm: string = '';
   
   // Estado del modal de logout
   showLogoutModal: boolean = false;
@@ -336,11 +328,6 @@ export class AdminDashboardComponent implements OnInit {
   selectedClientForVerification: any = null;
   isVerifyingDocument: boolean = false;
 
-  // Estados para rechazo de documento de cliente
-  showRejectClientModal: boolean = false;
-  selectedClientForRejection: any = null;
-  clientRejectionReason: string = '';
-
   // Estados para perfil del cliente
   showClientProfileModal: boolean = false;
   selectedClientProfile: any = null;
@@ -409,6 +396,14 @@ export class AdminDashboardComponent implements OnInit {
   showRejectPaymentModal: boolean = false;
   selectedPaymentForRejection: any = null;
   paymentRejectionReason: string = '';
+
+  // Estados para modal de confirmación de rechazo de cliente
+  showRejectClientModal: boolean = false;
+  selectedClientForRejection: any = null;
+  clientRejectionReason: string = '';
+
+  // Estados para nanny payments period
+  nannyPaymentPeriod: 'day' | 'week' | 'month' = 'month';
 
   // Estados para modal de resultado de acción de pago
   showPaymentActionResultModal: boolean = false;
@@ -1492,22 +1487,6 @@ export class AdminDashboardComponent implements OnInit {
     this.isVerifyingDocument = false;
   }
 
-  // Abrir modal de rechazo de cliente
-  openRejectClientModal(client: any) {
-    this.selectedClientForRejection = client;
-    this.clientRejectionReason = '';
-    this.showRejectClientModal = true;
-    // Cerrar el modal de verificación
-    this.showVerifyDocumentModal = false;
-  }
-
-  // Cerrar modal de rechazo de cliente
-  closeRejectClientModal() {
-    this.showRejectClientModal = false;
-    this.selectedClientForRejection = null;
-    this.clientRejectionReason = '';
-  }
-
   // Métodos para el modal de resultado de verificación
   openVerificationResultModal(type: 'success' | 'error', title: string, message: string, action?: string) {
     this.verificationResultData = {
@@ -1625,29 +1604,24 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  // Confirmar rechazo de verificación del cliente con motivo
-  async confirmRejectClientVerification() {
-    if (!this.clientRejectionReason.trim()) {
-      alert('Por favor, proporciona un motivo para el rechazo.');
-      return;
-    }
-
+  // Rechazar verificación del cliente
+  async rejectClientVerification(client: any) {
     this.isVerifyingDocument = true;
     try {
+      
       const token = this.authService.getToken();
       if (!token) {
-        throw new Error('No se encontró el token de autenticación');
+        throw new Error('No hay token de autenticación');
       }
       
-      const response = await fetch(`${ApiConfig.CLIENT_URL}/${this.selectedClientForRejection.id}/verify`, {
+      const response = await fetch(`${ApiConfig.CLIENT_URL}/${client.id}/verify`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          status: 'rejected',
-          rejectionReason: this.clientRejectionReason.trim()
+          status: 'rejected'
         })
       });
       
@@ -1655,21 +1629,18 @@ export class AdminDashboardComponent implements OnInit {
       
       if (response.ok && data.success) {
         // Actualizar estado local del cliente
-        const clientIndex = this.clientsData.findIndex(c => c.id === this.selectedClientForRejection.id);
+        const clientIndex = this.clientsData.findIndex(c => c.id === client.id);
         if (clientIndex !== -1) {
           this.clientsData[clientIndex].verificationStatus = 'rejected';
-          // Eliminar el documento del cliente localmente
-          this.clientsData[clientIndex].identification_document = undefined;
         }
         
-        // Cerrar modal de rechazo
-        this.closeRejectClientModal();
+        this.closeVerifyDocumentModal();
         
-        // Mostrar mensaje de éxito
+        // Mostrar modal de rechazo en lugar de alert
         this.openVerificationResultModal(
-          'success',
-          'Documento Rechazado',
-          `El documento ha sido rechazado correctamente. Se ha enviado un correo al cliente (${this.selectedClientForRejection.email}) con el motivo del rechazo. El documento ha sido eliminado y el cliente deberá subir uno nuevo.`,
+          'error',
+          'Verificación Rechazada',
+          'El documento de identificación ha sido rechazado. El cliente ha sido notificado por correo y puede reenviar una nueva solicitud.',
           'rejected'
         );
       } else {
@@ -1998,6 +1969,222 @@ export class AdminDashboardComponent implements OnInit {
       title: '',
       message: ''
     };
+  }
+
+  // ==================== NANNY PAYMENT METHODS ====================
+
+  /**
+   * Establecer el periodo de pago de nannys
+   */
+  setNannyPaymentPeriod(period: 'day' | 'week' | 'month') {
+    this.nannyPaymentPeriod = period;
+  }
+
+  /**
+   * Obtener el label del periodo de pago de nannys
+   */
+  getNannyPaymentPeriodLabel(): string {
+    switch (this.nannyPaymentPeriod) {
+      case 'day':
+        return 'Hoy';
+      case 'week':
+        return 'Esta semana';
+      case 'month':
+        return 'Este mes';
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Obtener el total de pagos a nannys según el periodo
+   */
+  getTotalNannyPayments(): number {
+    const payments = this.getCurrentNannyPayments();
+    return payments.reduce((total: number, payment: any) => {
+      return total + (parseFloat(payment.amount) || 0);
+    }, 0);
+  }
+
+  /**
+   * Obtener el número de nannys activas con pagos
+   */
+  getActiveNannysWithPayments(): number {
+    const payments = this.getCurrentNannyPayments();
+    const uniqueNannyIds = new Set(payments.map((p: any) => p.nanny_id));
+    return uniqueNannyIds.size;
+  }
+
+  /**
+   * Obtener el total de servicios completados según el periodo
+   */
+  getTotalCompletedServices(): number {
+    const nannyPayments = this.getCurrentNannyPayments();
+    return nannyPayments.reduce((total, np) => total + np.completed_services, 0);
+  }
+
+  /**
+   * Manejar cambio en búsqueda de pagos de nannys
+   */
+  onNannyPaymentSearchChange() {
+    // El filtrado se maneja automáticamente en getCurrentNannyPayments()
+  }
+
+  /**
+   * Obtener pagos de nannys filtrados por periodo y búsqueda, agrupados por nanny
+   */
+  getCurrentNannyPayments(): any[] {
+    let payments = this.paymentsData || [];
+    
+    console.log('🔍 Total pagos disponibles:', payments.length);
+    console.log('📊 Periodo seleccionado:', this.nannyPaymentPeriod);
+
+    // Filtrar solo pagos completados
+    payments = payments.filter((payment: any) => payment.payment_status === 'completed');
+    console.log('✅ Pagos completados:', payments.length);
+
+    // Filtrar por periodo
+    const filteredByDate = payments.filter((payment: any) => {
+      if (!payment.payment_date && !payment.created_at) {
+        console.log('⚠️ Pago sin fecha:', payment.id);
+        return false;
+      }
+      
+      const paymentDate = new Date(payment.payment_date || payment.created_at);
+      
+      if (this.nannyPaymentPeriod === 'day') {
+        return this.isPaymentInDateRange(paymentDate, 'today');
+      } else if (this.nannyPaymentPeriod === 'week') {
+        return this.isPaymentInDateRange(paymentDate, 'week');
+      } else if (this.nannyPaymentPeriod === 'month') {
+        return this.isPaymentInDateRange(paymentDate, 'month');
+      }
+      
+      return true;
+    });
+    
+    console.log('📅 Pagos después de filtro de fecha:', filteredByDate.length);
+    payments = filteredByDate;
+    
+    // Agrupar pagos por nanny
+    const nannyPaymentsMap = new Map<number, any>();
+
+    payments.forEach((payment: any) => {
+      // Usar nanny_user_id que es el campo correcto
+      const nannyId = payment.nanny_user_id;
+      
+      if (!nannyId) {
+        console.log('⚠️ Pago sin nanny_user_id:', payment.id);
+        return;
+      }
+
+      if (!nannyPaymentsMap.has(nannyId)) {
+        // Obtener información de la nanny desde nannysData usando el user_id
+        const nannyInfo = this.nannysData.find(n => n.user_id === nannyId);
+        
+        const nannyName = `${payment.nanny_first_name || ''} ${payment.nanny_last_name || ''}`.trim() || 'Sin nombre';
+        
+        nannyPaymentsMap.set(nannyId, {
+          nanny_id: nannyId,
+          nanny_name: nannyName,
+          nanny_email: payment.nanny_email || nannyInfo?.email || 'Sin email',
+          total_earnings: 0,
+          completed_services: 0,
+          total_hours: 0,
+          hourly_rate: nannyInfo?.hourly_rate || 50,
+          payments: []
+        });
+      }
+
+      const nannyData = nannyPaymentsMap.get(nannyId);
+      const paymentAmount = parseFloat(payment.amount) || 0;
+      
+      nannyData.total_earnings += paymentAmount;
+      nannyData.completed_services += 1;
+      
+      // Calcular horas desde service_total_hours
+      if (payment.service_total_hours) {
+        nannyData.total_hours += parseFloat(payment.service_total_hours) || 0;
+      } else if (payment.service_hours) {
+        nannyData.total_hours += parseFloat(payment.service_hours) || 0;
+      } else if (payment.hours) {
+        nannyData.total_hours += parseFloat(payment.hours) || 0;
+      } else if (nannyData.hourly_rate > 0) {
+        // Estimar horas basándose en el monto y la tarifa
+        nannyData.total_hours += paymentAmount / nannyData.hourly_rate;
+      }
+      
+      nannyData.payments.push(payment);
+    });
+
+    console.log('👩‍💼 Nannys con pagos:', nannyPaymentsMap.size);
+
+    // Convertir el mapa a array
+    let nannyPayments = Array.from(nannyPaymentsMap.values());
+
+    // Aplicar búsqueda
+    if (this.nannyPaymentSearchTerm.trim()) {
+      const searchLower = this.nannyPaymentSearchTerm.toLowerCase();
+      nannyPayments = nannyPayments.filter(nannyPayment => 
+        (nannyPayment.nanny_name?.toLowerCase().includes(searchLower) ||
+         nannyPayment.nanny_email?.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Ordenar por total_earnings descendente
+    nannyPayments.sort((a, b) => b.total_earnings - a.total_earnings);
+
+    console.log('📦 Resultado final:', nannyPayments);
+    return nannyPayments;
+  }
+
+  /**
+   * Ver detalles de pago de nanny
+   */
+  viewNannyPaymentDetails(payment: any) {
+    this.viewPaymentDetails(payment);
+  }
+
+  /**
+   * Procesar pago de nanny (aprobar/procesar)
+   */
+  processNannyPayment(payment: any) {
+    this.approvePayment(payment);
+  }
+
+  // ==================== CLIENT REJECTION METHODS ====================
+
+  /**
+   * Abrir modal para rechazar cliente
+   */
+  openRejectClientModal(client: any) {
+    this.selectedClientForRejection = client;
+    this.clientRejectionReason = '';
+    this.showRejectClientModal = true;
+  }
+
+  /**
+   * Cerrar modal de rechazo de cliente
+   */
+  closeRejectClientModal() {
+    this.showRejectClientModal = false;
+    this.selectedClientForRejection = null;
+    this.clientRejectionReason = '';
+  }
+
+  /**
+   * Confirmar rechazo de verificación de cliente
+   */
+  confirmRejectClientVerification() {
+    if (!this.selectedClientForRejection || !this.clientRejectionReason.trim()) {
+      return;
+    }
+
+    // Llamar al método existente que maneja el rechazo
+    this.rejectClientVerification(this.selectedClientForRejection);
+    
+    // Cerrar el modal de rechazo
+    this.closeRejectClientModal();
   }
 
  

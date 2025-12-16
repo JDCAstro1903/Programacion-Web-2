@@ -46,8 +46,13 @@ export class UserConfigService {
           },
           {
             id: 'payments',
-            label: 'Pagos',
+            label: 'Pagos de clientes',
             icon: 'dollar-sign'
+          },
+          {
+            id: 'pagos-nannys',
+            label: 'Pagos a Nannys',
+            icon: 'money-bill'
           },
           {
             id: 'datos-bancarios',
