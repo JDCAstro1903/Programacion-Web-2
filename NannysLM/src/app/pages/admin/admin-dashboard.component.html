@@ -1975,14 +1975,14 @@
         <button 
           type="button" 
           class="btn-reject-pro" 
-          (click)="rejectClientVerification(selectedClientForVerification)"
+          (click)="openRejectClientModal(selectedClientForVerification)"
           [disabled]="isVerifyingDocument">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
             <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
             <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
           </svg>
-          {{ isVerifyingDocument ? 'Procesando...' : 'Rechazar' }}
+          Rechazar
         </button>
         <button 
           type="button" 
@@ -1993,6 +1993,107 @@
             <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           {{ isVerifyingDocument ? 'Procesando...' : 'Aprobar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para rechazar documento de cliente con motivo - DISEÑO PROFESIONAL -->
+  <div *ngIf="showRejectClientModal" class="modal-overlay professional-overlay reject-overlay" (click)="closeRejectClientModal()">
+    <div class="modal-container reject-client-modal-enhanced" (click)="$event.stopPropagation()">
+      <!-- Overlay de loading -->
+      <div class="modal-loading-overlay" *ngIf="isVerifyingDocument">
+        <div class="loading-spinner"></div>
+        <p>Procesando rechazo...</p>
+      </div>
+      
+      <!-- Header del modal con diseño mejorado -->
+      <div class="reject-modal-header-enhanced">
+        <div class="reject-header-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Rechazar Documento</h2>
+        <p>Por favor, proporciona un motivo del rechazo que será enviado al cliente por correo electrónico.</p>
+      </div>
+
+      <!-- Cuerpo del modal mejorado -->
+      <div class="reject-modal-body-enhanced">
+        <!-- Información del cliente -->
+        <div class="rejection-client-info">
+          <div class="client-mini-card">
+            <div class="client-mini-avatar">
+              {{ (selectedClientForRejection?.name || 'C')[0] }}
+            </div>
+            <div class="client-mini-details">
+              <h4>{{ selectedClientForRejection?.name }}</h4>
+              <p>{{ selectedClientForRejection?.email }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Motivo del rechazo -->
+        <div class="form-group-enhanced">
+          <label for="rejectionReason" class="form-label-enhanced">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Motivo del Rechazo *
+          </label>
+          <textarea
+            id="rejectionReason"
+            [(ngModel)]="clientRejectionReason"
+            class="form-textarea-enhanced"
+            rows="5"
+            placeholder="Ejemplo: El documento no es legible, la fotografía está borrosa, el documento ha expirado, etc."
+            maxlength="500"></textarea>
+          <div class="char-counter">{{ clientRejectionReason.length }}/500 caracteres</div>
+        </div>
+
+        <!-- Advertencia importante -->
+        <div class="warning-box-enhanced">
+          <div class="warning-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="warning-content">
+            <h4>Importante</h4>
+            <ul>
+              <li>El documento actual será eliminado del sistema</li>
+              <li>El cliente recibirá un correo electrónico con el motivo del rechazo</li>
+              <li>El cliente deberá subir un nuevo documento para continuar con la verificación</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer mejorado con botones estilizados -->
+      <div class="reject-modal-footer-enhanced">
+        <button 
+          type="button" 
+          class="btn-cancel-enhanced" 
+          (click)="closeRejectClientModal()"
+          [disabled]="isVerifyingDocument">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn-confirm-reject-enhanced" 
+          (click)="confirmRejectClientVerification()"
+          [disabled]="isVerifyingDocument || !clientRejectionReason.trim()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          {{ isVerifyingDocument ? 'Procesando...' : 'Confirmar Rechazo' }}
         </button>
       </div>
     </div>

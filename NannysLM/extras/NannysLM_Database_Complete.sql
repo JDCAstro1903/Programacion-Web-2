@@ -34,6 +34,7 @@ CREATE TABLE `clients` (
   `identification_document` varchar(500) DEFAULT NULL,
   `verification_status` enum('pending','verified','rejected') DEFAULT 'pending',
   `verification_date` timestamp NULL DEFAULT NULL,
+  `rejection_reason` text,
   `emergency_contact_name` varchar(100) DEFAULT NULL,
   `emergency_contact_phone` varchar(20) DEFAULT NULL,
   `number_of_children` int DEFAULT '0',

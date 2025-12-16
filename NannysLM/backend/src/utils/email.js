@@ -658,7 +658,7 @@ const getVerificationApprovedEmailTemplate = (clientName) => {
 /**
  * Obtener plantilla HTML para verificación rechazada
  */
-const getVerificationRejectedEmailTemplate = (clientName) => {
+const getVerificationRejectedEmailTemplate = (clientName, rejectionReason = '') => {
     return `
     <!DOCTYPE html>
     <html>
@@ -685,10 +685,19 @@ const getVerificationRejectedEmailTemplate = (clientName) => {
                     </p>
 
                     <p style="margin: 0 0 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
-                        Lamentablemente, tu documento de identificación no cumplió con los requisitos de verificación. Esto puede deberse a:
+                        Lamentablemente, tu documento de identificación no cumplió con los requisitos de verificación.
                     </p>
 
-                    <!-- Razones posibles -->
+                    ${rejectionReason ? `
+                    <!-- Motivo específico del rechazo -->
+                    <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 8px 0; font-size: 13px; color: #7f1d1d; font-weight: 700;">📋 Motivo del rechazo:</p>
+                        <p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.6;">
+                            ${rejectionReason}
+                        </p>
+                    </div>
+                    ` : `
+                    <!-- Razones posibles (si no hay motivo específico) -->
                     <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin: 20px 0;">
                         <ul style="margin: 0; padding-left: 20px; list-style: none; color: #7f1d1d; font-size: 14px; line-height: 1.8;">
                             <li style="margin-bottom: 8px;">✕ Documento de baja calidad o borroso</li>
@@ -697,10 +706,11 @@ const getVerificationRejectedEmailTemplate = (clientName) => {
                             <li>✕ Documento no reconocido en nuestro sistema</li>
                         </ul>
                     </div>
+                    `}
 
                     <!-- Mensaje de acción -->
                     <p style="margin: 20px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
-                        No te preocupes, puedes <strong>reenviar tu documento</strong> siguiendo estas recomendaciones:
+                        No te preocupes, puedes <strong>volver a subir tu documento</strong> siguiendo estas recomendaciones:
                     </p>
 
                     <!-- Recomendaciones -->
@@ -710,14 +720,15 @@ const getVerificationRejectedEmailTemplate = (clientName) => {
                             <li style="margin-bottom: 8px;">• Asegúrate de que el documento sea legible</li>
                             <li style="margin-bottom: 8px;">• Evita reflejos o sombras en la foto</li>
                             <li style="margin-bottom: 8px;">• Usa documentos vigentes y válidos</li>
-                            <li>• Captura todos los datos de forma clara</li>
+                            <li style="margin-bottom: 8px;">• Captura todos los datos de forma clara</li>
+                            <li>• El documento anterior ha sido eliminado del sistema</li>
                         </ul>
                     </div>
 
                     <!-- Botón para reenviar -->
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="https://programacion-web-2-two.vercel.app/client/dashboard" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
-                            ↻ Reenviar Documento
+                            ↻ Subir Nuevo Documento
                         </a>
                     </div>
 
@@ -755,9 +766,9 @@ const sendVerificationApprovedEmail = async (toEmail, clientName) => {
 /**
  * Enviar correo de verificación rechazada
  */
-const sendVerificationRejectedEmail = async (toEmail, clientName) => {
+const sendVerificationRejectedEmail = async (toEmail, clientName, rejectionReason = '') => {
     const subject = 'Verificación rechazada - Por favor reintenta';
-    const html = getVerificationRejectedEmailTemplate(clientName);
+    const html = getVerificationRejectedEmailTemplate(clientName, rejectionReason);
     return await sendEmailWithSendGrid(toEmail, subject, html);
 };
 

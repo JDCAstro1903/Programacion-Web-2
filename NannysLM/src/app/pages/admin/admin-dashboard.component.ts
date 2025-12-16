@@ -336,6 +336,11 @@ export class AdminDashboardComponent implements OnInit {
   selectedClientForVerification: any = null;
   isVerifyingDocument: boolean = false;
 
+  // Estados para rechazo de documento de cliente
+  showRejectClientModal: boolean = false;
+  selectedClientForRejection: any = null;
+  clientRejectionReason: string = '';
+
   // Estados para perfil del cliente
   showClientProfileModal: boolean = false;
   selectedClientProfile: any = null;
@@ -1487,6 +1492,22 @@ export class AdminDashboardComponent implements OnInit {
     this.isVerifyingDocument = false;
   }
 
+  // Abrir modal de rechazo de cliente
+  openRejectClientModal(client: any) {
+    this.selectedClientForRejection = client;
+    this.clientRejectionReason = '';
+    this.showRejectClientModal = true;
+    // Cerrar el modal de verificación
+    this.showVerifyDocumentModal = false;
+  }
+
+  // Cerrar modal de rechazo de cliente
+  closeRejectClientModal() {
+    this.showRejectClientModal = false;
+    this.selectedClientForRejection = null;
+    this.clientRejectionReason = '';
+  }
+
   // Métodos para el modal de resultado de verificación
   openVerificationResultModal(type: 'success' | 'error', title: string, message: string, action?: string) {
     this.verificationResultData = {
@@ -1604,24 +1625,29 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  // Rechazar verificación del cliente
-  async rejectClientVerification(client: any) {
+  // Confirmar rechazo de verificación del cliente con motivo
+  async confirmRejectClientVerification() {
+    if (!this.clientRejectionReason.trim()) {
+      alert('Por favor, proporciona un motivo para el rechazo.');
+      return;
+    }
+
     this.isVerifyingDocument = true;
     try {
-      
       const token = this.authService.getToken();
       if (!token) {
-        throw new Error('No hay token de autenticación');
+        throw new Error('No se encontró el token de autenticación');
       }
       
-      const response = await fetch(`${ApiConfig.CLIENT_URL}/${client.id}/verify`, {
+      const response = await fetch(`${ApiConfig.CLIENT_URL}/${this.selectedClientForRejection.id}/verify`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          status: 'rejected'
+          status: 'rejected',
+          rejectionReason: this.clientRejectionReason.trim()
         })
       });
       
@@ -1629,18 +1655,21 @@ export class AdminDashboardComponent implements OnInit {
       
       if (response.ok && data.success) {
         // Actualizar estado local del cliente
-        const clientIndex = this.clientsData.findIndex(c => c.id === client.id);
+        const clientIndex = this.clientsData.findIndex(c => c.id === this.selectedClientForRejection.id);
         if (clientIndex !== -1) {
           this.clientsData[clientIndex].verificationStatus = 'rejected';
+          // Eliminar el documento del cliente localmente
+          this.clientsData[clientIndex].identification_document = undefined;
         }
         
-        this.closeVerifyDocumentModal();
+        // Cerrar modal de rechazo
+        this.closeRejectClientModal();
         
-        // Mostrar modal de rechazo en lugar de alert
+        // Mostrar mensaje de éxito
         this.openVerificationResultModal(
-          'error',
-          'Verificación Rechazada',
-          'El documento de identificación ha sido rechazado. El cliente ha sido notificado por correo y puede reenviar una nueva solicitud.',
+          'success',
+          'Documento Rechazado',
+          `El documento ha sido rechazado correctamente. Se ha enviado un correo al cliente (${this.selectedClientForRejection.email}) con el motivo del rechazo. El documento ha sido eliminado y el cliente deberá subir uno nuevo.`,
           'rejected'
         );
       } else {

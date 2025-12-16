@@ -503,7 +503,7 @@ class ClientController {
   static async verifyClient(req, res) {
     try {
       const clientId = req.params.id;
-      const { status } = req.body; // 'approved' o 'rejected'
+      const { status, rejectionReason } = req.body; // 'approved' o 'rejected', y motivo opcional
 
       if (!['approved', 'rejected'].includes(status)) {
         return res.status(400).json({
@@ -512,9 +512,17 @@ class ClientController {
         });
       }
 
-      // Obtener datos del cliente
+      // Si es rechazo y no hay motivo, retornar error
+      if (status === 'rejected' && !rejectionReason) {
+        return res.status(400).json({
+          success: false,
+          message: 'Se requiere un motivo para rechazar la verificación'
+        });
+      }
+
+      // Obtener datos del cliente incluyendo el documento
       const clientQuery = `
-        SELECT u.id, u.email, u.first_name, u.last_name, c.verification_status
+        SELECT u.id, u.email, u.first_name, u.last_name, c.verification_status, c.identification_document
         FROM users u
         JOIN clients c ON u.id = c.user_id
         WHERE c.id = ? AND u.user_type = 'client'
@@ -532,14 +540,52 @@ class ClientController {
       const client = clientResult.data[0];
       const verificationStatus = status === 'approved' ? 'verified' : 'rejected';
 
-      // Actualizar estado de verificación en tabla clients
-      const updateClientQuery = `
-        UPDATE clients 
-        SET verification_status = ?, verification_date = NOW()
-        WHERE id = ?
-      `;
+      // Si es rechazo, eliminar el documento de identificación
+      let documentDeleted = false;
+      if (status === 'rejected' && client.identification_document) {
+        const fs = require('fs');
+        const path = require('path');
+        
+        try {
+          // Construir la ruta completa del archivo
+          const documentPath = path.join(__dirname, '../../uploads', client.identification_document.replace('/uploads/', ''));
+          
+          // Verificar si el archivo existe y eliminarlo
+          if (fs.existsSync(documentPath)) {
+            fs.unlinkSync(documentPath);
+            documentDeleted = true;
+            logger.info('✓ Documento eliminado:', documentPath);
+          }
+        } catch (deleteError) {
+          logger.error('Error al eliminar documento:', deleteError);
+          // No lanzar error, continuar con el proceso
+        }
+      }
 
-      const updateClientResult = await executeQuery(updateClientQuery, [verificationStatus, clientId]);
+      // Actualizar estado de verificación en tabla clients y eliminar referencia al documento si es rechazo
+      let updateClientQuery;
+      let updateClientParams;
+
+      if (status === 'rejected') {
+        updateClientQuery = `
+          UPDATE clients 
+          SET verification_status = ?, 
+              verification_date = NOW(),
+              identification_document = NULL,
+              rejection_reason = ?
+          WHERE id = ?
+        `;
+        updateClientParams = [verificationStatus, rejectionReason, clientId];
+      } else {
+        updateClientQuery = `
+          UPDATE clients 
+          SET verification_status = ?, verification_date = NOW()
+          WHERE id = ?
+        `;
+        updateClientParams = [verificationStatus, clientId];
+      }
+
+      const updateClientResult = await executeQuery(updateClientQuery, updateClientParams);
 
       if (!updateClientResult.success) {
         throw new Error('Error al actualizar estado de verificación del cliente');
@@ -575,8 +621,8 @@ class ClientController {
         notificationType = 'success';
         logger.info('✓ Email de verificación aprobada enviado a:', client.email);
       } else {
-        emailResult = await sendVerificationRejectedEmail(client.email, clientName);
-        notificationMessage = 'Tu solicitud de verificación ha sido rechazada. Por favor, revisa tu correo para más información y reintenta.';
+        emailResult = await sendVerificationRejectedEmail(client.email, clientName, rejectionReason);
+        notificationMessage = `Tu solicitud de verificación ha sido rechazada. Motivo: ${rejectionReason}. Por favor, corrige los problemas y vuelve a subir tu documento.`;
         notificationType = 'warning';
         logger.info('✗ Email de verificación rechazada enviado a:', client.email);
       }
@@ -599,13 +645,15 @@ class ClientController {
 
       res.status(200).json({
         success: true,
-        message: `Cliente verificación ${status === 'approved' ? 'aprobada' : 'rechazada'} correctamente. Email y notificación enviados a ${client.email}`,
+        message: `Cliente verificación ${status === 'approved' ? 'aprobada' : 'rechazada'} correctamente. Email y notificación enviados a ${client.email}${documentDeleted ? '. Documento eliminado.' : ''}`,
         data: {
           clientId,
           verificationStatus,
           emailSent: emailResult.success,
           emailStatus: emailResult.message,
-          notificationSent: notificationResult.success
+          notificationSent: notificationResult.success,
+          documentDeleted: documentDeleted,
+          rejectionReason: status === 'rejected' ? rejectionReason : null
         }
       });
 

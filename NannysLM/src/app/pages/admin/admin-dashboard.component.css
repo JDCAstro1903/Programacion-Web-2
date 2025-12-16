@@ -9817,3 +9817,240 @@ input[type="file"] {
   }
 }
 
+/* ============================================================ */
+/* ESTILOS PARA MODAL DE RECHAZO DE DOCUMENTO DE CLIENTE */
+/* ============================================================ */
+
+/* Modal de rechazo de cliente - reutiliza estilos del modal de rechazo de pago */
+.reject-client-modal-enhanced {
+  width: 100%;
+  max-width: 620px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+/* Información del cliente a rechazar */
+.rejection-client-info {
+  margin-bottom: 1.5rem;
+}
+
+.client-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 12px;
+  border-left: 4px solid #f59e0b;
+}
+
+.client-mini-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.client-mini-details h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #78350f;
+  line-height: 1.3;
+}
+
+.client-mini-details p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #92400e;
+  opacity: 0.9;
+}
+
+/* Grupo de formulario mejorado */
+.form-group-enhanced {
+  margin-bottom: 1.5rem;
+}
+
+.form-label-enhanced {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 12px;
+}
+
+.form-label-enhanced svg {
+  width: 18px;
+  height: 18px;
+  color: #e31b7e;
+}
+
+/* Textarea mejorado */
+.form-textarea-enhanced {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  background: white;
+  color: #1e293b;
+  line-height: 1.6;
+  transition: all 0.3s ease;
+}
+
+.form-textarea-enhanced:focus {
+  outline: none;
+  border-color: #e31b7e;
+  box-shadow: 0 0 0 3px rgba(227, 27, 126, 0.1);
+}
+
+.form-textarea-enhanced::placeholder {
+  color: #cbd5e1;
+}
+
+/* Contador de caracteres */
+.char-counter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Caja de advertencia mejorada */
+.warning-box-enhanced {
+  display: flex;
+  gap: 12px;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+  border-radius: 12px;
+  margin-top: 1.5rem;
+}
+
+.warning-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.warning-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.warning-content h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #78350f;
+}
+
+.warning-content ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.warning-content li {
+  font-size: 13px;
+  color: #92400e;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.warning-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Botón de confirmar rechazo */
+.btn-confirm-reject-enhanced {
+  flex: 1;
+  padding: 0.875rem 1.75rem;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.btn-confirm-reject-enhanced:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+}
+
+.btn-confirm-reject-enhanced:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+}
+
+.btn-confirm-reject-enhanced:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  box-shadow: none;
+}
+
+.btn-confirm-reject-enhanced svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Responsive para modal de rechazo de cliente */
+@media (max-width: 768px) {
+  .reject-client-modal-enhanced {
+    max-width: 95%;
+    margin: 1rem;
+  }
+
+  .client-mini-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .form-textarea-enhanced {
+    font-size: 13px;
+  }
+
+  .warning-box-enhanced {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .warning-content ul {
+    text-align: left;
+  }
+}
