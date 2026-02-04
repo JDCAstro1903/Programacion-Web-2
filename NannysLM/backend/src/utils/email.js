@@ -876,6 +876,104 @@ const getPaymentApprovedEmailTemplate = (clientName, serviceName, amount, nannyN
 };
 
 /**
+ * Obtener plantilla HTML para notificar a la nanny sobre pago aprobado
+ */
+const getNannyPaymentApprovedEmailTemplate = (nannyName, clientName, serviceName, nannyAmount, platformFee, totalAmount) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pago Recibido - NannysLM</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); min-height: 100vh;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);">
+                
+                <!-- Header con gradiente verde -->
+                <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 40px 20px; text-align: center; color: white;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">💰 ¡Has Recibido un Pago!</h1>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Tu servicio ha sido pagado exitosamente</p>
+                </div>
+
+                <div style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151;">
+                        Hola <strong>${nannyName}</strong>,
+                    </p>
+
+                    <p style="margin: 0 0 30px 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                        ¡Excelentes noticias! El pago por tu servicio con <strong>${clientName}</strong> ha sido aprobado y procesado. El dinero ya está disponible para ti.
+                    </p>
+
+                    <!-- Ícono de confirmación -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block;">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="#10B981" opacity="0.1"/>
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" stroke="#10B981" stroke-width="1.5"/>
+                            <path d="M9 12L11 14L15 10" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+
+                    <!-- Detalles del pago -->
+                    <div style="background: #f0fdf4; border-left: 4px solid #10B981; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0 0 12px 0; font-size: 13px; color: #047857; font-weight: 600;">Detalles del pago:</p>
+                        <div style="font-size: 13px; color: #047857; line-height: 1.8;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Servicio:</span>
+                                <strong>${serviceName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Cliente:</span>
+                                <strong>${clientName}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-top: 8px; border-top: 1px solid rgba(16, 185, 129, 0.2);">
+                                <span>Monto total:</span>
+                                <strong>$${parseFloat(totalAmount).toFixed(2)}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Comisión plataforma:</span>
+                                <span>-$${parseFloat(platformFee).toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; border-top: 2px solid #10B981; padding-top: 8px; margin-top: 8px;">
+                                <span style="font-weight: 700;">TU PAGO:</span>
+                                <strong style="font-size: 20px; color: #10B981;">$${parseFloat(nannyAmount).toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p style="margin: 20px 0; font-size: 14px; color: #64748b; line-height: 1.6;">
+                        El dinero será transferido a tu cuenta bancaria registrada en los próximos días hábiles.
+                    </p>
+
+                    <div style="height: 1px; background: #e2e8f0; margin: 30px 0;"></div>
+
+                    <div style="background: #f0f9ff; border-left: 4px solid #1EB2E5; padding: 12px 16px; border-radius: 8px;">
+                        <p style="margin: 0; font-size: 13px; color: #0c5460;">
+                            <strong>💡 Tip:</strong> Puedes ver todos tus pagos en tu panel de control.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div style="background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 30px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p style="margin: 0 0 8px 0;">
+                        ¿Preguntas? Contáctanos en <a href="mailto:soporte@nannyslm.com" style="color: #10B981; text-decoration: none; font-weight: 600;">soporte@nannyslm.com</a>
+                    </p>
+                    <p style="margin: 0;">© 2025 NannysLM. Todos los derechos reservados.</p>
+                </div>
+            </div>
+
+            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px; line-height: 1.5;">
+                Este es un correo automático. Por favor no respondas a este mensaje.
+            </p>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
+/**
  * Obtener plantilla HTML para pago rechazado
  */
 const getPaymentRejectedEmailTemplate = (clientName, serviceName, amount, nannyName, reason = '') => {
@@ -1115,6 +1213,15 @@ const sendPaymentRejectedEmail = async (toEmail, clientName, serviceName, amount
     const subject = '✗ Tu Pago ha sido Rechazado';
     const html = getPaymentRejectedEmailTemplate(clientName, serviceName, amount, nannyName, reason);
     return await sendEmailWithSendGrid(toEmail, subject, html);
+};
+
+/**
+ * Enviar correo a la nanny cuando se aprueba su pago
+ */
+const sendNannyPaymentApprovedEmail = async (nannyEmail, nannyName, clientName, serviceName, nannyAmount, platformFee, totalAmount) => {
+    const subject = '💰 ¡Has Recibido un Pago!';
+    const html = getNannyPaymentApprovedEmailTemplate(nannyName, clientName, serviceName, nannyAmount, platformFee, totalAmount);
+    return await sendEmailWithSendGrid(nannyEmail, subject, html);
 };
 
 /**
@@ -1612,6 +1719,7 @@ module.exports = {
     sendVerificationRejectedEmail,
     sendPaymentApprovedEmail,
     sendPaymentRejectedEmail,
+    sendNannyPaymentApprovedEmail,
     sendNewPaymentNotificationEmail,
     sendNewVerificationRequestEmail,
     sendNannyAcceptedServiceEmail,

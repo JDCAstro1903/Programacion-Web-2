@@ -3,6 +3,7 @@ const logger = require('../utils/logger');
 const { 
     sendPaymentApprovedEmail,
     sendPaymentRejectedEmail,
+    sendNannyPaymentApprovedEmail,
     sendNewPaymentNotificationEmail 
 } = require('../utils/email');
 const notificationSystem = require('../utils/NotificationSystem');
@@ -74,6 +75,8 @@ class PaymentController {
                 SELECT 
                     p.id,
                     p.amount,
+                    p.platform_fee,
+                    p.nanny_amount,
                     p.payment_status,
                     p.client_id,
                     p.nanny_id,
@@ -899,7 +902,7 @@ class PaymentController {
                             logger.error(`⚠️ Error al crear notificación DB para cliente (pago #${paymentId}):`, notifError);
                         }
 
-                        // Enviar email de aprobación
+                        // Enviar email de aprobación al cliente
                         try {
                             await sendPaymentApprovedEmail(
                                 paymentData.client_email,
@@ -911,6 +914,48 @@ class PaymentController {
                             logger.success(`Email de aprobación enviado a cliente (${paymentData.client_email}) - Pago #${paymentId}`);
                         } catch (emailError) {
                             logger.error(`⚠️ Error al enviar email de aprobación a cliente (${paymentData.client_email}):`, emailError.message);
+                        }
+
+                        // Enviar email a la nanny notificando que recibió el pago
+                        if (paymentData.nanny_user_id && paymentData.nanny_email) {
+                            try {
+                                const nannyAmount = parseFloat(paymentData.nanny_amount) || 0;
+                                const platformFee = parseFloat(paymentData.platform_fee) || 0;
+                                
+                                await sendNannyPaymentApprovedEmail(
+                                    paymentData.nanny_email,
+                                    nannyName,
+                                    clientName,
+                                    paymentData.service_title || 'Sin título',
+                                    nannyAmount,
+                                    platformFee,
+                                    amount
+                                );
+                                logger.success(`✅ Email de pago enviado a nanny (${paymentData.nanny_email}) - Pago #${paymentId}`);
+                            } catch (emailError) {
+                                logger.error(`⚠️ Error al enviar email de pago a nanny (${paymentData.nanny_email}):`, emailError.message);
+                            }
+
+                            // Crear notificación en BD para la nanny
+                            try {
+                                const nannyAmount = parseFloat(paymentData.nanny_amount) || 0;
+                                const nannyNotifTitle = `💰 ¡Has Recibido un Pago de $${nannyAmount.toFixed(2)}!`;
+                                const nannyNotifMessage = `Tu servicio "${paymentData.service_title}" con ${clientName} ha sido pagado`;
+                                
+                                await notificationSystem.createNotification(
+                                    paymentData.nanny_user_id,
+                                    nannyNotifTitle,
+                                    nannyNotifMessage,
+                                    'payment_received',
+                                    paymentId,
+                                    'payment'
+                                );
+                                logger.success(`✅ Notificación DB creada para nanny sobre pago #${paymentId} recibido`);
+                            } catch (notifError) {
+                                logger.error(`⚠️ Error al crear notificación DB para nanny (pago #${paymentId}):`, notifError);
+                            }
+                        } else {
+                            logger.warn(`⚠️ No se encontró email de la nanny para enviar notificación del pago #${paymentId}`);
                         }
                     } else {
                         // Notificar al cliente que el pago fue rechazado (BD + correo)

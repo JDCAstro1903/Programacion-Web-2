@@ -3112,6 +3112,161 @@
     </div>
   </div>
 
+  <!-- Modal de detalles de pagos de nanny -->
+  <div *ngIf="showNannyPaymentDetailsModal" class="modal-overlay professional-overlay" (click)="closeNannyPaymentDetailsModal()">
+    <div class="modal-container nanny-payment-details-modal-pro" (click)="$event.stopPropagation()">
+      <!-- Header profesional -->
+      <div class="nanny-payment-header-pro">
+        <div class="header-gradient-nanny-payment"></div>
+        <div class="header-content-payment-pro">
+          <div class="header-icon-payment-pro">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="header-title-section-payment">
+            <h2>Detalles de Servicios</h2>
+            <p *ngIf="selectedNannyPaymentDetails">{{ selectedNannyPaymentDetails.nanny_name }}</p>
+          </div>
+        </div>
+        <button class="professional-close-btn" (click)="closeNannyPaymentDetailsModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido -->
+      <div class="nanny-payment-body-pro" *ngIf="selectedNannyPaymentDetails">
+        <!-- Resumen -->
+        <div class="payment-summary-cards">
+          <div class="summary-card-item">
+            <div class="summary-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="summary-content">
+              <p class="summary-label">Total Ganado</p>
+              <p class="summary-value">${{ selectedNannyPaymentDetails.total_earnings.toFixed(2) }}</p>
+            </div>
+          </div>
+
+          <div class="summary-card-item">
+            <div class="summary-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="summary-content">
+              <p class="summary-label">Servicios</p>
+              <p class="summary-value">{{ selectedNannyPaymentDetails.completed_services }}</p>
+            </div>
+          </div>
+
+          <div class="summary-card-item">
+            <div class="summary-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="summary-content">
+              <p class="summary-label">Horas Totales</p>
+              <p class="summary-value">{{ selectedNannyPaymentDetails.total_hours.toFixed(1) }}h</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de servicios -->
+        <div class="services-list-section">
+          <h3>Servicios Realizados en {{ getNannyPaymentPeriodLabel() }}</h3>
+          
+          <div class="services-table">
+            <div class="service-item" *ngFor="let payment of selectedNannyPaymentDetails.payments; let i = index">
+              <div class="service-number">
+                <span>#{{ i + 1 }}</span>
+              </div>
+              
+              <div class="service-details">
+                <div class="service-client">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>{{ payment.client_first_name }} {{ payment.client_last_name }}</span>
+                </div>
+                
+                <div class="service-info-row">
+                  <div class="service-date">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+                      <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+                      <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>{{ formatServiceDate(payment.service_start_date) }}</span>
+                  </div>
+                  
+                  <div class="service-hours">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                      <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>{{ payment.service_total_hours || 0 }} horas</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="service-amount">
+                <span class="amount-label">Monto</span>
+                <span class="amount-value">${{ (+payment.amount || 0).toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen financiero -->
+        <div class="financial-summary-section">
+          <h3>Resumen Financiero</h3>
+          <div class="financial-breakdown">
+            <div class="breakdown-item">
+              <span class="breakdown-label">Ingresos Brutos</span>
+              <span class="breakdown-value">${{ selectedNannyPaymentDetails.total_earnings.toFixed(2) }}</span>
+            </div>
+            <div class="breakdown-item commission">
+              <span class="breakdown-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="19" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Comisión Plataforma (10%)
+              </span>
+              <span class="breakdown-value">-${{ (selectedNannyPaymentDetails.total_earnings * 0.10).toFixed(2) }}</span>
+            </div>
+            <div class="breakdown-divider"></div>
+            <div class="breakdown-item total">
+              <span class="breakdown-label">Pago Neto a Recibir</span>
+              <span class="breakdown-value">${{ (selectedNannyPaymentDetails.total_earnings * 0.90).toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="nanny-payment-footer-pro">
+        <button type="button" class="btn-secondary-pro" (click)="closeNannyPaymentDetailsModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 18L18 6M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de creación exitosa de nanny -->
   <div *ngIf="showNannyCreationModal" class="modal-overlay professional-overlay" (click)="closeNannyCreationModal()">
     <div class="modal-container nanny-creation-success-modal" (click)="$event.stopPropagation()">
@@ -3357,7 +3512,10 @@
               </div>
               <div class="info-text">
                 <div class="info-label-approve">CLIENTE</div>
-                <div class="info-value-approve">{{ selectedPaymentForApproval.client_first_name }} {{ selectedPaymentForApproval.client_last_name }}</div>
+                <div class="info-value-approve">
+                  {{ (selectedPaymentForApproval.payments?.[0]?.client_first_name || selectedPaymentForApproval.client_first_name || 'N/A') }} 
+                  {{ (selectedPaymentForApproval.payments?.[0]?.client_last_name || selectedPaymentForApproval.client_last_name || '') }}
+                </div>
               </div>
             </div>
 
@@ -3370,7 +3528,10 @@
               </div>
               <div class="info-text">
                 <div class="info-label-approve">NIÑERA</div>
-                <div class="info-value-approve">{{ selectedPaymentForApproval.nanny_first_name }} {{ selectedPaymentForApproval.nanny_last_name }}</div>
+                <div class="info-value-approve">
+                  {{ (selectedPaymentForApproval.payments?.[0]?.nanny_first_name || selectedPaymentForApproval.nanny_first_name || selectedPaymentForApproval.nanny_name || 'N/A') }} 
+                  {{ (selectedPaymentForApproval.payments?.[0]?.nanny_last_name || selectedPaymentForApproval.nanny_last_name || '') }}
+                </div>
               </div>
             </div>
 
@@ -3384,7 +3545,9 @@
               </div>
               <div class="info-text">
                 <div class="info-label-approve">MONTO TOTAL</div>
-                <div class="info-value-approve amount-highlight">$ {{ selectedPaymentForApproval.amount | number:'1.2-2':'es-MX' }}</div>
+                <div class="info-value-approve amount-highlight">
+                  ${{ (selectedPaymentForApproval.payments?.[0]?.amount || selectedPaymentForApproval.amount || selectedPaymentForApproval.total_earnings || 0).toFixed(2) }}
+                </div>
               </div>
             </div>
 
@@ -3398,7 +3561,9 @@
               </div>
               <div class="info-text">
                 <div class="info-label-approve">PARA LA NIÑERA</div>
-                <div class="info-value-approve">$ {{ selectedPaymentForApproval.nanny_amount | number:'1.2-2':'es-MX' }}</div>
+                <div class="info-value-approve">
+                  ${{ (selectedPaymentForApproval.payments?.[0]?.nanny_amount || selectedPaymentForApproval.nanny_amount || (selectedPaymentForApproval.total_earnings * 0.9) || 0).toFixed(2) }}
+                </div>
               </div>
             </div>
           </div>
@@ -3414,7 +3579,7 @@
             </svg>
           </div>
           <div class="notice-content">
-            <strong>Nota:</strong> Esta acción notificará automáticamente al cliente y a la niñera sobre la aprobación del pago.
+            <strong>Nota:</strong> Esta acción notificará automáticamente a la niñera sobre la aprobación del pago.
           </div>
         </div>
       </div>

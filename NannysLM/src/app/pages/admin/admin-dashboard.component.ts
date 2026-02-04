@@ -405,6 +405,10 @@ export class AdminDashboardComponent implements OnInit {
   // Estados para nanny payments period
   nannyPaymentPeriod: 'day' | 'week' | 'month' = 'month';
 
+  // Estados para modal de detalles de pagos de nanny
+  showNannyPaymentDetailsModal: boolean = false;
+  selectedNannyPaymentDetails: any = null;
+
   // Estados para modal de resultado de acción de pago
   showPaymentActionResultModal: boolean = false;
   paymentActionResultData: {
@@ -1779,7 +1783,16 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     this.isSubmitting = true;
-    const paymentId = this.selectedPaymentForApproval.id; // Guardar el ID antes de hacer la petición
+    // Obtener el ID del pago: puede estar directamente o en payments[0]
+    const paymentId = this.selectedPaymentForApproval.id || 
+                     (this.selectedPaymentForApproval.payments && this.selectedPaymentForApproval.payments[0]?.id);
+    
+    if (!paymentId) {
+      console.error('No se pudo obtener el ID del pago:', this.selectedPaymentForApproval);
+      this.isSubmitting = false;
+      this.openPaymentActionResultModal('error', '❌ Error', 'No se pudo identificar el pago a aprobar', '');
+      return;
+    }
     
     // Llamar al servicio para verificar el pago
     this.paymentService.verifyPayment(paymentId, 'approve', 'Comprobante verificado correctamente').subscribe({
@@ -2011,7 +2024,7 @@ export class AdminDashboardComponent implements OnInit {
    */
   getActiveNannysWithPayments(): number {
     const payments = this.getCurrentNannyPayments();
-    const uniqueNannyIds = new Set(payments.map((p: any) => p.nanny_id));
+    const uniqueNannyIds = new Set(payments.map((p: any) => p. nanny_id));
     return uniqueNannyIds.size;
   }
 
@@ -2141,8 +2154,29 @@ export class AdminDashboardComponent implements OnInit {
   /**
    * Ver detalles de pago de nanny
    */
-  viewNannyPaymentDetails(payment: any) {
-    this.viewPaymentDetails(payment);
+  viewNannyPaymentDetails(nannyPayment: any) {
+    this.selectedNannyPaymentDetails = nannyPayment;
+    this.showNannyPaymentDetailsModal = true;
+  }
+
+  /**
+   * Cerrar modal de detalles de pagos de nanny
+   */
+  closeNannyPaymentDetailsModal() {
+    this.showNannyPaymentDetailsModal = false;
+    this.selectedNannyPaymentDetails = null;
+  }
+
+  /**
+   * Formatear fecha de servicio
+   */
+  formatServiceDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { 
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
   }
 
   /**
